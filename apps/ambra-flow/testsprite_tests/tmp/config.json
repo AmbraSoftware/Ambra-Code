@@ -1,0 +1,19 @@
+{
+  "status": "commited",
+  "type": "frontend",
+  "scope": "codebase",
+  "localEndpoint": "http://localhost:3000/register",
+  "executionArgs": {
+    "projectName": "ambra-flow",
+    "projectPath": "c:\\Users\\Usuário\\Documents\\nodum\\apps\\ambra-flow",
+    "testIds": [
+      "TC001",
+      "TC002",
+      "TC003"
+    ],
+    "additionalInstruction": "Use 'page.getByText(\\\"Escola / Colégio\\\").first().click({ force: true })' for profile selection to avoid clicking issues. Handle the mandatory legal modal scroll correctly by executing javascript scroll.",
+    "envs": {
+      "API_KEY": "sk-user-GZpV3KP_soO9k37zxWXqQD-SNM7MCkPM56LDBKgmgfqwffdIPT93A0-_dLdOQzghxlhI3DSfyAL68np-wOhhvC5xQoUsARSoNlpxqHcgiASD0I-6EY6I1ZFZuJDrxayyf80"
+    }
+  }
+}

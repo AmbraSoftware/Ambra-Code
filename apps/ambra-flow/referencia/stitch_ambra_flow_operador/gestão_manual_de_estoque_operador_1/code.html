@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Gestão Manual de Estoque - Ambra Flow</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#f27f0d",
+                        "background-light": "#f8f7f5",
+                        "background-dark": "#221910",
+                        "surface-dark": "#2d241b",
+                        "surface-active": "#393028",
+                        "border-dark": "#54473b",
+                        "text-muted": "#baab9c",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-white overflow-hidden">
+<div class="flex h-screen w-full relative">
+<!-- SideNavBar -->
+<aside class="w-72 bg-[#181411] border-r border-border-dark flex flex-col justify-between shrink-0 z-20">
+<div class="p-6 flex flex-col gap-8">
+<!-- User/Brand Info -->
+<div class="flex gap-3 items-center">
+<div class="bg-center bg-no-repeat bg-cover rounded-full size-12 bg-surface-active" data-alt="Profile picture of the current operator" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAm7pMwoUSHO8kn8RYFGcAdkjST2Ytidg1eW37GQoQ5UM-4IFd291IEgwyJ_P5gZXswCbcJgULUZ62n5-11JKbxovn9wkAMQsJ7vf34HMhy7KCnKcKZo3i2Brcnt0EYfr1QnA6Dewxf3875yL0-5OQFHFbmKhuoX0eFSBx5G7W6UXxel5Un3om8-TAUIujpgE6er1Ad1Bl2aCMQbEUW5ST2dPzTy76tgQfljuM8Y2pUfSzoLrOnkSFuBFddAcj5h9ceYKlvDS2nQXs");'></div>
+<div class="flex flex-col">
+<h1 class="text-white text-lg font-bold leading-tight">Ambra Flow</h1>
+<p class="text-text-muted text-sm font-normal">Operador Cantina</p>
+</div>
+</div>
+<!-- Navigation -->
+<nav class="flex flex-col gap-2">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-text-muted hover:bg-surface-active hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-sm font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-text-muted hover:bg-surface-active hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined">shopping_cart</span>
+<span class="text-sm font-medium">Vendas</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg bg-surface-active text-primary border-l-4 border-primary shadow-lg transition-colors" href="#">
+<span class="material-symbols-outlined fill">inventory_2</span>
+<span class="text-sm font-bold">Estoque</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-text-muted hover:bg-surface-active hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined">bar_chart</span>
+<span class="text-sm font-medium">Relatórios</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-text-muted hover:bg-surface-active hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-sm font-medium">Configurações</span>
+</a>
+</nav>
+</div>
+<div class="p-6">
+<button class="flex items-center gap-3 px-4 py-3 w-full rounded-lg text-text-muted hover:text-red-400 transition-colors">
+<span class="material-symbols-outlined">logout</span>
+<span class="text-sm font-medium">Sair</span>
+</button>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col h-full overflow-hidden relative">
+<!-- Header & Stats -->
+<div class="flex-none p-8 pb-4 flex flex-col gap-6">
+<!-- Title Row -->
+<div class="flex flex-wrap justify-between items-end gap-4">
+<div class="flex flex-col gap-1">
+<h2 class="text-3xl font-black tracking-tight text-white">Gestão Manual de Estoque</h2>
+<p class="text-text-muted text-base">Gerencie entradas, baixas e ajustes de saldo rapidamente.</p>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center gap-2 px-4 py-2 bg-surface-active border border-border-dark rounded-lg hover:bg-surface-dark text-white transition-colors text-sm font-medium">
+<span class="material-symbols-outlined text-[20px]">history</span>
+                            Histórico de Ajustes
+                        </button>
+</div>
+</div>
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="flex flex-col gap-1 rounded-xl p-5 bg-surface-active border border-border-dark">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-text-muted">inventory</span>
+<span class="text-text-muted text-sm font-medium uppercase tracking-wider">Total de Itens</span>
+</div>
+<p class="text-white text-3xl font-bold tracking-tight">1,240</p>
+</div>
+<div class="flex flex-col gap-1 rounded-xl p-5 bg-surface-active border border-border-dark border-l-4 border-l-red-500/50">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-red-400">warning</span>
+<span class="text-text-muted text-sm font-medium uppercase tracking-wider">Estoque Crítico</span>
+</div>
+<p class="text-white text-3xl font-bold tracking-tight">5 <span class="text-base font-normal text-text-muted">itens</span></p>
+</div>
+<div class="flex flex-col gap-1 rounded-xl p-5 bg-surface-active border border-border-dark">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-primary">attach_money</span>
+<span class="text-text-muted text-sm font-medium uppercase tracking-wider">Valor em Estoque</span>
+</div>
+<p class="text-white text-3xl font-bold tracking-tight">R$ 12.450,00</p>
+</div>
+</div>
+</div>
+<!-- Toolbar & List -->
+<div class="flex-1 flex flex-col min-h-0 px-8 pb-8">
+<!-- Toolbar -->
+<div class="flex flex-wrap gap-4 items-center mb-4">
+<div class="flex-1 min-w-[300px]">
+<label class="flex w-full items-center rounded-lg bg-surface-active border border-border-dark focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all overflow-hidden h-12">
+<div class="pl-4 text-text-muted flex items-center justify-center">
+<span class="material-symbols-outlined">search</span>
+</div>
+<input class="w-full bg-transparent border-none text-white placeholder:text-text-muted focus:ring-0 px-3 py-2 text-base" placeholder="Buscar por nome, SKU ou código de barras..." type="text"/>
+<div class="pr-2 flex items-center">
+<button class="p-2 text-text-muted hover:text-white transition-colors" title="Scan Barcode">
+<span class="material-symbols-outlined">barcode_scanner</span>
+</button>
+</div>
+</label>
+</div>
+<div class="flex gap-2">
+<button class="flex items-center gap-2 px-4 h-12 bg-surface-active border border-border-dark rounded-lg text-text-muted hover:text-white hover:border-primary transition-colors">
+<span class="material-symbols-outlined">filter_list</span>
+<span class="text-sm font-medium">Categorias</span>
+</button>
+<button class="flex items-center gap-2 px-4 h-12 bg-surface-active border border-border-dark rounded-lg text-text-muted hover:text-white hover:border-primary transition-colors">
+<span class="material-symbols-outlined">sort</span>
+<span class="text-sm font-medium">Ordenar</span>
+</button>
+</div>
+</div>
+<!-- Table Container -->
+<div class="flex-1 overflow-auto rounded-xl border border-border-dark bg-background-dark scrollbar-thin scrollbar-thumb-surface-active scrollbar-track-transparent">
+<table class="w-full text-left border-collapse">
+<thead class="sticky top-0 z-10 bg-[#27211b] text-text-muted uppercase text-xs font-semibold tracking-wider">
+<tr>
+<th class="px-6 py-4">Produto</th>
+<th class="px-6 py-4">Categoria</th>
+<th class="px-6 py-4">Estoque Atual</th>
+<th class="px-6 py-4">Preço Unit.</th>
+<th class="px-6 py-4 text-right">Ações</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-dark text-sm">
+<!-- Row 1 -->
+<tr class="group hover:bg-surface-active/50 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-4">
+<div class="size-12 rounded-lg bg-center bg-cover border border-border-dark shrink-0" data-alt="Image of Coxinha de Frango" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCgGPFD_59NEFpsixfUI6UEXmIxj5J9oq8coraQcIc6piMKBsItgR7AVJoDabqnPejMk39RJaxbL17wSGPtfLQkhayWkZvcYWHOyOIdgUlAOhykZXaqsKegPqooces-ImPI-7OO5nnJvp-mXe3fYxBRO9oMB60OyOaJPM8lQPuPcJrP6SCHmNK9cLW9Mou7VYttLsrDTe4GdKP5muztzp8ZZ2bX2W-K6hkDz9-7gNFr3heQMG3uCmx86G6w9VqSeCNEcTMw65KDr2k");'></div>
+<div>
+<p class="text-white font-medium text-base">Coxinha de Frango</p>
+<p class="text-text-muted text-xs">SKU: SAL-001</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                                        Salgados
+                                    </span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="text-white font-bold text-lg">14</span>
+<span class="text-text-muted text-xs">un</span>
+</div>
+</td>
+<td class="px-6 py-4 text-text-muted">R$ 6,50</td>
+<td class="px-6 py-4 text-right">
+<button class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-surface-active hover:bg-primary hover:text-white text-primary border border-primary/30 hover:border-primary transition-all text-sm font-medium">
+                                        Ajustar
+                                    </button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="group hover:bg-surface-active/50 transition-colors bg-surface-active/30">
+<td class="px-6 py-4">
+<div class="flex items-center gap-4">
+<div class="size-12 rounded-lg bg-center bg-cover border border-border-dark shrink-0" data-alt="Image of Suco de Laranja" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBcb97aM-P5D2QbqDomZcH6SX-JmnzWbXbmj4rxrtnuNIXQWHxu6bOf0buVoYlxsVmzEb08XvV6o2R9bDQULoYLv0eOMWPaRzxTvgL2-3BhSX37ZeIGwQ4kC_2vtXaGrCMEKBlnEznrjfp2iEvqODY4Mbw3WM2TNZqjPlQkDWAM9rK9iaZxDw-De299KVXpjnFBLwjxCX9mes6mlH4LmXKUn9NO3eLQyltgqD-ShC05yOHvXB1FpmcbkP3VIBiUp27RnDQmjJXV0Vs");'></div>
+<div>
+<p class="text-white font-medium text-base">Suco de Laranja 300ml</p>
+<p class="text-text-muted text-xs">SKU: BEB-042</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-500/10 text-orange-400 border border-orange-500/20">
+                                        Bebidas
+                                    </span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="text-red-500 font-bold text-lg">8</span>
+<span class="text-text-muted text-xs">un</span>
+<span class="material-symbols-outlined text-red-500 text-lg" title="Baixo Estoque">warning</span>
+</div>
+</td>
+<td class="px-6 py-4 text-text-muted">R$ 8,00</td>
+<td class="px-6 py-4 text-right">
+<button class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-primary text-white border border-primary shadow-lg shadow-primary/20 transition-all text-sm font-medium hover:brightness-110">
+                                        Ajustar
+                                    </button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="group hover:bg-surface-active/50 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-4">
+<div class="size-12 rounded-lg bg-center bg-cover border border-border-dark shrink-0" data-alt="Image of Chocolate Barra" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCSJzx5xQXPnE76y4XGseKe-c4kyyGdGt1rGlWfCvHiIrO_oD93XASesqfWweFTgG1aelvZGk8LgXnt_hONulyPjQ8sYltvtsGhZilLZYcDxAYUlDtDoo0FGTQUlWE00Ts1ZZWNlM1IQs_eeUffApCeEwTjTMi_VRItq8O4nvhTPQF-I9-EPlKVUmkgt6zXGb5eJFWraNmDTTuq7w0RpodI2UXOFO5LwWPun1sXJCAg4ZEq3FW9aRMgbWxwa8ZvRv1771q0xCYMQLc");'></div>
+<div>
+<p class="text-white font-medium text-base">Chocolate Barra Ao Leite</p>
+<p class="text-text-muted text-xs">SKU: DOC-103</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                                        Doces
+                                    </span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="text-white font-bold text-lg">45</span>
+<span class="text-text-muted text-xs">un</span>
+</div>
+</td>
+<td class="px-6 py-4 text-text-muted">R$ 4,50</td>
+<td class="px-6 py-4 text-right">
+<button class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-surface-active hover:bg-primary hover:text-white text-primary border border-primary/30 hover:border-primary transition-all text-sm font-medium">
+                                        Ajustar
+                                    </button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="group hover:bg-surface-active/50 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-4">
+<div class="size-12 rounded-lg bg-center bg-cover border border-border-dark shrink-0" data-alt="Image of Sanduíche Natural" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCjgrhmmsqy_pQ-WxumOFUa-LNwS6S-UMTh4S62C938XMWk4wd7EHK2tdw1dss5mGE_gbEXYxc0P1ydOiOyOsMq3y3AN76sMoU0NaqfL6W0LRVCnG_checPHVZFw6pqXH-IOGLhVOt--ICPbQapRQh6LCfVqwHu6GGDYpTkVsf_Ur4lRac3OV4MevftBTdLMqpiDj2u2NDdUHsQRda5ZLmYAvNtw9-5dsr2BslSDWLHed5mglng3edp4Cb1HBsONiLgrPBWtKgB8LU");'></div>
+<div>
+<p class="text-white font-medium text-base">Sanduíche Natural Frango</p>
+<p class="text-text-muted text-xs">SKU: LAN-012</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                                        Lanches
+                                    </span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="text-red-500 font-bold text-lg">3</span>
+<span class="text-text-muted text-xs">un</span>
+<span class="material-symbols-outlined text-red-500 text-lg" title="Baixo Estoque">warning</span>
+</div>
+</td>
+<td class="px-6 py-4 text-text-muted">R$ 12,00</td>
+<td class="px-6 py-4 text-right">
+<button class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-surface-active hover:bg-primary hover:text-white text-primary border border-primary/30 hover:border-primary transition-all text-sm font-medium">
+                                        Ajustar
+                                    </button>
+</td>
+</tr>
+<!-- Row 5 -->
+<tr class="group hover:bg-surface-active/50 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-4">
+<div class="size-12 rounded-lg bg-center bg-cover border border-border-dark shrink-0" data-alt="Image of Refrigerante Lata" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDRbluMUCbGv1n5SiqdILFH1VtD0zgaB2mg0V_koIIDhGIsd___1qANxtqbocfSbiVpxnZZDYaZzJFRG5SyFejhcOWyJ9xBvLtQrh0Z5DkoyyYS1u3l45C3Q7asfhDUFvL3e2fR7jI9aeTkLolO-7pNgZysYx_KFDRJaHj_byeO9HMhQVT6zvgyBRW9g60EnE6sKXHrL0P407ICnufVdrga6oFVqJPW3UqXfIpvRI5enO2bvxtA-nmTDM8B9Uef3kwUSP3tp8udNVU");'></div>
+<div>
+<p class="text-white font-medium text-base">Refrigerante Cola Lata</p>
+<p class="text-text-muted text-xs">SKU: BEB-088</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-500/10 text-orange-400 border border-orange-500/20">
+                                        Bebidas
+                                    </span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="text-white font-bold text-lg">22</span>
+<span class="text-text-muted text-xs">un</span>
+</div>
+</td>
+<td class="px-6 py-4 text-text-muted">R$ 5,00</td>
+<td class="px-6 py-4 text-right">
+<button class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-surface-active hover:bg-primary hover:text-white text-primary border border-primary/30 hover:border-primary transition-all text-sm font-medium">
+                                        Ajustar
+                                    </button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="flex justify-between items-center mt-4 text-text-muted text-sm">
+<p>Mostrando <span class="text-white font-medium">1-5</span> de <span class="text-white font-medium">1240</span> itens</p>
+<div class="flex gap-2">
+<button class="px-3 py-1 rounded bg-surface-active border border-border-dark hover:text-white disabled:opacity-50">Anterior</button>
+<button class="px-3 py-1 rounded bg-surface-active border border-border-dark hover:text-white">Próximo</button>
+</div>
+</div>
+</div>
+<!-- Modal Overlay (Simulated Active State) -->
+<!-- This visualizes the "Baixa Manual" action requested -->
+<div class="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+<div class="w-full max-w-lg bg-[#221910] rounded-2xl shadow-2xl border border-border-dark overflow-hidden flex flex-col">
+<!-- Modal Header -->
+<div class="px-6 py-5 border-b border-border-dark flex justify-between items-center bg-[#27211b]">
+<h3 class="text-lg font-bold text-white">Baixa de Estoque</h3>
+<button class="text-text-muted hover:text-white">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<!-- Modal Body -->
+<div class="p-6 flex flex-col gap-6">
+<!-- Product Summary -->
+<div class="flex gap-4 items-center p-3 rounded-lg bg-surface-active/50 border border-border-dark">
+<div class="size-14 rounded-md bg-center bg-cover shrink-0" data-alt="Thumbnail of Suco de Laranja" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCd1qnIqKdtUSuso0ccBBRorC_6keoEfBSSr7uf4l5OU9DnRHCiX5v4-yYDuXnPHZ5fbm4DbQyeZPOA-5W1frfP6X5eOlADnX7s8Bv-4pBnzb8pyqQjFzF1Go8vUtBW4levs-tA1mt7q1oCpIyA1pwE8YXW4xAALaMkgW7arD2gtnh5d9UnsBqB-5TMleP5scNTDzGQYyRDSnB2nGj6JY8Lm-yPuaAc2-iOJOL-i5tuhd99k7aIisDjg3FYHw-PJZLpwHmpOsya_dM");'></div>
+<div class="flex flex-col">
+<span class="text-white font-bold">Suco de Laranja 300ml</span>
+<span class="text-text-muted text-sm">Atual: <span class="text-white">8 unidades</span></span>
+</div>
+</div>
+<!-- Action Tabs -->
+<div class="grid grid-cols-2 gap-2 p-1 bg-surface-active rounded-lg">
+<button class="py-2 text-sm font-bold text-center rounded bg-[#221910] text-primary shadow-sm">
+                                Baixa (Retirar)
+                            </button>
+<button class="py-2 text-sm font-medium text-center rounded text-text-muted hover:text-white">
+                                Ajuste de Saldo
+                            </button>
+</div>
+<!-- Form -->
+<div class="flex flex-col gap-4">
+<div>
+<label class="block text-sm font-medium text-text-muted mb-1">Quantidade a retirar</label>
+<div class="flex items-center">
+<button class="w-12 h-12 rounded-l-lg bg-surface-active border border-border-dark hover:bg-surface-dark flex items-center justify-center text-white">
+<span class="material-symbols-outlined">remove</span>
+</button>
+<input class="flex-1 h-12 bg-[#181411] border-y border-border-dark text-center text-white font-bold text-lg focus:ring-0 focus:border-primary" type="number" value="1"/>
+<button class="w-12 h-12 rounded-r-lg bg-surface-active border border-border-dark hover:bg-surface-dark flex items-center justify-center text-white">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+</div>
+<div>
+<label class="block text-sm font-medium text-text-muted mb-1">Motivo da Baixa</label>
+<div class="relative">
+<select class="w-full h-12 pl-4 pr-10 rounded-lg bg-surface-active border border-border-dark text-white appearance-none focus:ring-1 focus:ring-primary focus:border-primary">
+<option>Selecione um motivo...</option>
+<option value="vencimento">Vencimento do Produto</option>
+<option value="quebra">Quebra / Avaria</option>
+<option value="consumo">Consumo Próprio / Degustação</option>
+<option value="erro">Erro de Contagem</option>
+</select>
+<div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-text-muted">
+<span class="material-symbols-outlined">expand_more</span>
+</div>
+</div>
+</div>
+<div>
+<label class="block text-sm font-medium text-text-muted mb-1">Observação (Opcional)</label>
+<textarea class="w-full rounded-lg bg-surface-active border border-border-dark text-white placeholder:text-text-muted/50 p-3 text-sm focus:ring-1 focus:ring-primary focus:border-primary resize-none" placeholder="Descreva detalhes se necessário..." rows="2"></textarea>
+</div>
+</div>
+<!-- New Balance Preview -->
+<div class="flex justify-between items-center text-sm pt-2 border-t border-border-dark border-dashed">
+<span class="text-text-muted">Novo saldo estimado:</span>
+<span class="text-white font-bold text-lg">7 un</span>
+</div>
+</div>
+<!-- Modal Footer -->
+<div class="px-6 py-4 bg-surface-active/50 flex gap-3 justify-end">
+<button class="px-4 py-2 rounded-lg text-text-muted hover:text-white font-medium transition-colors">Cancelar</button>
+<button class="px-6 py-2 rounded-lg bg-primary hover:bg-primary/90 text-white font-bold shadow-lg shadow-primary/20 transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px]">check_circle</span>
+                            Confirmar Retirada
+                        </button>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

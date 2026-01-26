@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #FC5407;
+  --color-primary-hover: #e04804;
+  --color-secondary-orange: #FBAF72;
+  --color-background-light: #F8FAFC;
+  --color-background-dark: #18181b; /* Zinc-900 (Soft Dark) instead of Slate-900 */
+  --color-surface-light: #ffffff;
+  --color-surface-dark: #1e293b;
+  --color-text-light: #1e293b;
+  --color-text-dark: #e2e8f0;
+  --color-muted-light: #64748b;
+  --color-muted-dark: #94a3b8;
+  --color-border-light: #e2e8f0;
+  --color-border-dark: #334155;
+
+  --font-display: var(--font-manrope), sans-serif;
+  --font-sans: var(--font-inter), sans-serif;
+
+  --animate-fade-in-up: fade-in-up 0.5s ease-out forwards;
+
+  @keyframes fade-in-up {
+    0% { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+}
+
+/* Custom Base Styles */
+body {
+  @apply bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark min-h-screen flex flex-col transition-colors duration-300 overflow-x-hidden;
+}
+

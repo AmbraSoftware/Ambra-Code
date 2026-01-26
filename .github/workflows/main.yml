@@ -1,0 +1,49 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x]
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        cache-dependency-path: '**/package-lock.json'
+
+    # Install Root Dependencies (Turbo/Nx/Monorepo aware if needed, currently assumes standard npm workspaces)
+    - name: Install Dependencies
+      run: npm ci
+
+    # Build Backend
+    - name: Build Backend
+      run: npm run build --workspace=apps/backend
+
+    # Build Ambra Flow (Frontend)
+    - name: Build Ambra Flow
+      run: npm run build --workspace=apps/ambra-flow
+
+    # Build Ambra Console (Frontend)
+    - name: Build Ambra Console
+      run: npm run build --workspace=apps/ambra-console
+
+    # Run Linter
+    # - name: Lint
+    #   run: npm run lint
+
+    # Run Tests
+    - name: Test REST API (Backend)
+      run: npm test --workspace=apps/backend

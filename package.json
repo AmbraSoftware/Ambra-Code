@@ -1,0 +1,28 @@
+{
+    "name": "nodum-ecosystem",
+    "version": "1.0.0",
+    "private": true,
+    "description": "Nodum Kernel & Ambra Experience - Industrial Monorepo",
+    "workspaces": [
+        "apps/*"
+    ],
+    "scripts": {
+        "backend:dev": "npm run start:dev -w apps/backend",
+        "backend:build": "npm run build -w apps/backend",
+        "console:dev": "npm run dev -w apps/nodum-console",
+        "flow:dev": "npm run dev -w apps/ambra-flow",
+        "food:dev": "npm run dev -w apps/ambra-food",
+        "build:all": "npm run build --workspaces",
+        "install:all": "npm install --workspaces"
+    },
+    "devDependencies": {
+        "puppeteer": "^24.35.0",
+        "typescript": "^5.0.0"
+    },
+    "dependencies": {
+        "@betterbugs/web-sdk": "^0.0.38",
+        "date-fns": "^4.1.0",
+        "jspdf": "^3.0.4",
+        "jspdf-autotable": "^5.0.2"
+    }
+}

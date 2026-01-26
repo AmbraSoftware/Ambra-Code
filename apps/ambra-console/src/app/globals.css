@@ -1,0 +1,147 @@
+@import "tailwindcss";
+
+@plugin "tailwindcss-animate";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root { 
+  /* VSCode Dark Soft Theme - Applied to both modes for consistency */
+  --background: 220 13% 18%;        /* #252526 - VSCode dark bg */
+  --foreground: 0 0% 83%;            /* #D4D4D4 - VSCode light text */
+  
+  --card: 220 13% 20%;               /* Slightly lighter than bg */
+  --card-foreground: 0 0% 83%;
+  
+  --popover: 220 13% 18%;
+  --popover-foreground: 0 0% 83%;
+  
+  /* Primary: Vibrant Orange */
+  --primary: 24.6 95% 53.1%;         /* #FF8800 - Orange accent */
+  --primary-foreground: 0 0% 100%;
+  
+  --secondary: 220 13% 25%;          /* #3E3E42 - VSCode selection */
+  --secondary-foreground: 0 0% 83%;
+  
+  --muted: 220 13% 25%;              /* Muted elements */
+  --muted-foreground: 0 0% 60%;      /* #999999 - Muted text */
+  
+  --accent: 220 13% 30%;             /* Hover states */
+  --accent-foreground: 0 0% 90%;
+  
+  --destructive: 0 72% 51%;          /* Red for errors */
+  --destructive-foreground: 0 0% 100%;
+  
+  --border: 220 13% 28%;             /* #3E3E42 - Subtle borders */
+  --input: 220 13% 25%;
+  --ring: 24.6 95% 53.1%;            /* Orange focus ring */
+  --radius: 0.625rem;
+  
+  /* Charts - Colorful palette */
+  --chart-1: 24.6 95% 53.1%;         /* Orange */
+  --chart-2: 173 58% 50%;            /* Teal */
+  --chart-3: 217 91% 60%;            /* Blue */
+  --chart-4: 43 96% 56%;             /* Yellow */
+  --chart-5: 340 82% 52%;            /* Pink */
+  
+  /* Sidebar - VSCode sidebar colors */
+  --sidebar-background: 220 13% 16%; /* #1E1E1E - Darker sidebar */
+  --sidebar-foreground: 0 0% 83%;
+  --sidebar-primary: 24.6 95% 53.1%; /* Orange */
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 220 13% 25%;
+  --sidebar-accent-foreground: 0 0% 83%;
+  --sidebar-border: 220 13% 22%;
+  --sidebar-ring: 24.6 95% 53.1%;
+  --sidebar: 220 13% 16%;
+}
+
+.dark {
+  /* VSCode Dark Soft Theme with Orange Accent */
+  --background: 220 13% 18%;        /* #252526 - VSCode dark bg */
+  --foreground: 0 0% 83%;            /* #D4D4D4 - VSCode light text */
+  
+  --card: 220 13% 20%;               /* Slightly lighter than bg */
+  --card-foreground: 0 0% 83%;
+  
+  --popover: 220 13% 18%;
+  --popover-foreground: 0 0% 83%;
+  
+  /* Primary: Vibrant Orange */
+  --primary: 24.6 95% 53.1%;         /* #FF8800 - Orange accent */
+  --primary-foreground: 0 0% 100%;
+  
+  --secondary: 220 13% 25%;          /* #3E3E42 - VSCode selection */
+  --secondary-foreground: 0 0% 83%;
+  
+  --muted: 220 13% 25%;              /* Muted elements */
+  --muted-foreground: 0 0% 60%;      /* #999999 - Muted text */
+  
+  --accent: 220 13% 30%;             /* Hover states */
+  --accent-foreground: 0 0% 90%;
+  
+  --destructive: 0 72% 51%;          /* Red for errors */
+  --destructive-foreground: 0 0% 100%;
+  
+  --border: 220 13% 28%;             /* #3E3E42 - Subtle borders */
+  --input: 220 13% 25%;
+  --ring: 24.6 95% 53.1%;            /* Orange focus ring */
+  
+  /* Charts - Colorful palette for dark bg */
+  --chart-1: 24.6 95% 53.1%;         /* Orange */
+  --chart-2: 173 58% 50%;            /* Teal */
+  --chart-3: 217 91% 60%;            /* Blue */
+  --chart-4: 43 96% 56%;             /* Yellow */
+  --chart-5: 340 82% 52%;            /* Pink */
+  
+  /* Sidebar - VSCode sidebar colors */
+  --sidebar-background: 220 13% 16%; /* #1E1E1E - Darker sidebar */
+  --sidebar-foreground: 0 0% 83%;
+  --sidebar-primary: 24.6 95% 53.1%; /* Orange */
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 220 13% 25%;
+  --sidebar-accent-foreground: 0 0% 83%;
+  --sidebar-border: 220 13% 22%;
+  --sidebar-ring: 24.6 95% 53.1%;
+  --sidebar: 220 13% 16%;
+}
+
+@theme {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --color-chart-1: hsl(var(--chart-1));
+  --color-chart-2: hsl(var(--chart-2));
+  --color-chart-3: hsl(var(--chart-3));
+  --color-chart-4: hsl(var(--chart-4));
+  --color-chart-5: hsl(var(--chart-5));
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+ }
+  body {
+    @apply bg-background text-foreground;
+ }
+}

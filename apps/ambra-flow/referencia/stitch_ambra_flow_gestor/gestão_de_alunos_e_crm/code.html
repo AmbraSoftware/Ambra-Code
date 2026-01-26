@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+
+<html class="light" lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Ambra Flow - Gestão de Alunos e CRM</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#f2780d",
+                        "primary-dark": "#d66606",
+                        "background-light": "#f8f7f5",
+                        "background-dark": "#221810",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#2d241d",
+                        "text-main": "#181411",
+                        "text-secondary": "#8a7460",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Manrope', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings:
+            'FILL' 0,
+            'wght' 400,
+            'GRAD' 0,
+            'opsz' 24
+        }
+        .material-symbols-outlined.filled {
+            font-variation-settings:
+            'FILL' 1,
+            'wght' 400,
+            'GRAD' 0,
+            'opsz' 24
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-text-main antialiased min-h-screen flex overflow-hidden">
+<!-- Sidebar -->
+<aside class="w-64 bg-surface-light dark:bg-surface-dark border-r border-[#e6e0db] flex-shrink-0 flex flex-col h-screen fixed left-0 top-0 z-10 transition-colors duration-200">
+<div class="p-6 pb-2">
+<div class="flex items-center gap-3 mb-8">
+<div class="bg-center bg-no-repeat bg-cover rounded-full h-10 w-10 shrink-0 shadow-sm" data-alt="Abstract orange logo representing flow and connection" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDsUx-vQgQPblEHSd5lEDQqsoEESC7AFwhqmEXOH-Ye4rvL0PR-jIrF1T4dg2Hm0ukdgmnKFOlAxuovahF1vSKkkGXEaAgqeMSRw6dChv5YTCAaUj7iFgnlT74a3fRUKr7BtymH3WciCV9XNXzfoUriFzvcEH9wjDpvnkXKdlkJLX5-0C8M_yag8jkqNV6zD_b4GzUHaImjmU_814MobXg89GSE413ib8PvHu0OERORUkTsPfSizq9Q3Q9lBwR04uH0VVFo6Yr6oic");'></div>
+<div class="flex flex-col">
+<h1 class="text-text-main dark:text-white text-base font-bold leading-tight">Ambra Flow</h1>
+<p class="text-text-secondary text-xs font-medium">Gestão de Cantina</p>
+</div>
+</div>
+<nav class="flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-main hover:bg-gray-100 dark:hover:bg-white/5 transition-colors group" href="#">
+<span class="material-symbols-outlined text-text-secondary group-hover:text-primary transition-colors">home</span>
+<span class="text-sm font-medium dark:text-gray-200">Início</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-main hover:bg-gray-100 dark:hover:bg-white/5 transition-colors group" href="#">
+<span class="material-symbols-outlined text-text-secondary group-hover:text-primary transition-colors">receipt_long</span>
+<span class="text-sm font-medium dark:text-gray-200">Vendas</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-main hover:bg-gray-100 dark:hover:bg-white/5 transition-colors group" href="#">
+<span class="material-symbols-outlined text-text-secondary group-hover:text-primary transition-colors">inventory_2</span>
+<span class="text-sm font-medium dark:text-gray-200">Produtos</span>
+</a>
+<!-- Active Item -->
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/10 text-primary" href="#">
+<span class="material-symbols-outlined filled text-primary">group</span>
+<span class="text-sm font-bold">Pessoas</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-main hover:bg-gray-100 dark:hover:bg-white/5 transition-colors group" href="#">
+<span class="material-symbols-outlined text-text-secondary group-hover:text-primary transition-colors">attach_money</span>
+<span class="text-sm font-medium dark:text-gray-200">Financeiro</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-main hover:bg-gray-100 dark:hover:bg-white/5 transition-colors group" href="#">
+<span class="material-symbols-outlined text-text-secondary group-hover:text-primary transition-colors">settings</span>
+<span class="text-sm font-medium dark:text-gray-200">Configurações</span>
+</a>
+</nav>
+</div>
+<div class="mt-auto p-6 border-t border-[#e6e0db] dark:border-white/10">
+<div class="flex items-center gap-3">
+<div class="h-8 w-8 rounded-full bg-gray-200 overflow-hidden" data-alt="User profile picture placeholder">
+<img alt="User Avatar" class="h-full w-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCh3Dd0MbV8XNt4FS-rN5RvJP9ciPLtoz08LF_862yNhE2_07TayWVKIfCOxse2guPbTXSHCSJj7fUo0Xcs6k9S_rr2zzo3bk_zFhBoqjda0sMNzjoUvTt4zqr83H-Bsw6qn5l_lEQbb4MqSZFZ3uMOq9EIMkMCOtefzgm9PYcsI9Y74xg2TyZniWtpjo1q8UzGbQw8b7NXE1OazYpMzh056QIb-Q0kk5rYM4N5baJ3r-UaK2_rI5NL7urqKNrHHtJe4MWrD__LFQI"/>
+</div>
+<div class="flex flex-col">
+<p class="text-sm font-semibold text-text-main dark:text-white">Maria Gestora</p>
+<p class="text-xs text-text-secondary">Admin</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 ml-64 flex flex-col h-screen overflow-y-auto bg-background-light dark:bg-background-dark">
+<!-- Header Section -->
+<header class="bg-surface-light dark:bg-surface-dark border-b border-[#e6e0db] dark:border-white/10 px-8 py-6 sticky top-0 z-20">
+<div class="max-w-7xl mx-auto w-full">
+<div class="flex justify-between items-start gap-4 mb-6">
+<div>
+<h1 class="text-3xl font-extrabold text-text-main dark:text-white tracking-tight">Gestão de Alunos e CRM</h1>
+<p class="text-text-secondary dark:text-gray-400 mt-1">Gerencie saldos, histórico e comunique-se com os pais no Ambra Food.</p>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-[#e6e0db] bg-white text-text-main text-sm font-semibold hover:bg-gray-50 transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[20px]">file_download</span>
+                            Exportar Relatório
+                        </button>
+<button class="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary hover:bg-primary-dark text-white text-sm font-semibold shadow-md shadow-primary/20 transition-all active:scale-95">
+<span class="material-symbols-outlined text-[20px]">person_add</span>
+                            Novo Aluno
+                        </button>
+</div>
+</div>
+<!-- Tabs -->
+<div class="flex gap-8 border-b border-[#e6e0db] dark:border-white/10">
+<button class="flex items-center gap-2 border-b-2 border-primary pb-3 px-1 text-primary font-bold text-sm transition-colors">
+<span class="material-symbols-outlined text-[20px]">contacts</span>
+                        Base de Alunos
+                    </button>
+<button class="flex items-center gap-2 border-b-2 border-transparent pb-3 px-1 text-text-secondary hover:text-text-main dark:hover:text-white font-bold text-sm transition-colors">
+<span class="material-symbols-outlined text-[20px]">campaign</span>
+                        Central de Avisos
+                    </button>
+<button class="flex items-center gap-2 border-b-2 border-transparent pb-3 px-1 text-text-secondary hover:text-text-main dark:hover:text-white font-bold text-sm transition-colors">
+<span class="material-symbols-outlined text-[20px]">loyalty</span>
+                        Fidelidade
+                    </button>
+</div>
+</div>
+</header>
+<!-- Content Area -->
+<div class="p-8 max-w-7xl mx-auto w-full flex-1">
+<!-- Metrics Summary Row -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+<div class="bg-surface-light dark:bg-surface-dark p-4 rounded-xl border border-[#e6e0db] dark:border-white/10 shadow-sm flex items-start justify-between">
+<div>
+<p class="text-text-secondary text-xs font-semibold uppercase tracking-wider mb-1">Total de Alunos</p>
+<p class="text-2xl font-bold text-text-main dark:text-white">1.248</p>
+</div>
+<div class="h-10 w-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+<span class="material-symbols-outlined">school</span>
+</div>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark p-4 rounded-xl border border-[#e6e0db] dark:border-white/10 shadow-sm flex items-start justify-between">
+<div>
+<p class="text-text-secondary text-xs font-semibold uppercase tracking-wider mb-1">Saldos Positivos</p>
+<p class="text-2xl font-bold text-emerald-600">R$ 42.500</p>
+</div>
+<div class="h-10 w-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+<span class="material-symbols-outlined">trending_up</span>
+</div>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark p-4 rounded-xl border border-[#e6e0db] dark:border-white/10 shadow-sm flex items-start justify-between">
+<div>
+<p class="text-text-secondary text-xs font-semibold uppercase tracking-wider mb-1">Saldos Devedores</p>
+<p class="text-2xl font-bold text-red-600">- R$ 1.250</p>
+</div>
+<div class="h-10 w-10 rounded-full bg-red-50 text-red-600 flex items-center justify-center">
+<span class="material-symbols-outlined">trending_down</span>
+</div>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark p-4 rounded-xl border border-[#e6e0db] dark:border-white/10 shadow-sm flex items-start justify-between">
+<div>
+<p class="text-text-secondary text-xs font-semibold uppercase tracking-wider mb-1">Usuários App</p>
+<p class="text-2xl font-bold text-primary">85%</p>
+</div>
+<div class="h-10 w-10 rounded-full bg-orange-50 text-primary flex items-center justify-center">
+<span class="material-symbols-outlined">smartphone</span>
+</div>
+</div>
+</div>
+<!-- Filters -->
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-[#e6e0db] dark:border-white/10 shadow-sm mb-6 p-4">
+<div class="flex flex-wrap gap-4 items-end">
+<div class="flex-1 min-w-[280px]">
+<label class="text-xs font-bold text-text-secondary mb-1.5 block ml-1">Buscar Aluno</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary">search</span>
+<input class="w-full pl-10 pr-4 py-2.5 rounded-lg border border-[#e6e0db] dark:border-white/10 bg-white dark:bg-white/5 text-text-main dark:text-white placeholder:text-text-secondary/50 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm" placeholder="Nome, matrícula ou responsável..." type="text"/>
+</div>
+</div>
+<div class="w-full sm:w-[200px]">
+<label class="text-xs font-bold text-text-secondary mb-1.5 block ml-1">Turma / Série</label>
+<div class="relative">
+<select class="w-full pl-4 pr-10 py-2.5 rounded-lg border border-[#e6e0db] dark:border-white/10 bg-white dark:bg-white/5 text-text-main dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary appearance-none text-sm">
+<option value="">Todas as turmas</option>
+<option value="1">1º Ano Fundamental</option>
+<option value="2">2º Ano Fundamental</option>
+<option value="3">3º Ano Fundamental</option>
+<option value="med">Ensino Médio</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary pointer-events-none text-lg">expand_more</span>
+</div>
+</div>
+<div class="w-full sm:w-[180px]">
+<label class="text-xs font-bold text-text-secondary mb-1.5 block ml-1">Status Saldo</label>
+<div class="relative">
+<select class="w-full pl-4 pr-10 py-2.5 rounded-lg border border-[#e6e0db] dark:border-white/10 bg-white dark:bg-white/5 text-text-main dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary appearance-none text-sm">
+<option value="">Todos</option>
+<option value="pos">Positivo</option>
+<option value="neg">Negativo (Devedor)</option>
+<option value="zer">Zerado</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary pointer-events-none text-lg">expand_more</span>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="h-[42px] px-4 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 font-semibold text-sm transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">filter_list</span>
+                            Mais Filtros
+                         </button>
+</div>
+</div>
+</div>
+<!-- Table Card -->
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-[#e6e0db] dark:border-white/10 shadow-sm overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-[#e6e0db] dark:border-white/10 bg-gray-50/50 dark:bg-white/5">
+<th class="py-4 px-6 text-xs font-bold uppercase tracking-wider text-text-secondary w-[30%]">Aluno &amp; Responsável</th>
+<th class="py-4 px-6 text-xs font-bold uppercase tracking-wider text-text-secondary w-[15%]">Turma</th>
+<th class="py-4 px-6 text-xs font-bold uppercase tracking-wider text-text-secondary w-[15%]">Último Consumo</th>
+<th class="py-4 px-6 text-xs font-bold uppercase tracking-wider text-text-secondary w-[15%]">Saldo Atual</th>
+<th class="py-4 px-6 text-xs font-bold uppercase tracking-wider text-text-secondary w-[10%]">Status</th>
+<th class="py-4 px-6 text-xs font-bold uppercase tracking-wider text-text-secondary w-[15%] text-right">Ações</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-[#e6e0db] dark:divide-white/10">
+<!-- Row 1 -->
+<tr class="group hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+<td class="py-4 px-6">
+<div class="flex items-center gap-3">
+<div class="h-10 w-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-bold text-sm">JS</div>
+<div>
+<p class="font-bold text-text-main dark:text-white text-sm">João Silva</p>
+<p class="text-xs text-text-secondary">Resp: Maria Silva (Mãe)</p>
+</div>
+</div>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2.5 py-1 rounded-md bg-gray-100 dark:bg-white/10 text-text-secondary text-xs font-medium">
+                                        5º Ano B
+                                    </span>
+</td>
+<td class="py-4 px-6">
+<p class="text-sm text-text-main dark:text-gray-300">Hoje, 10:30</p>
+<p class="text-xs text-text-secondary">Salgado + Suco</p>
+</td>
+<td class="py-4 px-6">
+<p class="text-sm font-bold text-emerald-600">R$ 45,00</p>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 text-xs font-semibold">
+<span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                                        Ativo
+                                    </span>
+</td>
+<td class="py-4 px-6 text-right">
+<button class="text-text-secondary hover:text-primary transition-colors p-2 rounded-full hover:bg-primary/10" title="Ver Histórico">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+</button>
+<button class="text-text-secondary hover:text-primary transition-colors p-2 rounded-full hover:bg-primary/10" title="Recarregar">
+<span class="material-symbols-outlined text-[20px]">account_balance_wallet</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="group hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+<td class="py-4 px-6">
+<div class="flex items-center gap-3">
+<div class="h-10 w-10 rounded-full bg-pink-100 text-pink-600 flex items-center justify-center font-bold text-sm">AC</div>
+<div>
+<p class="font-bold text-text-main dark:text-white text-sm">Ana Costa</p>
+<p class="text-xs text-text-secondary">Resp: Pedro Costa (Pai)</p>
+</div>
+</div>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2.5 py-1 rounded-md bg-gray-100 dark:bg-white/10 text-text-secondary text-xs font-medium">
+                                        3º Ano A
+                                    </span>
+</td>
+<td class="py-4 px-6">
+<p class="text-sm text-text-main dark:text-gray-300">Ontem, 15:00</p>
+<p class="text-xs text-text-secondary">Água Mineral</p>
+</td>
+<td class="py-4 px-6">
+<p class="text-sm font-bold text-red-600">- R$ 10,00</p>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-50 text-red-700 border border-red-100 text-xs font-semibold">
+<span class="h-1.5 w-1.5 rounded-full bg-red-500"></span>
+                                        Bloqueado
+                                    </span>
+</td>
+<td class="py-4 px-6 text-right">
+<button class="text-text-secondary hover:text-primary transition-colors p-2 rounded-full hover:bg-primary/10" title="Ver Histórico">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+</button>
+<button class="text-text-secondary hover:text-primary transition-colors p-2 rounded-full hover:bg-primary/10" title="Recarregar">
+<span class="material-symbols-outlined text-[20px]">account_balance_wallet</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="group hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+<td class="py-4 px-6">
+<div class="flex items-center gap-3">
+<div class="h-10 w-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">LP</div>
+<div>
+<p class="font-bold text-text-main dark:text-white text-sm">Lucas Pereira</p>
+<p class="text-xs text-text-secondary">Resp: Carla Pereira (Mãe)</p>
+</div>
+</div>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2.5 py-1 rounded-md bg-gray-100 dark:bg-white/10 text-text-secondary text-xs font-medium">
+                                        9º Ano C
+                                    </span>
+</td>
+<td class="py-4 px-6">
+<p class="text-sm text-text-main dark:text-gray-300">22/10, 09:45</p>
+<p class="text-xs text-text-secondary">Lanche Natural</p>
+</td>
+<td class="py-4 px-6">
+<p class="text-sm font-bold text-emerald-600">R$ 120,50</p>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 text-xs font-semibold">
+<span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                                        Ativo
+                                    </span>
+</td>
+<td class="py-4 px-6 text-right">
+<button class="text-text-secondary hover:text-primary transition-colors p-2 rounded-full hover:bg-primary/10" title="Ver Histórico">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+</button>
+<button class="text-text-secondary hover:text-primary transition-colors p-2 rounded-full hover:bg-primary/10" title="Recarregar">
+<span class="material-symbols-outlined text-[20px]">account_balance_wallet</span>
+</button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="group hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+<td class="py-4 px-6">
+<div class="flex items-center gap-3">
+<div class="h-10 w-10 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-bold text-sm">BS</div>
+<div>
+<p class="font-bold text-text-main dark:text-white text-sm">Beatriz Souza</p>
+<p class="text-xs text-text-secondary">Resp: Fernanda Souza (Mãe)</p>
+</div>
+</div>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2.5 py-1 rounded-md bg-gray-100 dark:bg-white/10 text-text-secondary text-xs font-medium">
+                                        1º Ano A
+                                    </span>
+</td>
+<td class="py-4 px-6">
+<p class="text-sm text-text-main dark:text-gray-300">20/10, 10:15</p>
+<p class="text-xs text-text-secondary">Fruta</p>
+</td>
+<td class="py-4 px-6">
+<p class="text-sm font-bold text-yellow-600">R$ 5,00</p>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 text-xs font-semibold">
+<span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                                        Ativo
+                                    </span>
+</td>
+<td class="py-4 px-6 text-right">
+<button class="text-text-secondary hover:text-primary transition-colors p-2 rounded-full hover:bg-primary/10" title="Ver Histórico">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+</button>
+<button class="text-text-secondary hover:text-primary transition-colors p-2 rounded-full hover:bg-primary/10" title="Recarregar">
+<span class="material-symbols-outlined text-[20px]">account_balance_wallet</span>
+</button>
+</td>
+</tr>
+<!-- Row 5 -->
+<tr class="group hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+<td class="py-4 px-6">
+<div class="flex items-center gap-3">
+<div class="h-10 w-10 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center font-bold text-sm">GS</div>
+<div>
+<p class="font-bold text-text-main dark:text-white text-sm">Gabriel Santos</p>
+<p class="text-xs text-text-secondary">Resp: Ricardo Santos (Pai)</p>
+</div>
+</div>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2.5 py-1 rounded-md bg-gray-100 dark:bg-white/10 text-text-secondary text-xs font-medium">
+                                        7º Ano B
+                                    </span>
+</td>
+<td class="py-4 px-6">
+<p class="text-sm text-text-main dark:text-gray-300">19/10, 12:30</p>
+<p class="text-xs text-text-secondary">Refeição Completa</p>
+</td>
+<td class="py-4 px-6">
+<p class="text-sm font-bold text-red-600">- R$ 25,00</p>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-50 text-red-700 border border-red-100 text-xs font-semibold">
+<span class="h-1.5 w-1.5 rounded-full bg-red-500"></span>
+                                        Bloqueado
+                                    </span>
+</td>
+<td class="py-4 px-6 text-right">
+<button class="text-text-secondary hover:text-primary transition-colors p-2 rounded-full hover:bg-primary/10" title="Ver Histórico">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+</button>
+<button class="text-text-secondary hover:text-primary transition-colors p-2 rounded-full hover:bg-primary/10" title="Recarregar">
+<span class="material-symbols-outlined text-[20px]">account_balance_wallet</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="border-t border-[#e6e0db] dark:border-white/10 p-4 flex items-center justify-between">
+<p class="text-sm text-text-secondary">Mostrando <span class="font-bold text-text-main dark:text-white">1-5</span> de <span class="font-bold text-text-main dark:text-white">1248</span> alunos</p>
+<div class="flex gap-2">
+<button class="px-3 py-1.5 border border-[#e6e0db] dark:border-white/10 rounded-lg text-text-secondary text-sm hover:bg-gray-50 dark:hover:bg-white/5 disabled:opacity-50">Anterior</button>
+<button class="px-3 py-1.5 border border-[#e6e0db] dark:border-white/10 rounded-lg text-text-secondary text-sm hover:bg-gray-50 dark:hover:bg-white/5">Próximo</button>
+</div>
+</div>
+</div>
+<!-- Bottom Section Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8 pb-12">
+<!-- Quick Announcement -->
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-[#e6e0db] dark:border-white/10 shadow-sm p-6">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-primary">campaign</span>
+<h3 class="text-lg font-bold text-text-main dark:text-white">Aviso Rápido</h3>
+</div>
+<p class="text-sm text-text-secondary mb-4">Envie uma notificação push para o app Ambra Food dos pais.</p>
+<div class="space-y-4">
+<div>
+<label class="block text-xs font-bold text-text-secondary mb-1">Público Alvo</label>
+<select class="w-full rounded-lg border border-[#e6e0db] dark:border-white/10 bg-white dark:bg-white/5 text-sm p-2.5 text-text-main dark:text-white">
+<option>Todos os Responsáveis</option>
+<option>Apenas Devedores</option>
+<option>Ensino Fundamental I</option>
+</select>
+</div>
+<div>
+<label class="block text-xs font-bold text-text-secondary mb-1">Mensagem</label>
+<textarea class="w-full rounded-lg border border-[#e6e0db] dark:border-white/10 bg-white dark:bg-white/5 text-sm p-2.5 text-text-main dark:text-white" placeholder="Escreva seu comunicado aqui..." rows="3"></textarea>
+</div>
+<button class="w-full py-2.5 bg-text-main dark:bg-white text-white dark:text-text-main rounded-lg font-bold text-sm hover:opacity-90 transition-opacity">
+                            Enviar Notificação
+                        </button>
+</div>
+</div>
+<!-- Loyalty / Config -->
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-[#e6e0db] dark:border-white/10 shadow-sm p-6">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-primary">loyalty</span>
+<h3 class="text-lg font-bold text-text-main dark:text-white">Configuração de Fidelidade</h3>
+</div>
+<div class="space-y-5">
+<div class="flex items-center justify-between p-3 rounded-lg border border-[#e6e0db] dark:border-white/10 bg-gray-50/50 dark:bg-white/5">
+<div>
+<p class="text-sm font-bold text-text-main dark:text-white">Cashback Automático</p>
+<p class="text-xs text-text-secondary">Devolve % do valor em vendas acima de R$ 50</p>
+</div>
+<div class="relative inline-block w-11 h-6 transition duration-200 ease-in-out rounded-full cursor-pointer bg-primary">
+<span class="translate-x-6 inline-block w-4 h-4 mt-1 ml-1 transform bg-white rounded-full transition-transform"></span>
+</div>
+</div>
+<div>
+<div class="flex justify-between mb-1">
+<span class="text-xs font-bold text-text-secondary">Percentual de Retorno</span>
+<span class="text-xs font-bold text-primary">5%</span>
+</div>
+<div class="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
+<div class="bg-primary h-2 rounded-full" style="width: 25%"></div>
+</div>
+</div>
+<div class="border-t border-[#e6e0db] dark:border-white/10 pt-4 mt-2">
+<div class="flex items-center justify-between mb-2">
+<p class="text-sm font-bold text-text-main dark:text-white">Campanha Ativa</p>
+<span class="text-xs text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded">Em andamento</span>
+</div>
+<div class="p-3 bg-primary/5 border border-primary/20 rounded-lg flex gap-3">
+<div class="h-10 w-10 rounded bg-primary/20 flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined">local_pizza</span>
+</div>
+<div>
+<p class="text-sm font-bold text-text-main dark:text-white">Semana Saudável</p>
+<p class="text-xs text-text-secondary">Saladas e sucos com 10% OFF até Sexta.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

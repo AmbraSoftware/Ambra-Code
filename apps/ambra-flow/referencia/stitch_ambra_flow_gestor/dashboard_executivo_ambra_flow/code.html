@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html class="light" lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Ambra Flow - Dashboard Executivo</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#f97316","primary-dark": "#ea580c","background-light": "#fdfbf7","background-dark": "#0c0a09","surface-light": "#ffffff",
+                        "surface-dark": "#1c1917","text-main": "#1c1917","text-muted": "#78716c",},
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #e7e5e4;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #d6d3d1;
+        }
+        .chart-bar {
+            transition: height 0.5s ease-out;
+        }
+        .chart-bar:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-text-main dark:text-white font-display h-screen flex overflow-hidden">
+<aside class="hidden md:flex flex-col w-64 bg-surface-light dark:bg-surface-dark border-r border-gray-200 dark:border-gray-800 h-full flex-shrink-0 z-20 relative">
+<div class="h-20 flex items-center px-6 border-b border-gray-100 dark:border-gray-800">
+<div class="flex items-center gap-2 text-primary">
+<span class="material-symbols-outlined text-3xl">local_dining</span>
+<h1 class="text-text-main dark:text-white text-xl font-extrabold tracking-tight">Ambra Flow</h1>
+</div>
+</div>
+<nav class="flex-1 overflow-y-auto py-6 px-4 space-y-2">
+<a class="flex items-center gap-3 px-4 py-3 bg-primary/10 text-primary rounded-xl font-bold transition-all" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+                Dashboard
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-text-muted hover:text-text-main dark:hover:text-white hover:bg-gray-50 dark:hover:bg-white/5 rounded-xl font-medium transition-all group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">point_of_sale</span>
+                Vendas
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-text-muted hover:text-text-main dark:hover:text-white hover:bg-gray-50 dark:hover:bg-white/5 rounded-xl font-medium transition-all group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">inventory_2</span>
+                Estoque
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-text-muted hover:text-text-main dark:hover:text-white hover:bg-gray-50 dark:hover:bg-white/5 rounded-xl font-medium transition-all group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">groups</span>
+                Alunos
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-text-muted hover:text-text-main dark:hover:text-white hover:bg-gray-50 dark:hover:bg-white/5 rounded-xl font-medium transition-all group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">attach_money</span>
+                Financeiro
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-text-muted hover:text-text-main dark:hover:text-white hover:bg-gray-50 dark:hover:bg-white/5 rounded-xl font-medium transition-all group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">settings</span>
+                Configurações
+            </a>
+</nav>
+<div class="p-4 border-t border-gray-100 dark:border-gray-800">
+<div class="bg-gray-50 dark:bg-white/5 rounded-xl p-4 flex items-center gap-3">
+<div class="size-10 rounded-full bg-gray-200 bg-center bg-cover border-2 border-white dark:border-gray-600 shadow-sm flex-shrink-0" data-alt="Profile picture of the manager" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCJI2rDNPN_jvmCYoh4enqj5xNJn5t7AoFwOrTrpd7NwJoo5zs24W8wT-NJjsRi9kT0Qtw7fjByYbqAxnk3-m_WrgeAB4ESVPrvmk9UoezJ-rjYv03WjYKUFdB0_Ssijkzl8ix8bel99ktMKVOvJmpiN5_b3MS1A7N86MvLTO-eaeujljEsx40lXxrbDdrXLCLFY2SzmgX3fViqkCtQAPkLVlwaPxYgbl0tCeHL_OrVAZNAJBzngRoRIIrrmdrnPfB3llTCfyZWjKs');"></div>
+<div class="overflow-hidden">
+<p class="text-sm font-bold text-text-main dark:text-white truncate">Cantina Central</p>
+<p class="text-xs text-text-muted truncate">Gestor Operacional</p>
+</div>
+</div>
+</div>
+</aside>
+<div class="flex-1 flex flex-col h-full overflow-hidden w-full relative">
+<header class="bg-surface-light/80 dark:bg-surface-dark/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 h-20 flex items-center justify-between px-6 sm:px-8 z-10 sticky top-0">
+<button class="md:hidden p-2 -ml-2 text-text-muted hover:text-primary">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<div class="hidden md:flex flex-col">
+<span class="text-xs font-bold text-text-muted uppercase tracking-wider mb-0.5">Visão Geral</span>
+<h2 class="text-xl font-bold text-text-main dark:text-white">Dashboard Executivo</h2>
+</div>
+<div class="flex items-center gap-4 ml-auto">
+<div class="hidden sm:flex items-center bg-white dark:bg-white/5 border border-gray-200 dark:border-gray-700 rounded-full px-3 py-1.5">
+<div class="size-2 rounded-full bg-green-500 mr-2 animate-pulse"></div>
+<span class="text-xs font-bold text-text-muted">Sistema Operante</span>
+</div>
+<button class="relative p-2 text-text-muted hover:text-primary transition-colors bg-white dark:bg-white/5 border border-gray-200 dark:border-gray-700 rounded-full shadow-sm hover:shadow-md">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+<span class="absolute top-0 right-0 size-2.5 bg-red-500 rounded-full border-2 border-white dark:border-surface-dark"></span>
+</button>
+</div>
+</header>
+<main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 scroll-smooth">
+<div class="max-w-[1600px] mx-auto">
+<div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+<div>
+<h2 class="text-3xl font-black tracking-tight text-text-main dark:text-white mb-2">Olá, Gestor!</h2>
+<p class="text-text-muted dark:text-gray-400">Confira a saúde financeira da sua operação hoje, <span class="font-medium text-text-main dark:text-gray-200">24 de Outubro</span>.</p>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-surface-dark border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-bold text-text-main dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[20px]">download</span>
+                            Exportar Relatório
+                        </button>
+<button class="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-bold transition-colors shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-[20px]">add</span>
+                            Nova Venda
+                        </button>
+</div>
+</div>
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
+<div class="xl:col-span-2 bg-gradient-to-br from-primary to-primary-dark rounded-2xl p-6 md:p-8 text-white shadow-xl shadow-primary/10 relative overflow-hidden group">
+<div class="absolute top-0 right-0 w-80 h-80 bg-white opacity-10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none mix-blend-overlay"></div>
+<div class="absolute bottom-0 left-0 w-64 h-64 bg-orange-900 opacity-20 rounded-full blur-2xl -ml-16 -mb-16 pointer-events-none"></div>
+<div class="relative z-10 flex flex-col h-full justify-between">
+<div class="flex justify-between items-start mb-8">
+<div class="flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full backdrop-blur-sm border border-white/10">
+<span class="material-symbols-outlined text-sm">account_balance_wallet</span>
+<span class="text-xs font-bold tracking-wide uppercase">Saldo Disponível (Asaas)</span>
+</div>
+<button aria-label="Atualizar saldo" class="p-2 hover:bg-white/10 rounded-lg transition-colors">
+<span class="material-symbols-outlined">refresh</span>
+</button>
+</div>
+<div class="mb-8">
+<div class="flex items-baseline gap-1">
+<span class="text-2xl opacity-80 font-medium">R$</span>
+<span class="text-5xl md:text-7xl font-black tracking-tighter">12.450,00</span>
+</div>
+<p class="text-white/90 mt-2 text-sm font-medium flex items-center gap-1">
+<span class="bg-white/20 rounded px-1.5 py-0.5 text-xs flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[14px]">trending_up</span>
+                                        +12%
+                                    </span>
+<span>R$ 1.200,00 adicionados hoje</span>
+</p>
+</div>
+<div class="flex flex-wrap gap-3 mt-auto">
+<button class="flex-1 sm:flex-none bg-white text-primary hover:bg-gray-50 px-6 py-3 rounded-xl font-bold text-sm shadow-sm transition-colors">
+                                    Solicitar Saque
+                                </button>
+<button class="flex-1 sm:flex-none bg-black/20 hover:bg-black/30 text-white border border-white/10 px-6 py-3 rounded-xl font-bold text-sm transition-colors backdrop-blur-sm">
+                                    Ver Extrato
+                                </button>
+</div>
+</div>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-sm flex flex-col">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-lg font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-orange-500">warning</span>
+                                Alertas Operacionais
+                            </h3>
+<span class="bg-red-100 text-red-700 text-xs font-bold px-2 py-1 rounded-full">2 Novos</span>
+</div>
+<div class="flex-1 flex flex-col gap-3">
+<div class="flex items-start gap-3 p-3 bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-100 dark:border-red-900/30">
+<div class="bg-white dark:bg-red-800 text-red-600 dark:text-red-200 rounded-lg p-1.5 flex-shrink-0 shadow-sm">
+<span class="material-symbols-outlined text-sm">inventory_2</span>
+</div>
+<div>
+<p class="text-sm font-bold text-red-900 dark:text-red-200">Estoque Crítico</p>
+<p class="text-xs text-red-700 dark:text-red-300 mt-0.5 leading-relaxed">Coca-Cola Zero e Suco de Laranja acabando.</p>
+</div>
+</div>
+<div class="flex items-start gap-3 p-3 bg-amber-50 dark:bg-amber-900/10 rounded-xl border border-amber-100 dark:border-amber-900/30">
+<div class="bg-white dark:bg-amber-800 text-amber-700 dark:text-amber-200 rounded-lg p-1.5 flex-shrink-0 shadow-sm">
+<span class="material-symbols-outlined text-sm">credit_card_off</span>
+</div>
+<div>
+<p class="text-sm font-bold text-amber-900 dark:text-amber-200">Limite de Crédito</p>
+<p class="text-xs text-amber-700 dark:text-amber-300 mt-0.5 leading-relaxed">3 alunos atingiram o limite de "Venda Garantida".</p>
+</div>
+</div>
+</div>
+<a class="mt-4 text-center text-sm font-bold text-primary hover:text-primary-dark transition-colors py-2 border-t border-gray-100 dark:border-gray-800" href="#">Ver todos os alertas</a>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+<div class="bg-surface-light dark:bg-surface-dark border border-gray-200 dark:border-gray-800 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow group">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<span class="bg-orange-100 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 p-1 rounded-md">
+<span class="material-symbols-outlined text-sm">payments</span>
+</span>
+<p class="text-text-muted text-sm font-bold">Vendas (Hoje)</p>
+</div>
+<span class="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-bold px-2 py-1 rounded">+12%</span>
+</div>
+<p class="text-3xl font-black text-text-main dark:text-white tracking-tight">R$ 3.200,00</p>
+<div class="mt-3 w-full bg-gray-100 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
+<div class="bg-primary h-1.5 rounded-full group-hover:bg-primary-dark transition-colors" style="width: 75%"></div>
+</div>
+<p class="text-xs text-text-muted mt-2">Meta diária: R$ 4.000,00</p>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark border border-gray-200 dark:border-gray-800 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<span class="bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 p-1 rounded-md">
+<span class="material-symbols-outlined text-sm">credit_score</span>
+</span>
+<p class="text-text-muted text-sm font-bold">Vendas Garantidas</p>
+</div>
+<span class="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs font-bold px-2 py-1 rounded">15 Alunos</span>
+</div>
+<p class="text-3xl font-black text-text-main dark:text-white tracking-tight">R$ 450,00</p>
+<div class="mt-2 flex items-center gap-2">
+<span class="text-xs font-medium text-text-muted">Impacto na receita:</span>
+<span class="text-xs font-bold text-blue-600 dark:text-blue-400">14%</span>
+</div>
+<p class="text-xs text-text-muted mt-1">Crédito emergencial utilizado</p>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark border border-gray-200 dark:border-gray-800 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<span class="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 p-1 rounded-md">
+<span class="material-symbols-outlined text-sm">receipt</span>
+</span>
+<p class="text-text-muted text-sm font-bold">Ticket Médio</p>
+</div>
+<span class="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs font-bold px-2 py-1 rounded">-2%</span>
+</div>
+<p class="text-3xl font-black text-text-main dark:text-white tracking-tight">R$ 18,50</p>
+<div class="flex gap-1 mt-3">
+<span class="h-1.5 flex-1 bg-primary rounded-full"></span>
+<span class="h-1.5 flex-1 bg-primary rounded-full"></span>
+<span class="h-1.5 flex-1 bg-primary/40 rounded-full"></span>
+<span class="h-1.5 flex-1 bg-gray-200 dark:bg-gray-700 rounded-full"></span>
+</div>
+<p class="text-xs text-text-muted mt-2">Ontem: R$ 18,90</p>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark border border-gray-200 dark:border-gray-800 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<span class="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 p-1 rounded-md">
+<span class="material-symbols-outlined text-sm">shopping_cart</span>
+</span>
+<p class="text-text-muted text-sm font-bold">Transações</p>
+</div>
+<div class="size-6 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400">
+<span class="material-symbols-outlined text-xs font-bold">arrow_upward</span>
+</div>
+</div>
+<p class="text-3xl font-black text-text-main dark:text-white tracking-tight">172</p>
+<p class="text-xs text-text-muted mt-2 text-green-600 font-bold flex items-center gap-1">
+                            Pico às 10:15
+                        </p>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+<div class="lg:col-span-2 bg-surface-light dark:bg-surface-dark border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-sm">
+<div class="flex items-center justify-between mb-8">
+<div>
+<h3 class="text-lg font-bold text-text-main dark:text-white">Pico de Horário</h3>
+<p class="text-sm text-text-muted">Volume de transações por hora</p>
+</div>
+<select class="bg-gray-50 dark:bg-gray-800 border-none text-sm font-bold text-text-main dark:text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary cursor-pointer outline-none">
+<option>Hoje</option>
+<option>Ontem</option>
+<option>Última Semana</option>
+</select>
+</div>
+<div class="h-64 w-full flex items-end justify-between gap-2 sm:gap-4 px-2">
+<div class="flex flex-col items-center gap-3 group flex-1 h-full justify-end">
+<div class="w-full bg-orange-100 dark:bg-white/5 rounded-t-sm h-[15%] relative group-hover:bg-primary/40 transition-all duration-300">
+<div class="opacity-0 group-hover:opacity-100 absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs py-1.5 px-3 rounded-lg font-bold transition-all shadow-lg whitespace-nowrap z-10">R$ 120</div>
+</div>
+<span class="text-xs text-text-muted font-bold">07h</span>
+</div>
+<div class="flex flex-col items-center gap-3 group flex-1 h-full justify-end">
+<div class="w-full bg-orange-100 dark:bg-white/5 rounded-t-sm h-[25%] relative group-hover:bg-primary/40 transition-all duration-300">
+<div class="opacity-0 group-hover:opacity-100 absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs py-1.5 px-3 rounded-lg font-bold transition-all shadow-lg whitespace-nowrap z-10">R$ 280</div>
+</div>
+<span class="text-xs text-text-muted font-bold">08h</span>
+</div>
+<div class="flex flex-col items-center gap-3 group flex-1 h-full justify-end">
+<div class="w-full bg-primary rounded-t-md h-[65%] relative hover:bg-primary-dark transition-all duration-300 shadow-lg shadow-primary/20">
+<div class="opacity-0 group-hover:opacity-100 absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs py-1.5 px-3 rounded-lg font-bold transition-all shadow-lg whitespace-nowrap z-10">R$ 850</div>
+</div>
+<span class="text-xs text-text-main font-bold">09h</span>
+</div>
+<div class="flex flex-col items-center gap-3 group flex-1 h-full justify-end">
+<div class="w-full bg-primary rounded-t-md h-[90%] relative hover:bg-primary-dark transition-all duration-300 shadow-lg shadow-primary/20">
+<div class="opacity-0 group-hover:opacity-100 absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs py-1.5 px-3 rounded-lg font-bold transition-all shadow-lg whitespace-nowrap z-10">R$ 1.250</div>
+</div>
+<span class="text-xs text-text-main font-bold">10h</span>
+</div>
+<div class="flex flex-col items-center gap-3 group flex-1 h-full justify-end">
+<div class="w-full bg-orange-100 dark:bg-white/5 rounded-t-sm h-[30%] relative group-hover:bg-primary/40 transition-all duration-300">
+<div class="opacity-0 group-hover:opacity-100 absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs py-1.5 px-3 rounded-lg font-bold transition-all shadow-lg whitespace-nowrap z-10">R$ 320</div>
+</div>
+<span class="text-xs text-text-muted font-bold">11h</span>
+</div>
+<div class="flex flex-col items-center gap-3 group flex-1 h-full justify-end">
+<div class="w-full bg-primary rounded-t-md h-[75%] relative hover:bg-primary-dark transition-all duration-300 shadow-lg shadow-primary/20">
+<div class="opacity-0 group-hover:opacity-100 absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs py-1.5 px-3 rounded-lg font-bold transition-all shadow-lg whitespace-nowrap z-10">R$ 980</div>
+</div>
+<span class="text-xs text-text-main font-bold">12h</span>
+</div>
+<div class="flex flex-col items-center gap-3 group flex-1 h-full justify-end">
+<div class="w-full bg-orange-100 dark:bg-white/5 rounded-t-sm h-[40%] relative group-hover:bg-primary/40 transition-all duration-300">
+<div class="opacity-0 group-hover:opacity-100 absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs py-1.5 px-3 rounded-lg font-bold transition-all shadow-lg whitespace-nowrap z-10">R$ 410</div>
+</div>
+<span class="text-xs text-text-muted font-bold">13h</span>
+</div>
+<div class="flex flex-col items-center gap-3 group flex-1 h-full justify-end">
+<div class="w-full bg-orange-100 dark:bg-white/5 rounded-t-sm h-[10%] relative group-hover:bg-primary/40 transition-all duration-300">
+<div class="opacity-0 group-hover:opacity-100 absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs py-1.5 px-3 rounded-lg font-bold transition-all shadow-lg whitespace-nowrap z-10">R$ 90</div>
+</div>
+<span class="text-xs text-text-muted font-bold">14h</span>
+</div>
+</div>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-sm flex flex-col">
+<h3 class="text-lg font-bold text-text-main dark:text-white mb-6">Composição de Receita</h3>
+<div class="flex-1 flex flex-col justify-center">
+<div class="flex items-center gap-6 mb-8">
+<div class="relative size-32 rounded-full border-[12px] border-primary flex items-center justify-center shadow-inner" style="border-right-color: #3b82f6; transform: rotate(-45deg);">
+<div class="absolute inset-0 rounded-full border-[12px] border-transparent border-l-orange-400" style="transform: rotate(60deg);"></div>
+<div class="text-center transform rotate-45">
+<span class="block text-2xl font-black text-text-main dark:text-white">86%</span>
+<span class="text-[10px] uppercase font-bold text-text-muted">Saudável</span>
+</div>
+</div>
+<div class="flex-1 flex flex-col gap-3">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<div class="size-3 rounded-full bg-primary"></div>
+<span class="text-xs font-bold text-text-main dark:text-gray-200">Carteira (Pré-pago)</span>
+</div>
+<p class="text-sm text-text-muted pl-5 font-medium">R$ 2.750,00</p>
+</div>
+<div>
+<div class="flex items-center gap-2 mb-1">
+<div class="size-3 rounded-full bg-blue-500"></div>
+<span class="text-xs font-bold text-text-main dark:text-gray-200">Venda Garantida</span>
+</div>
+<p class="text-sm text-text-muted pl-5 font-medium">R$ 450,00</p>
+</div>
+</div>
+</div>
+<div class="bg-gray-50 dark:bg-white/5 rounded-xl p-4 border border-gray-100 dark:border-white/5">
+<p class="text-sm font-bold text-text-main dark:text-gray-200 mb-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-sm text-primary">lightbulb</span>
+                                    Insight Rápido
+                                </p>
+<p class="text-xs text-text-muted leading-relaxed">
+                                    A utilização de crédito aumentou <strong class="text-primary">5%</strong> em relação à média das últimas terças-feiras. Considere enviar lembretes de recarga aos pais.
+                                </p>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden">
+<div class="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+<h3 class="text-lg font-bold text-text-main dark:text-white">Transações Recentes</h3>
+<a class="text-sm font-bold text-primary hover:text-primary-dark transition-colors flex items-center gap-1" href="#">
+                            Ver todas
+                            <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</a>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-gray-50 dark:bg-white/5 text-xs uppercase tracking-wider text-text-muted border-b border-gray-100 dark:border-white/5">
+<th class="px-6 py-4 font-bold">Aluno</th>
+<th class="px-6 py-4 font-bold">Produto</th>
+<th class="px-6 py-4 font-bold">Horário</th>
+<th class="px-6 py-4 font-bold">Método</th>
+<th class="px-6 py-4 font-bold text-right">Valor</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-gray-100 dark:divide-white/5 text-sm">
+<tr class="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors group">
+<td class="px-6 py-4 font-medium text-text-main dark:text-gray-200">
+<div class="flex items-center gap-3">
+<div class="size-9 rounded-full bg-gray-200 bg-cover bg-center border border-white shadow-sm" data-alt="Portrait of student Pedro" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDLYtmZVnX64N_uYGBCpNxmx70CpaFTiXT9vCVOAK7y5zt9kcMb5Det5sPk7izoU0uNHlyH1yDGzGGseXtIadQaztWC1NpMcuQe1UKDQx9Q7pA2IqYv1EiVdl5HKt0hj7AvPzuy0Gs9WzN6dV33OxVlf4BmZ4ja-Mov-NRowcj_C2wDSRDLCjrfuu6Y9pHALihjSNZ8lU6iWCjDOsNA_TuxAj6Ky318nkN85xiMY6j-oJtf2qcsm3PUPinKR-x968pYOJK1uUSR8AQ')"></div>
+                                            Pedro S.
+                                        </div>
+</td>
+<td class="px-6 py-4 text-text-muted">Salgado Assado + Suco</td>
+<td class="px-6 py-4 text-text-muted">12:45</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+<span class="size-1.5 rounded-full bg-green-500"></span>
+                                            Carteira Digital
+                                        </span>
+</td>
+<td class="px-6 py-4 font-bold text-text-main dark:text-white text-right">R$ 12,50</td>
+</tr>
+<tr class="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors group">
+<td class="px-6 py-4 font-medium text-text-main dark:text-gray-200">
+<div class="flex items-center gap-3">
+<div class="size-9 rounded-full bg-pink-100 flex items-center justify-center text-pink-600 font-bold text-xs border border-pink-200">MJ</div>
+                                            Maria Julia
+                                        </div>
+</td>
+<td class="px-6 py-4 text-text-muted">Almoço Executivo</td>
+<td class="px-6 py-4 text-text-muted">12:42</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+<span class="size-1.5 rounded-full bg-blue-500"></span>
+                                            Venda Garantida
+                                        </span>
+</td>
+<td class="px-6 py-4 font-bold text-text-main dark:text-white text-right">R$ 22,00</td>
+</tr>
+<tr class="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors group">
+<td class="px-6 py-4 font-medium text-text-main dark:text-gray-200">
+<div class="flex items-center gap-3">
+<div class="size-9 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-bold text-xs border border-purple-200">LB</div>
+                                            Lucas B.
+                                        </div>
+</td>
+<td class="px-6 py-4 text-text-muted">Sanduíche Natural</td>
+<td class="px-6 py-4 text-text-muted">12:38</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+<span class="size-1.5 rounded-full bg-green-500"></span>
+                                            Carteira Digital
+                                        </span>
+</td>
+<td class="px-6 py-4 font-bold text-text-main dark:text-white text-right">R$ 9,50</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</main>
+</div>
+
+</body></html>

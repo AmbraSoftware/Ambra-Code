@@ -1,0 +1,403 @@
+[
+  {
+    "id": "TC001",
+    "title": "Multi-step Registration - Successful Registration for School Manager",
+    "description": "Verify that a School Manager can complete the multi-step registration process successfully with all valid inputs, including profile selection, personal details, entity/business data, and financial setup, with real-time validation and ViaCEP address lookup.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the registration page"
+      },
+      {
+        "type": "action",
+        "description": "Select 'School Manager' as profile type"
+      },
+      {
+        "type": "action",
+        "description": "Fill in valid personal details including CPF, phone number with proper masks"
+      },
+      {
+        "type": "action",
+        "description": "Provide valid entity/business information including CNPJ and address details"
+      },
+      {
+        "type": "action",
+        "description": "Use ViaCEP integration to autofill address based on provided CEP and verify autofill accuracy"
+      },
+      {
+        "type": "action",
+        "description": "Complete financial setup details with valid data"
+      },
+      {
+        "type": "action",
+        "description": "Open and scroll through the Legal Consent Modal"
+      },
+      {
+        "type": "action",
+        "description": "Accept Terms of Use and Privacy Policy to enable submission"
+      },
+      {
+        "type": "action",
+        "description": "Submit the registration form"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm registration is completed successfully and user receives activation status"
+      }
+    ]
+  },
+  {
+    "id": "TC002",
+    "title": "Multi-step Registration - Validation Errors with Invalid Inputs",
+    "description": "Verify that the multi-step registration form enforces Zod validation and mask formatting, preventing submission when required fields are empty, formats are invalid, or ViaCEP lookup fails.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the registration page"
+      },
+      {
+        "type": "action",
+        "description": "Select 'Canteen Operator' as profile type"
+      },
+      {
+        "type": "action",
+        "description": "Leave required fields empty or input incorrectly formatted CPF/CNPJ, phone, and CEP"
+      },
+      {
+        "type": "action",
+        "description": "Attempt to proceed to the next step of the form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify validation errors are displayed for each invalid or missing field"
+      },
+      {
+        "type": "action",
+        "description": "Enter invalid CEP and trigger ViaCEP lookup"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify appropriate error message is shown indicating ViaCEP retrieval failure"
+      },
+      {
+        "type": "action",
+        "description": "Attempt to submit the form without accepting legal consent"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that submission is blocked and a prompt indicates legal consent is required"
+      }
+    ]
+  },
+  {
+    "id": "TC003",
+    "title": "Legal Consent Modal - Mandatory Scroll and Acceptance Enforcement",
+    "description": "Ensure that the Legal Consent Modal enforces users to scroll through the entire Terms of Use and Privacy Policy content before the acceptance button becomes enabled.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Open the Legal Consent Modal during registration"
+      },
+      {
+        "type": "action",
+        "description": "Attempt to accept terms without scrolling"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify acceptance button is disabled and cannot be clicked"
+      },
+      {
+        "type": "action",
+        "description": "Scroll through the entire content of Terms of Use and Privacy Policy"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify acceptance button becomes enabled after scrolling completes"
+      },
+      {
+        "type": "action",
+        "description": "Click accept to close the modal"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm acceptance is registered and user can proceed with registration"
+      }
+    ]
+  },
+  {
+    "id": "TC004",
+    "title": "Login - Successful Login for School Manager",
+    "description": "Verify that a registered School Manager can log in successfully using valid credentials and is redirected to the standard dashboard interface.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the School Manager login page"
+      },
+      {
+        "type": "action",
+        "description": "Enter valid login credentials for School Manager"
+      },
+      {
+        "type": "action",
+        "description": "Click the login button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify login is successful and user is redirected to the Manager's dashboard"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm that the session token is properly set and maintained"
+      }
+    ]
+  },
+  {
+    "id": "TC005",
+    "title": "Login - Failed Login with Invalid Credentials",
+    "description": "Verify that login fails when incorrect credentials are entered for either School Manager or Canteen Operator, and appropriate error messages are displayed.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to login page (Manager or Operator)"
+      },
+      {
+        "type": "action",
+        "description": "Enter invalid username/email or password"
+      },
+      {
+        "type": "action",
+        "description": "Attempt to log in"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify login fails and user is presented with a clear error message"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm no session token is issued"
+      }
+    ]
+  },
+  {
+    "id": "TC006",
+    "title": "Session Token Lifecycle - Token Refresh and Persistence",
+    "description": "Verify that the authentication service correctly handles session token lifecycle, including token refresh, persistence across sessions, and secure logout for both roles.",
+    "category": "security",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login as either School Manager or Canteen Operator"
+      },
+      {
+        "type": "action",
+        "description": "Simulate token expiration"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm the token is refreshed automatically without forcing re-login"
+      },
+      {
+        "type": "action",
+        "description": "Close and reopen the browser or tab"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the session persists if token is still valid"
+      },
+      {
+        "type": "action",
+        "description": "Perform logout action"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm session token is cleared and user is redirected to login"
+      }
+    ]
+  },
+  {
+    "id": "TC007",
+    "title": "ViaCEP API Integration - Successful Address Lookup",
+    "description": "Verify that valid CEP inputs trigger ViaCEP API calls and that responses correctly autofill address fields in the registration form for both roles.",
+    "category": "integration",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Enter a valid CEP in the registration form"
+      },
+      {
+        "type": "assertion",
+        "description": "Ensure that the ViaCEP API is called with the correct CEP"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that address fields are autofilled with the ViaCEP response data"
+      }
+    ]
+  },
+  {
+    "id": "TC008",
+    "title": "ViaCEP API Integration - Handling Invalid or Unreachable CEP",
+    "description": "Verify the system behavior when ViaCEP returns errors or the CEP is invalid: the form should display appropriate error messages and avoid autofilling address.",
+    "category": "error handling",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Enter an invalid or unreachable CEP on the registration form"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm that an error message is displayed indicating address lookup failure"
+      },
+      {
+        "type": "assertion",
+        "description": "Ensure that address fields remain empty or unchanged"
+      }
+    ]
+  },
+  {
+    "id": "TC009",
+    "title": "Role-specific Dashboard Rendering - School Manager",
+    "description": "Verify that upon login, a School Manager user is redirected to the dashboard designed with comprehensive management and analytics features appropriate for the role.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login as School Manager"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the dashboard UI rendered corresponds to the Manager layout"
+      },
+      {
+        "type": "assertion",
+        "description": "Check presence of management, financial, and operational widgets"
+      }
+    ]
+  },
+  {
+    "id": "TC010",
+    "title": "Role-specific Dashboard Rendering - Canteen Operator",
+    "description": "Verify that upon login, a Canteen Operator user is redirected to the POS-focused dashboard that supports operational tasks relevant to canteen control and payment processing.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login as Canteen Operator"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the dashboard UI rendered is POS-oriented and tailored to operator needs"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm presence of quick payment options and operational controls"
+      }
+    ]
+  },
+  {
+    "id": "TC011",
+    "title": "Form Masking Formats - CPF, CNPJ, Phone, CEP",
+    "description": "Validate that all form input fields enforcing masks for CPF, CNPJ, phone, and CEP correctly format user input and restrict invalid characters.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to registration form"
+      },
+      {
+        "type": "action",
+        "description": "Input unformatted CPF, CNPJ, phone, and CEP values"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm that input fields apply correct formatting masks as user types"
+      },
+      {
+        "type": "action",
+        "description": "Try entering invalid characters (letters in numeric fields)"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm invalid characters are rejected or not accepted"
+      }
+    ]
+  },
+  {
+    "id": "TC012",
+    "title": "Notification System - Real-time Feedback During Authentication",
+    "description": "Verify that the notification system (Sonner) provides correct real-time feedback messages on success and failure events during login and registration workflows.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Perform successful login"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm success notification is displayed"
+      },
+      {
+        "type": "action",
+        "description": "Attempt login with invalid credentials"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm failure notification is shown"
+      },
+      {
+        "type": "action",
+        "description": "Complete registration successfully"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm success notification is displayed"
+      }
+    ]
+  },
+  {
+    "id": "TC013",
+    "title": "Responsive UI Behavior and Accessibility Compliance",
+    "description": "Ensure that the key UI components including registration forms, legal consent modal, and dashboards built with Tailwind CSS and React Hook Form are responsive and meet accessibility standards across desktop and mobile devices.",
+    "category": "ui",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Open registration form on various viewport sizes (mobile, tablet, desktop)"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify UI adapts correctly with no layout breakage"
+      },
+      {
+        "type": "action",
+        "description": "Navigate through forms and modal using keyboard only"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm focus indicators are present and navigation is logical"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify ARIA attributes exist where needed for screen reader support"
+      }
+    ]
+  }
+]
