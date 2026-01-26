@@ -4,7 +4,8 @@
     "private": true,
     "description": "Nodum Kernel & Ambra Experience - Industrial Monorepo",
     "workspaces": [
-        "apps/*"
+        "apps/*",
+        "packages/*"
     ],
     "scripts": {
         "backend:dev": "npm run start:dev -w apps/backend",

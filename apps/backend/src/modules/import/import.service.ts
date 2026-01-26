@@ -81,7 +81,12 @@ export class ImportService {
   }
 
   private parseCsvLocally(lines: string[], headers: string[]): any[] {
-    const users = [];
+    const users: Array<{
+      studentName: string;
+      guardianEmail: string;
+      guardianName: string;
+      guardianDocument?: string;
+    }> = [];
     // Mapeamento simples de índices
     const nameIdx = headers.findIndex(h => h.includes('nome') || h.includes('aluno'));
     const emailIdx = headers.findIndex(h => h.includes('email') || h.includes('responsavel') || h.includes('mail'));

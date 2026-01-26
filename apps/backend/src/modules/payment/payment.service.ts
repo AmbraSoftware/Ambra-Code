@@ -59,9 +59,9 @@ export class PaymentService {
 
       // 2. Cria uma transação PENDENTE para rastrear a recarga.
       // 2. Cria uma transação PENDENTE para rastrear a recarga.
-      const fee = new Prisma.Decimal(3.0);
       const amountDecimal = new Prisma.Decimal(amount);
-      const net = amountDecimal.minus(fee);
+      const fee = new Prisma.Decimal(0);
+      const net = amountDecimal;
 
       const pendingTransaction = await tx.transaction.create({
         data: {

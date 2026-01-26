@@ -10,11 +10,19 @@ import { ROLES_KEY } from '../decorators/roles.decorator';
 import { AuthenticatedUserPayload } from '../dto/user-payload.dto';
 
 type UserRole =
-  | 'GLOBAL_ADMIN'
+  | 'SUPER_ADMIN'
   | 'SCHOOL_ADMIN'
-  | 'CANTEEN_OPERATOR'
+  | 'MERCHANT_ADMIN'
+  | 'OPERATOR_SALES'
+  | 'OPERATOR_MEAL'
+  | 'GOV_ADMIN'
   | 'GUARDIAN'
-  | 'STUDENT';
+  | 'STUDENT'
+  | 'CONSUMER'
+  // Legacy
+  | 'GLOBAL_ADMIN'
+  | 'OPERATOR_ADMIN'
+  | 'CANTEEN_OPERATOR';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -34,16 +42,19 @@ export class RolesGuard implements CanActivate {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     const user: AuthenticatedUserPayload = request.user;
 
-    if (!user || !user.role) {
+    if (!user || (!user.roles && !user.role)) {
       throw new ForbiddenException('Acesso negado.');
     }
 
+    // [v5.0] Migration Compatibility
+    const userRoles = user.roles || [user.role];
+
     // "God Mode": Global Admin tem acesso irrestrito a todas as rotas
-    if (user.role === 'GLOBAL_ADMIN') {
+    if (userRoles.includes('SUPER_ADMIN' as UserRole) || userRoles.includes('GLOBAL_ADMIN' as UserRole)) {
       return true;
     }
 
-    const hasRole = requiredRoles.some((role) => user.role === role);
+    const hasRole = requiredRoles.some((role) => userRoles.includes(role));
 
     if (!hasRole) {
       throw new ForbiddenException(

@@ -115,7 +115,7 @@ export class OperatorsService {
     }
 
     // 2. Identificar o Operador do usuário atual
-    let operatorId = null;
+    let operatorId: string | null = null;
     
     // Se o usuário tem um operatorId direto (assumindo que User tem esse campo, se não, usamos a lógica da cantina)
     // No schema atual, o vínculo pode ser indireto. Vamos verificar se o user é um operador.

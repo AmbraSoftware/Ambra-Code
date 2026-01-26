@@ -196,6 +196,7 @@ model School {
   invoices     Invoice[]
   invitations  GuardianInvitation[]
   announcements Announcement[]
+  discountRules DiscountRule[]
   
   config       Json?               
   customFeesConfig Json?  // [v4.7] Override Fees (Escola/Governo Flexível)
@@ -262,7 +263,8 @@ model User {
   document            String?              
   documentHash        String?              
   birthDate           DateTime?            @db.Date
-  role                UserRole             @default(STUDENT)
+  role                UserRole?            @default(STUDENT) // Legacy (kept for safety)
+  roles               UserRole[]           @default([STUDENT]) // [v5.0] Multi-Role Support
   
   // [v4.8] Academic Info
   class               String?              // Turma/Série (Ex: "5º Ano A")
@@ -384,13 +386,50 @@ enum InvitationStatus {
 }
 
 enum UserRole {
-  GLOBAL_ADMIN
-  GOV_ADMIN        // Acesso de Secretários de Educação
-  OPERATOR_ADMIN   // [v4.0] Dono da Cantina (MEI)
+  SUPER_ADMIN
   SCHOOL_ADMIN
-  CANTEEN_OPERATOR
+  MERCHANT_ADMIN   // [v5.0] MEI/Dono da Cantina
+  OPERATOR_SALES   // [v5.0] Caixa
+  OPERATOR_MEAL    // [v5.0] Merendeira
+  GOV_ADMIN        
   GUARDIAN
   STUDENT
+  CONSUMER         // [v5.0] Genérico
+  
+  // Legacy Roles (Mantidas para compatibilidade)
+  GLOBAL_ADMIN
+  OPERATOR_ADMIN
+  CANTEEN_OPERATOR
+}
+
+enum ProductType {
+  SALE
+  CONSUMPTION
+}
+
+enum WalletType {
+  STUDENT
+  MERCHANT
+  AMBRA
+  SCHOOL
+}
+
+model DiscountRule {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schoolId    String   @db.Uuid
+  school      School   @relation(fields: [schoolId], references: [id])
+  
+  name        String
+  target      String   // "CATEGORY:BEBIDAS" ou "PRODUCT:UUID"
+  type        String   // "PERCENTAGE" ou "FIXED"
+  value       Decimal  @db.Decimal(12, 2)
+  conditions  Json?    // { "minItems": 2, "daysOfWeek": [1, 5] }
+  
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([schoolId])
+  @@map("discount_rules")
 }
 
 // ==========================================
@@ -578,6 +617,8 @@ model Product {
   id            String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name          String
   price         Decimal              @db.Decimal(12, 2)
+  type          ProductType          @default(SALE)
+  cost          Decimal?             @db.Decimal(12, 2) // [v5.0] Custo para Relatórios
   salePrice     Decimal?             @db.Decimal(12, 2)
   stock         Int                  @default(0)
   version       Int                  @default(0) 

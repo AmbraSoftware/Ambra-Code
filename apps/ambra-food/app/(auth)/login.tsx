@@ -1,8 +1,9 @@
-import { View, Text, TextInput, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState } from 'react';
-import { supabase } from '../../lib/supabase';
+import { api } from '../../services/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -11,25 +12,26 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert('Erro', 'Preencha todos os campos.');
+      return;
+    }
+
     setLoading(true);
-    // Mock for development if no keys configured
-    if (!process.env.EXPO_PUBLIC_SUPABASE_URL) {
-         console.warn('Supabase not configured. Mocking login.');
-         router.replace('/(tabs)/home');
-         return;
-    }
+    try {
+      const response = await api.post('/auth/login', { email, password });
+      const { access_token, user } = response.data;
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+      await AsyncStorage.setItem('token', access_token);
+      await AsyncStorage.setItem('user', JSON.stringify(user));
 
-    if (error) {
-      alert(error.message);
-    } else {
       router.replace('/(tabs)/home');
+    } catch (error: any) {
+      const msg = error.response?.data?.message || 'Falha no login. Verifique suas credenciais.';
+      Alert.alert('Erro', msg);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (

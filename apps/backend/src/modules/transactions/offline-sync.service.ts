@@ -61,38 +61,25 @@ export class OfflineSyncService {
 
       const currentBalance = Number(wallet.balance);
       const amountDecimal = new Prisma.Decimal(amount);
-      const newBalance = currentBalance - amount;
-      let isOverdraft = false;
-
-      // Scenario B: Insufficient Funds -> Overdraft
-      if (newBalance < 0) {
-        isOverdraft = true;
-        this.logger.warn(
-          `Offline Overdraft Detected: Wallet ${walletId}, Balance: ${currentBalance}, Amount: ${amount}`,
-        );
-
-        // Lock the wallet to prevent further purchases until recharge
-        await tx.wallet.update({
-          where: { id: walletId },
-          data: {
-            canPurchaseAlone: false,
-            version: { increment: 1 },
-          },
-        });
+      if (!amount || amount <= 0) {
+        throw new Error('Valor inválido para débito offline.');
       }
 
-      // ... (Balance Update Logic Skiped for brevity in diff, assume standard update) ...
+      const newBalance = currentBalance - amount;
+      if (newBalance < 0) {
+        throw new Error('Saldo insuficiente.');
+      }
 
-      if (!isOverdraft) {
-        await tx.wallet.update({
-          where: { id: walletId },
-          data: { balance: newBalance, version: { increment: 1 } },
-        });
-      } else {
-        await tx.wallet.update({
-          where: { id: walletId },
-          data: { balance: newBalance, version: { increment: 1 } },
-        });
+      const { count } = await tx.wallet.updateMany({
+        where: {
+          id: walletId,
+          balance: { gte: amountDecimal },
+        },
+        data: { balance: newBalance, version: { increment: 1 } },
+      });
+
+      if (count !== 1) {
+        throw new Error('Saldo insuficiente.');
       }
 
       // Create Ledger Entry
@@ -112,30 +99,7 @@ export class OfflineSyncService {
         },
       });
 
-      // Audit Log for Overdraft (Fixed School ID)
-      if (isOverdraft) {
-        if (wallet.user?.schoolId) {
-          await tx.auditLog.create({
-            data: {
-              schoolId: wallet.user.schoolId, // Real School ID
-              action: 'OFFLINE_OVERDRAFT',
-              entity: 'Wallet',
-              entityId: walletId,
-              meta: {
-                offlineId,
-                overdraftAmount: newBalance,
-                previousBalance: currentBalance,
-              },
-            },
-          });
-        } else {
-          this.logger.warn(
-            `Could not audit overdraft for wallet ${walletId}: User has no school.`,
-          );
-        }
-      }
-
-      return { transactionId: transaction.id, newBalance, isOverdraft };
+      return { transactionId: transaction.id, newBalance };
     });
   }
 }

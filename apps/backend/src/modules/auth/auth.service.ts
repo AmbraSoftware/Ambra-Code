@@ -55,12 +55,12 @@ export class AuthService {
       throw new UnauthorizedException('Credenciais inválidas.');
     }
 
-    this.validateTenantAccess(user.role, user.school?.status as SchoolStatus);
+    this.validateTenantAccess(user.roles as unknown as UserRole[], user.school?.status as SchoolStatus);
 
     const payload = {
       sub: user.id,
       email: user.email,
-      role: user.role,
+      roles: user.roles as unknown as UserRole[],
       schoolId: user.schoolId,
       mustChangePassword: user.mustChangePassword, // [v4.5] Security flag
     };
@@ -71,7 +71,7 @@ export class AuthService {
         user: {
           id: user.id,
           name: user.name,
-          role: user.role,
+          roles: user.roles as unknown as UserRole[],
           schoolId: user.schoolId,
           mustChangePassword: user.mustChangePassword,
         },
@@ -97,7 +97,7 @@ export class AuthService {
         id: true,
         name: true,
         email: true,
-        role: true,
+        roles: true,
         schoolId: true,
       },
     });
@@ -106,16 +106,17 @@ export class AuthService {
       throw new NotFoundException('Usuário não encontrado.');
     }
 
-    return user as UserProfileDto;
+    return user as unknown as UserProfileDto;
   }
 
   /**
    * Valida se um usuário (não-global) pode acessar seu tenant.
-   * @param role A role do usuário.
+   * @param roles As roles do usuário.
    * @param schoolStatus O status da escola associada.
    */
-  private validateTenantAccess(role: UserRole, schoolStatus?: SchoolStatus) {
-    if (role === UserRole.GLOBAL_ADMIN) return;
+  private validateTenantAccess(roles: UserRole[], schoolStatus?: SchoolStatus) {
+    // [v5.0] Multi-Role Support
+    if (roles.includes('SUPER_ADMIN' as UserRole) || roles.includes('GLOBAL_ADMIN' as UserRole)) return;
 
     if (!schoolStatus || schoolStatus !== SchoolStatus.ACTIVE) {
       throw new ForbiddenException(
@@ -263,10 +264,13 @@ export class AuthService {
               name: email.split('@')[0],
               email,
               passwordHash,
-              role:
+              // [v5.0] Multi-Role Support
+              roles: [
                 profileType === 'school'
-                  ? UserRole.SCHOOL_ADMIN
-                  : UserRole.OPERATOR_ADMIN,
+                  ? 'SCHOOL_ADMIN'
+                  : 'MERCHANT_ADMIN'
+              ] as any,
+              role: profileType === 'school' ? UserRole.SCHOOL_ADMIN : 'MERCHANT_ADMIN' as any, // Legacy
               schoolId: schoolId,
               termsAccepted: true,
               termsVersion: consentVersion,

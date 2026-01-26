@@ -11,6 +11,7 @@ import {
   UseInterceptors,
   Query,
   Res,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -65,7 +66,7 @@ export class UsersController {
     }
 
     // Garantimos que o utilizador só cria membros para a sua própria escola
-    return this.usersService.create(createUserDto, user.schoolId!, user.canteenId);
+    return this.usersService.create(createUserDto, user.schoolId!);
   }
 
   @Post('bulk')
@@ -80,7 +81,7 @@ export class UsersController {
     @Body() bulkDto: BulkCreateUserDto,
     @CurrentUser() user: AuthenticatedUserPayload,
   ) {
-    return this.usersService.bulkCreate(bulkDto, user.schoolId!, user.canteenId);
+    return this.usersService.bulkCreate(bulkDto, user.schoolId!);
   }
 
   @Get()
@@ -103,7 +104,6 @@ export class UsersController {
       roles,
       withDeleted,
       filter, // [v4.5] Pass filter to service
-      user.canteenId || undefined // [v4.9] Operator Scope
     );
   }
 
@@ -139,7 +139,7 @@ export class UsersController {
     }
 
     // If not in cache, fetch from database
-    const stats = await this.usersService.getStudentStats(user.schoolId || undefined, user.canteenId || undefined);
+    const stats = await this.usersService.getStudentStats(user.schoolId || undefined);
 
     // Cache for 60 seconds
     this.cacheService.set(cacheKey, stats, 60000);

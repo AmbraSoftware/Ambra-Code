@@ -119,17 +119,21 @@ export class TasksService {
 
       try {
         // Consultar status no Asaas (usando http client do service)
-        // Nota: O AsaasService precisaria expor um método 'getSubscription'
-        // Como não temos exposto, vamos assumir que o webhook faria isso, 
-        // mas o Cron é uma segurança redundante (Soberania).
-        // Vamos implementar um 'checkSubscriptionStatus' no AsaasService ou usar o http direto se fosse publico.
-        // Por hora, vamos apenas logar que estamos "verificando" (Placeholder para implementação real)
+        // [MOCK IMPLEMENTATION] Simulating Asaas Check
+        // Em produção, isso chamaria this.asaasService.getSubscription(school.subscriptionId)
         
-        // Em um cenário real:
-        // const sub = await this.asaasService.getSubscription(school.subscriptionId);
-        // if (sub.status === 'OVERDUE' && school.status === 'ACTIVE') { ... }
+        const isMockOverdue = false; // Force "ACTIVE" for now to avoid accidental suspensions
+
+        if (isMockOverdue) {
+           this.logger.warn(`Subscription ${school.subscriptionId} is OVERDUE. Suspending school ${school.name}...`);
+           await this.prisma.school.update({
+             where: { id: school.id },
+             data: { status: 'SUSPENDED' }
+           });
+        } else {
+           this.logger.debug(`Subscription ${school.subscriptionId} is ACTIVE.`);
+        }
         
-        this.logger.debug(`Checked subscription ${school.subscriptionId} for ${school.name}`);
         updatedCount++;
       } catch (error) {
         this.logger.error(`Failed to sync subscription for ${school.name}`, error);

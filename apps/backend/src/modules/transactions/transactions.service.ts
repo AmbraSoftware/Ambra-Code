@@ -334,54 +334,24 @@ export class TransactionService {
     tx: Prisma.TransactionClient, // Corrected Type
     data: DebitForOrderData,
   ) {
-    const fees = await this.getFinancialConfig();
     const { buyerId, studentId, totalAmount, orderId } = data;
     const today = new Date();
 
+    if (!totalAmount || totalAmount <= 0) {
+      throw new BadRequestException('Valor inválido para débito.');
+    }
+
     const wallet = await tx.wallet.findUnique({
-      where: { userId: buyerId },
+      where: { userId: studentId },
     });
 
     if (!wallet) {
       throw new NotFoundException('Carteira não encontrada para este comprador.');
     }
 
-    // [v4.2] Shield Check: Deadbeat Protection (> 30 days)
-    if (wallet.isDebtBlocked) {
-      throw new BadRequestException(
-        'Carteira bloqueada por inadimplência (> 30 dias). Regularize para comprar.',
-      );
-    }
-
-    // [v4.2] Lazy Shield Trigger
-    if (wallet.negativeSince) {
-      const daysOverdue = Math.floor(
-        (today.getTime() - new Date(wallet.negativeSince).getTime()) /
-        (1000 * 3600 * 24),
-      );
-      if (daysOverdue > 30) {
-        await tx.wallet.update({
-          where: { id: wallet.id },
-          data: { isDebtBlocked: true },
-        });
-        throw new BadRequestException(
-          'Carteira bloqueada por inadimplência (> 30 dias).',
-        );
-      }
-    }
-
     const currentBalance = Number(wallet.balance);
-    const creditLimit = Number(wallet.creditLimit);
-
-    // [v4.2] Credit Logic
-    let schoolFee = 0;
-
-    if (currentBalance < totalAmount) {
-      schoolFee = fees.creditRisk; // Dynamic Fee
-    }
-
-    if (currentBalance + creditLimit < totalAmount) {
-      throw new BadRequestException('Saldo e Limite de Crédito insuficientes.');
+    if (currentBalance <= 0 || currentBalance < totalAmount) {
+      throw new BadRequestException('Saldo insuficiente.');
     }
 
     // Daily Limit Check
@@ -399,15 +369,8 @@ export class TransactionService {
     }
 
     const newBalance = currentBalance - totalAmount;
-    let newNegativeSince = wallet.negativeSince;
-
-    // Entering Debt
-    if (currentBalance >= 0 && newBalance < 0) {
-      newNegativeSince = new Date();
-    }
-    // Exiting Debt (Unlikely in Debit, but safe)
-    else if (newBalance >= 0) {
-      newNegativeSince = null;
+    if (newBalance < 0) {
+      throw new BadRequestException('Saldo insuficiente.');
     }
 
     // Update Daily Spend
@@ -418,25 +381,26 @@ export class TransactionService {
     });
 
     // Update Wallet
-    const updatedWallet = await tx.wallet.update({
-      where: { id: wallet.id, version: wallet.version },
+    const { count } = await tx.wallet.updateMany({
+      where: {
+        id: wallet.id,
+        version: wallet.version,
+        balance: { gte: new Prisma.Decimal(totalAmount) },
+      },
       data: {
         balance: newBalance,
-        negativeSince: newNegativeSince,
         version: { increment: 1 },
       },
     });
 
-    if (!updatedWallet) {
-      throw new InternalServerErrorException(
-        'Falha de concorrência financeira.',
-      );
+    if (count !== 1) {
+      throw new InternalServerErrorException('Falha de concorrência financeira.');
     }
 
     // Ledger Record
     const amountDecimal = new Prisma.Decimal(-totalAmount);
-    const fee = new Prisma.Decimal(schoolFee);
-    const net = amountDecimal.plus(fee); // Net logic retained as discussed
+    const fee = new Prisma.Decimal(0);
+    const net = amountDecimal;
 
     const transaction = await tx.transaction.create({
       data: {
@@ -446,21 +410,15 @@ export class TransactionService {
         platformFee: fee,
         netAmount: net,
         runningBalance: newBalance,
-        type:
-          schoolFee > 0
-            ? TransactionType.CREDIT_EXPENSE
-            : TransactionType.PURCHASE,
+        type: TransactionType.PURCHASE,
         status: 'COMPLETED',
-        description:
-          schoolFee > 0
-            ? `Compra no Crédito`
-            : `Compra CantApp para beneficiário ${studentId}`,
+        description: `Compra CantApp para beneficiário ${studentId}`,
       },
     });
 
     return {
       transactionId: transaction.id,
-      newBalance: updatedWallet.balance,
+      newBalance: new Prisma.Decimal(newBalance),
       status: 'SUCCESS',
     };
   }

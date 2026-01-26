@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Plan, School, User } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Plan, Prisma, School, User } from '@prisma/client';
 
 // Interfaces for JSON Configuration
 export interface FeesConfig {
@@ -13,15 +12,15 @@ export interface FeesConfig {
 }
 
 export interface SplitResult {
-  totalPaid: Decimal;      // What the parent pays (Credit + Convenience)
-  creditAmount: Decimal;   // What goes into Wallet
-  platformFee: Decimal;    // What Nodum keeps (Fixed + Percent + Risk)
-  netAmount: Decimal;      // What School/Operator gets
+  totalPaid: Prisma.Decimal;      // What the parent pays (Credit + Convenience)
+  creditAmount: Prisma.Decimal;   // What goes into Wallet
+  platformFee: Prisma.Decimal;    // What Nodum keeps (Fixed + Percent + Risk)
+  netAmount: Prisma.Decimal;      // What School/Operator gets
   breakdown: {
-    convenience: Decimal;
-    serviceFixed: Decimal;
-    servicePercent: Decimal;
-    riskFee: Decimal;
+    convenience: Prisma.Decimal;
+    serviceFixed: Prisma.Decimal;
+    servicePercent: Prisma.Decimal;
+    riskFee: Prisma.Decimal;
   };
 }
 
@@ -31,11 +30,11 @@ export class FeeCalculatorService {
 
   // Default ROI Fallback (Hardcoded Safety Net)
   private readonly DEFAULTS: FeesConfig = {
-    rechargeFixed: 3.00,
-    rechargePercent: 5.0, // 5%
-    creditRiskFixed: 1.00,
-    creditRiskPercent: 4.0, // 4%
-    convenienceFee: 2.00
+    rechargeFixed: 0.00, // [DISABLED]
+    rechargePercent: 0.0, // [DISABLED]
+    creditRiskFixed: 0.00, // [DISABLED]
+    creditRiskPercent: 0.0, // [DISABLED]
+    convenienceFee: 0.00 // [DISABLED]
   };
 
   /**
@@ -46,56 +45,36 @@ export class FeeCalculatorService {
    * @param isRecovery Whether this is a debt recovery recharge (triggers risk fees)
    */
   calculateRechargeSplit(
-    amount: number | Decimal,
+    amount: number | Prisma.Decimal,
     school: School & { plan: Plan },
     user?: User,
     isRecovery = false
   ): SplitResult {
-    const creditValue = new Decimal(amount);
+    const creditValue = new Prisma.Decimal(amount);
     
-    // 1. Resolve Configuration (Hierarchy: School > Plan > Defaults)
-    const config = this.resolveFeesConfig(school);
+    // [DISABLED] All fees are zeroed out as per business requirement
+    const config = this.DEFAULTS; 
 
     // 2. Calculate Convenience Fee (Parent)
-    // If User has Premium Plan, Convenience Fee is 0
-    // TODO: Check user.subscriptionStatus === 'ACTIVE'
-    const isPremium = user?.subscriptionPlanId != null; 
-    const convenienceFee = isPremium ? new Decimal(0) : new Decimal(config.convenienceFee ?? this.DEFAULTS.convenienceFee!);
+    const convenienceFee = new Prisma.Decimal(0);
 
     // 3. Calculate Service Fees (School/Manager)
-    const serviceFixed = new Decimal(config.rechargeFixed ?? this.DEFAULTS.rechargeFixed!);
-    const percentRate = new Decimal(config.rechargePercent ?? this.DEFAULTS.rechargePercent!).div(100);
-    const servicePercent = creditValue.mul(percentRate);
+    const serviceFixed = new Prisma.Decimal(0);
+    const servicePercent = new Prisma.Decimal(0);
 
     // 4. Calculate Risk Fee (If Recovery Mode)
-    let riskFee = new Decimal(0);
-    if (isRecovery) {
-      const riskFixed = new Decimal(config.creditRiskFixed ?? this.DEFAULTS.creditRiskFixed!);
-      const riskRate = new Decimal(config.creditRiskPercent ?? this.DEFAULTS.creditRiskPercent!).div(100);
-      riskFee = riskFixed.add(creditValue.mul(riskRate));
-    }
+    // [DISABLED] Risk Engine is off
+    const riskFee = new Prisma.Decimal(0);
 
     // 5. Aggregation
-    // Total Parent Pays = Credit + Convenience
-    const totalPaid = creditValue.add(convenienceFee);
+    // Total Parent Pays = Credit (No Fees)
+    const totalPaid = creditValue;
 
-    // Total Platform Keeps = Convenience + ServiceFixed + ServicePercent + Risk
-    const platformFee = convenienceFee
-      .add(serviceFixed)
-      .add(servicePercent)
-      .add(riskFee);
+    // Total Platform Keeps = 0
+    const platformFee = new Prisma.Decimal(0);
 
-    // Net for Operator = TotalPaid - PlatformFee - (Convenience is already in PlatformFee)
-    // Wait! Logic Check:
-    // Money Flow: Parent -> Asaas (TotalPaid) -> Split -> Nodum (PlatformFee) & Operator (Rest)
-    // So Operator gets: TotalPaid - PlatformFee
-    // But Operator expects: CreditValue - ServiceFees.
-    // Let's verify:
-    // Operator = (Credit + Conv) - (Conv + SvcFixed + SvcPerc + Risk)
-    // Operator = Credit - SvcFixed - SvcPerc - Risk
-    // This is correct. The operator pays the service fees from the principal.
-    
-    const netAmount = totalPaid.sub(platformFee);
+    // Net for Operator = Credit (Full Amount)
+    const netAmount = creditValue;
 
     return {
       totalPaid,

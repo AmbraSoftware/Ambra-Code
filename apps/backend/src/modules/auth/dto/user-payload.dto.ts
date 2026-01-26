@@ -1,16 +1,25 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-type UserRole =
-  | 'GLOBAL_ADMIN'
+export type UserRole =
+  | 'SUPER_ADMIN'
   | 'SCHOOL_ADMIN'
-  | 'CANTEEN_OPERATOR'
+  | 'MERCHANT_ADMIN'
+  | 'OPERATOR_SALES'
+  | 'OPERATOR_MEAL'
+  | 'GOV_ADMIN'
   | 'GUARDIAN'
-  | 'STUDENT';
+  | 'STUDENT'
+  | 'CONSUMER'
+  // Legacy
+  | 'GLOBAL_ADMIN'
+  | 'OPERATOR_ADMIN'
+  | 'CANTEEN_OPERATOR';
 
 export interface AuthenticatedUserPayload {
   id: string;
   email: string;
-  role: UserRole;
+  role?: UserRole;
+  roles: UserRole[];
   schoolId: string | null;
   canteenId: string | null;
 }
@@ -26,16 +35,21 @@ export class UserProfileDto {
   email: string;
 
   @ApiProperty({
-    example: 'GUARDIAN',
+    example: ['GUARDIAN'],
+    isArray: true,
     enum: [
-      'GLOBAL_ADMIN',
+      'SUPER_ADMIN',
       'SCHOOL_ADMIN',
-      'CANTEEN_OPERATOR',
+      'MERCHANT_ADMIN',
+      'OPERATOR_SALES',
+      'OPERATOR_MEAL',
+      'GOV_ADMIN',
       'GUARDIAN',
       'STUDENT',
+      'CONSUMER',
     ],
   })
-  role: UserRole;
+  roles: UserRole[];
 
   @ApiProperty({
     example: 'f0e9d8c7-b6a5-4321-fedc-ba9876543210',
