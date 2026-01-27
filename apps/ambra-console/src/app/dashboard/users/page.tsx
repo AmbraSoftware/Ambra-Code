@@ -25,6 +25,7 @@ import type { Operator, Client } from "@/types";
 import { DocumentConsultDialog } from "@/components/dashboard/users/document-consult-dialog";
 import { ExportButton } from "@/components/ui/export-button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { useToast } from "@/hooks/use-toast";
 
 // --- Tab Components ---
 import { api } from "@/lib/api";
@@ -37,12 +38,23 @@ import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 // ... existing imports
 
 function OperatorsTab() {
-  const { data: operators = [], isLoading, mutate } = useFetch<Operator[]>('/users?role=CANTEEN_OPERATOR,OPERATOR_ADMIN,SCHOOL_ADMIN');
-  // const [operators, setOperators] = useState<Operator[]>([]); // Using useFetch data instead
+  const { data: operators = [], isLoading, isError, mutate } = useFetch<Operator[]>('/users?role=OPERATOR_SALES,OPERATOR_MEAL,MERCHANT_ADMIN,SCHOOL_ADMIN');
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState<{ key: keyof Operator, direction: SortDirection } | null>({ key: 'name', direction: 'asc' });
   const [editUser, setEditUser] = useState<Operator | null>(null);
   const [editOpen, setEditOpen] = useState(false);
+
+  // Error feedback
+  React.useEffect(() => {
+    if (isError) {
+      toast({
+        title: "Erro de conexão",
+        description: "Não foi possível carregar os operadores. Verifique sua conexão.",
+        variant: "destructive"
+      });
+    }
+  }, [isError, toast]);
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [userToDeactivate, setUserToDeactivate] = useState<{ id: string, name: string } | null>(null);
@@ -62,8 +74,18 @@ function OperatorsTab() {
     try {
       await api.delete(`/users/${userToDeactivate.id}`);
       mutate();
+      toast({
+        title: "Operador desativado",
+        description: `${userToDeactivate.name} foi desativado com sucesso.`
+      });
+      setConfirmOpen(false);
     } catch (error) {
       console.error("Erro ao desativar:", error);
+      toast({
+        title: "Erro ao desativar operador",
+        description: "Não foi possível desativar o operador. Tente novamente.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -146,7 +168,18 @@ function OperatorsTab() {
                   <TableRow key={operator.id}>
                     <TableCell className="font-medium">{operator.name}</TableCell>
                     <TableCell><Censored value={operator.taxId} /></TableCell>
-                    <TableCell><Badge variant={operator.status === 'Ativo' ? 'default' : 'secondary'}>{operator.status}</Badge></TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={
+                          operator.status === 'Ativo'
+                            ? 'border-green-500 text-green-700 bg-green-50 dark:bg-green-950 dark:text-green-400'
+                            : 'border-gray-500 text-gray-700 bg-gray-50'
+                        }
+                      >
+                        {operator.status}
+                      </Badge>
+                    </TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -199,10 +232,22 @@ function OperatorsTab() {
 }
 
 function ClientsTab() {
-  const { data: clients = [], isLoading, mutate } = useFetch<Client[]>('/users?role=GUARDIAN'); // Assuming specific endpoint or param
+  const { data: clients = [], isLoading, isError, mutate } = useFetch<Client[]>('/users?role=GUARDIAN');
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState<{ key: keyof Client, direction: SortDirection } | null>({ key: 'name', direction: 'asc' });
   const [editUser, setEditUser] = useState<Client | null>(null);
+
+  // Error feedback
+  React.useEffect(() => {
+    if (isError) {
+      toast({
+        title: "Erro de conexão",
+        description: "Não foi possível carregar os clientes. Verifique sua conexão.",
+        variant: "destructive"
+      });
+    }
+  }, [isError, toast]);
   const [editOpen, setEditOpen] = useState(false);
 
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -224,8 +269,18 @@ function ClientsTab() {
     try {
       await api.delete(`/users/${clientToDeactivate.id}`);
       mutate();
-    } catch (error) {
+      toast({
+        title: "Cliente removido",
+        description: `${clientToDeactivate.name} foi removido com sucesso.`,
+      });
+      setConfirmOpen(false);
+    } catch (error: any) {
       console.error("Erro ao desativar:", error);
+      const errorMessage = error.response?.data?.message || 
+                          (error.response?.status === 404 ? "Cliente não encontrado." :
+                           error.response?.status === 403 ? "Você não tem permissão para remover este cliente." :
+                           "Erro ao remover cliente. Tente novamente.");
+      toast({ title: "Erro ao remover", description: errorMessage, variant: "destructive" });
     }
   };
 
@@ -309,7 +364,18 @@ function ClientsTab() {
                     <TableCell className="font-medium">{client.name}</TableCell>
                     <TableCell>{client.email}</TableCell>
                     <TableCell><Badge variant="outline">{client.role}</Badge></TableCell>
-                    <TableCell><Badge variant={client.status === 'Ativo' ? 'default' : 'secondary'}>{client.status}</Badge></TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={
+                          client.status === 'Ativo'
+                            ? 'border-green-500 text-green-700 bg-green-50 dark:bg-green-950 dark:text-green-400'
+                            : 'border-gray-500 text-gray-700 bg-gray-50'
+                        }
+                      >
+                        {client.status}
+                      </Badge>
+                    </TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -373,7 +439,7 @@ export default function UsersPage() {
         actions={
           activeTab === 'operators' ? (
             <CreateUserDialog
-              defaultRole="OPERATOR_ADMIN"
+              defaultRole="MERCHANT_ADMIN"
               triggerLabel="Adicionar Operador"
               onSuccess={() => {/* mutate handled inside tabs usually */ }}
             />

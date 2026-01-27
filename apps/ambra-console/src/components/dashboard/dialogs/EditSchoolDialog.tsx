@@ -36,13 +36,13 @@ interface EditSchoolDialogProps {
 
 interface FormData {
     name: string;
-    taxId: string; // CNPJ
+    taxId: string; // CNPJ (somente leitura, não enviado ao backend)
     slug: string;
-    customDomain?: string;
+    customDomain?: string; // Ainda não implementado no backend
     status: string;
-    active: boolean;
+    active: boolean; // Ainda não implementado no backend
     planId: string;
-    // governmentId? // For now maybe just simple ones
+    // Nota: taxId, customDomain e active são exibidos mas não enviados no PATCH
 }
 
 export function EditSchoolDialog({
@@ -74,7 +74,18 @@ export function EditSchoolDialog({
         if (!school) return;
         setLoading(true);
         try {
-            await api.patch(`/tenancy/schools/${school.id}`, data);
+            // Backend aceita apenas: name, slug, planId, status, config
+            // Removendo campos não aceitos (taxId, customDomain, active)
+            const payload = {
+                name: data.name,
+                slug: data.slug,
+                planId: data.planId,
+                status: data.status,
+                // customDomain e taxId não são aceitos pelo UpdateSchoolDto
+                // active também não é aceito diretamente
+            };
+
+            await api.patch(`/tenancy/schools/${school.id}`, payload);
             toast({
                 title: "Escola atualizada",
                 description: `A escola ${data.name} foi atualizada.`,
@@ -83,9 +94,19 @@ export function EditSchoolDialog({
             onOpenChange(false);
         } catch (error: any) {
             console.error(error);
+            // Extrai mensagem amigável do backend
+            const errorMessage = error.response?.data?.message || 
+                                error.response?.data?.error ||
+                                (error.response?.status === 404 ? "Escola não encontrada." :
+                                 error.response?.status === 409 ? "Já existe uma escola com este slug cadastrado." :
+                                 error.response?.status === 400 ? "Dados inválidos. Verifique os campos preenchidos." :
+                                 error.response?.status === 401 ? "Você não tem permissão para realizar esta ação." :
+                                 error.response?.status === 500 ? "Erro interno do servidor. Tente novamente mais tarde." :
+                                 "Ocorreu um erro ao tentar atualizar a escola. Tente novamente.");
+            
             toast({
                 title: "Erro ao atualizar",
-                description: error.response?.data?.message || "Erro desconhecido",
+                description: errorMessage,
                 variant: "destructive",
             });
         } finally {

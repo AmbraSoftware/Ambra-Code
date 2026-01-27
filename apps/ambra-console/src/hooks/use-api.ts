@@ -74,9 +74,17 @@ export function useUsers(role?: string) {
     };
 }
 
-// Generic Hook for any endpoint
+// Generic Hook for any endpoint with error handling
 export function useFetch<T>(endpoint: string | null) {
-    const { data, error, isLoading, mutate } = useSWR<T>(endpoint, fetcher);
+    const { data, error, isLoading, mutate } = useSWR<T>(endpoint, fetcher, {
+        onError: (error: AxiosError) => {
+            console.error(`Erro ao buscar ${endpoint}:`, error);
+            // Você pode adicionar toast global aqui se desejar
+        },
+        shouldRetryOnError: true,
+        errorRetryCount: 2,
+        dedupingInterval: 2000
+    });
     return {
         data,
         isLoading,

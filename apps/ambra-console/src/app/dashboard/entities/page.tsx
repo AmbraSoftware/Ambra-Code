@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, ArrowUpDown, Network, Building, School as SchoolIcon, Loader2, CheckCircle, XCircle, Store } from "lucide-react";
+import { MoreHorizontal, ArrowUpDown, Network, Building, School as SchoolIcon, Loader2, CheckCircle, XCircle, Store, Utensils, Apple } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -62,9 +62,18 @@ const fetchOperators = async () => {
 
 function SystemsTab() {
   const queryClient = useQueryClient();
-  const { data: systems = [], isLoading } = useQuery({
+  const { data: systems = [], isLoading, isError, error } = useQuery({
     queryKey: ['systems'],
-    queryFn: fetchSystems
+    queryFn: fetchSystems,
+    retry: 2,
+    onError: (error: any) => {
+      console.error('Erro ao carregar sistemas:', error);
+      toast({
+        title: "Erro de conexão",
+        description: "Não foi possível carregar os sistemas. Tente novamente.",
+        variant: "destructive"
+      });
+    }
   });
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -196,10 +205,19 @@ function SchoolsTab() {
   const [searchTerm, setSearchTerm] = useState("");
 
   // Separate queries for better caching and performance
-  const { data: schools = [], isLoading } = useQuery({
+  const { data: schools = [], isLoading, isError } = useQuery({
     queryKey: ['schools', viewMode], // Key depends on viewMode to fetch correct data
     queryFn: () => fetchSchools(viewMode === 'pending' ? 'PENDING' : undefined),
-    staleTime: 1000 * 60 * 2 // 2 mins
+    staleTime: 1000 * 60 * 2, // 2 mins
+    retry: 2,
+    onError: (error: any) => {
+      console.error('Erro ao carregar escolas:', error);
+      toast({
+        title: "Erro de conexão",
+        description: "Não foi possível carregar as escolas. Verifique sua conexão.",
+        variant: "destructive"
+      });
+    }
   });
 
   // Query for pending count badge (always active)
@@ -209,7 +227,12 @@ function SchoolsTab() {
       const data = await fetchSchools('PENDING');
       return data.length;
     },
-    refetchInterval: 1000 * 60 // Poll every minute
+    refetchInterval: 1000 * 60, // Poll every minute
+    retry: 1,
+    onError: () => {
+      // Silently fail for badge count - não interrompe UX
+      console.warn('Não foi possível atualizar contador de aprovações pendentes');
+    }
   });
 
   // Local state for modals
@@ -291,6 +314,7 @@ function SchoolsTab() {
                 <TableHead>Nome</TableHead>
                 <TableHead>CNPJ</TableHead>
                 <TableHead>Plano</TableHead>
+                <TableHead>Módulos</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
@@ -298,14 +322,14 @@ function SchoolsTab() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-48 text-center">
+                  <TableCell colSpan={6} className="h-48 text-center">
                     <Loader2 className="mr-2 h-8 w-8 animate-spin inline text-primary" />
                     <p className="text-muted-foreground mt-2">Carregando dados...</p>
                   </TableCell>
                 </TableRow>
               ) : filteredSchools.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-48 text-center">
+                  <TableCell colSpan={6} className="h-48 text-center">
                     <EmptyState
                       icon={SchoolIcon}
                       title={viewMode === 'pending' ? "Tudo limpo por aqui!" : "Nenhuma escola encontrada"}
@@ -411,9 +435,18 @@ function SchoolsTab() {
 
 function MunicipalitiesTab() {
   const queryClient = useQueryClient();
-  const { data: municipalities = [], isLoading } = useQuery({
+  const { data: municipalities = [], isLoading, isError } = useQuery({
     queryKey: ['municipalities'],
-    queryFn: fetchGovernments
+    queryFn: fetchGovernments,
+    retry: 2,
+    onError: (error: any) => {
+      console.error('Erro ao carregar municípios:', error);
+      toast({
+        title: "Erro de conexão",
+        description: "Não foi possível carregar os municípios. Tente novamente.",
+        variant: "destructive"
+      });
+    }
   });
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -524,9 +557,18 @@ function MunicipalitiesTab() {
 
 function OperatorsTab() {
   const queryClient = useQueryClient();
-  const { data: operators = [], isLoading } = useQuery({
+  const { data: operators = [], isLoading, isError } = useQuery({
     queryKey: ['operators'],
-    queryFn: fetchOperators
+    queryFn: fetchOperators,
+    retry: 2,
+    onError: (error: any) => {
+      console.error('Erro ao carregar operadores:', error);
+      toast({
+        title: "Erro de conexão",
+        description: "Não foi possível carregar os operadores. Tente novamente.",
+        variant: "destructive"
+      });
+    }
   });
 
   const [searchTerm, setSearchTerm] = useState("");
