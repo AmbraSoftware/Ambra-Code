@@ -33,7 +33,7 @@ export default function CanteenDetailsPage() {
             setCanteen(data);
         } catch (error) {
             console.error('Failed to load canteen', error);
-            router.push('/manager/canteens');
+            router.push('/dashboard/canteens');
         } finally {
             setIsLoading(false);
         }

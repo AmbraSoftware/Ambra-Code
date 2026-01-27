@@ -6,7 +6,7 @@ import { StockService } from '../stock/stock.service';
 import { AuditService } from '../audit/audit.service';
 import { NotificationsGateway } from '../notifications/notifications.gateway';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { CreateOrderDto } from './dto/create-order.dto';
+import { CreateOrderDto } from '@nodum/shared';
 import { OrderStatus } from '@prisma/client';
 
 describe('OrdersService', () => {

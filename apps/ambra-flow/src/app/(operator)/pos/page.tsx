@@ -15,6 +15,14 @@ export interface CartItem extends Product {
     quantity: number;
 }
 
+/**
+ * POS Page - Operator Mode
+ * 
+ * Tela de venda rápida para operadores.
+ * Layout fullscreen sem distrações.
+ * 
+ * @see AMBRA_CONTEXT.md - Segregação Total de Experiência
+ */
 export default function PosPage() {
     const { data: products = [], isLoading, refetch: reloadProducts } = usePosProducts();
     const [cart, setCart] = useState<CartItem[]>([]);

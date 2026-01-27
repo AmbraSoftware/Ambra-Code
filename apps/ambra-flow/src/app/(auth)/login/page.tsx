@@ -5,8 +5,19 @@ import Logo from '@/components/ui/Logo';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { authService } from '@/services/auth.service';
+import { UserRole } from '@nodum/shared';
+import { setAuthToken, removeAuthToken } from '@/lib/auth-utils';
 
-export default function ManagerLoginPage() {
+/**
+ * Login Unificado com Redirecionamento Inteligente
+ * 
+ * Detecta automaticamente o tipo de usuário baseado em roles e redireciona:
+ * - MERCHANT_ADMIN, SCHOOL_ADMIN -> /dashboard (Manager Mode)
+ * - OPERATOR_SALES, OPERATOR_MEAL -> /pos (Operator Mode)
+ * 
+ * @see AMBRA_CONTEXT.md - Segregação Total de Experiência
+ */
+export default function LoginPage() {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
     const [formData, setFormData] = useState({
@@ -28,14 +39,36 @@ export default function ManagerLoginPage() {
                 password: formData.password
             });
 
-            // Store Token & User
-            localStorage.setItem('token', response.access_token);
+            // Store Token & User (sincroniza com cookies para middleware)
+            setAuthToken(response.access_token);
             localStorage.setItem('user', JSON.stringify(response.user));
 
-            // Redirect Logic
-            // OPERATOR_ADMIN redirects to /manager/dashboard to Link School
-            // SCHOOL_ADMIN redirects to /manager/dashboard normally
-            router.push('/manager/dashboard');
+            // Redirecionamento Inteligente baseado em Roles
+            const userRoles = response.user.roles || [response.user.role].filter(Boolean);
+            
+            // Verifica se tem role de ADMIN (Manager Mode)
+            const isManager = userRoles.some(role => 
+                role === UserRole.MERCHANT_ADMIN || 
+                role === UserRole.SCHOOL_ADMIN ||
+                role === UserRole.SUPER_ADMIN
+            );
+
+            // Verifica se tem role de OPERATOR (Operator Mode)
+            const isOperator = userRoles.some(role => 
+                role === UserRole.OPERATOR_SALES || 
+                role === UserRole.OPERATOR_MEAL
+            );
+
+            // Redireciona baseado na prioridade: Manager > Operator
+            if (isManager) {
+                router.push('/dashboard');
+            } else if (isOperator) {
+                router.push('/pos');
+            } else {
+                // Usuário sem role válido para este sistema
+                alert('Seu perfil não tem acesso ao Ambra Flow. Entre em contato com o administrador.');
+                removeAuthToken();
+            }
         } catch (error: any) {
             console.error('Login error:', error);
             const msg = error.response?.data?.message || 'Falha ao autenticar. Verifique suas credenciais.';
@@ -56,12 +89,12 @@ export default function ManagerLoginPage() {
                                 <Logo />
                             </Link>
                             <p className="text-sm font-semibold uppercase tracking-wider text-muted-light dark:text-muted-dark ml-1 mt-4">
-                                Painel do Gestor
+                                Acesso ao Sistema
                             </p>
                         </div>
 
                         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-8">
-                            Login do Gestor
+                            Login
                         </h2>
 
                         <form className="space-y-6" onSubmit={handleLogin}>
@@ -70,7 +103,7 @@ export default function ManagerLoginPage() {
                                     className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
                                     htmlFor="email"
                                 >
-                                    E-mail Corporativo
+                                    E-mail ou Usuário
                                 </label>
                                 <div className="relative">
                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -80,7 +113,7 @@ export default function ManagerLoginPage() {
                                         className="pl-10 block w-full rounded-lg border-border-light dark:border-border-dark bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-primary focus:border-primary sm:text-sm py-3 transition-shadow outline-none border focus:ring-1"
                                         id="email"
                                         name="email"
-                                        placeholder="gestao@escola.com"
+                                        placeholder="usuario@escola.com"
                                         type="email"
                                         required
                                         value={formData.email}

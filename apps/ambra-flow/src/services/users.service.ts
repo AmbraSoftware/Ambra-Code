@@ -1,10 +1,12 @@
 import { api } from './api';
+import { UserRole } from '@nodum/shared';
 
 export interface User {
     id: string;
     name: string;
     email: string;
-    role: 'STUDENT' | 'GUARDIAN' | 'SCHOOL_ADMIN' | 'CANTEEN_OPERATOR';
+    role: string; // Legacy single role
+    roles?: string[]; // Multi-role support
     profile?: {
         class?: string;
         restrictions?: string[];
@@ -25,7 +27,7 @@ export interface CreateUserDto {
     name: string;
     email?: string;
     password?: string;
-    role: 'STUDENT' | 'GUARDIAN';
+    role: string; // Aceita qualquer role válida (STUDENT, GUARDIAN, OPERATOR_SALES, OPERATOR_MEAL, etc.)
     profile?: {
         class?: string;
         restrictions?: string[];

@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../prisma/prisma.service';
-import { LoginDto } from './dto/login.dto';
+import { LoginDto } from '@nodum/shared';
 import * as bcrypt from 'bcrypt';
 import { UserRole, SchoolStatus } from '@prisma/client';
 import { UserProfileDto } from './dto/user-payload.dto';

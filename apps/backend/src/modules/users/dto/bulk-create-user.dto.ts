@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsArray, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
-import { CreateUserDto } from './create-user.dto';
+import { CreateUserDto } from '@nodum/shared';
 
 export class BulkCreateUserDto {
     @ApiProperty({

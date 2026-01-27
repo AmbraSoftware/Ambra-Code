@@ -1,19 +1,20 @@
-import { IsArray, IsInt, IsNotEmpty, IsOptional, IsUUID, Min, ValidateNested } from 'class-validator';
+import { IsArray, IsInt, IsNotEmpty, IsOptional, IsUUID, Min, ValidateNested, IsDateString } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateOrderItemDto {
-  @IsUUID()
   @IsNotEmpty()
+  @IsUUID()
   productId!: string;
 
+  @IsNotEmpty()
   @IsInt()
   @Min(1)
   quantity!: number;
 }
 
 export class CreateOrderDto {
-  @IsUUID()
   @IsNotEmpty()
+  @IsUUID()
   studentId!: string;
 
   @IsArray()
@@ -22,5 +23,6 @@ export class CreateOrderDto {
   items!: CreateOrderItemDto[];
 
   @IsOptional()
+  @IsDateString()
   scheduledFor?: string;
 }

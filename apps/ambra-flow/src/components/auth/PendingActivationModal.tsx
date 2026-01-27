@@ -15,7 +15,7 @@ export default function PendingActivationModal({ isOpen, onClose, profileType = 
 
     const handleAction = () => {
         if (isOperator) {
-            router.push('/login/manager');
+            router.push('/login');
         }
         onClose();
     };

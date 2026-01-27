@@ -1,4 +1,5 @@
 import { api } from './api';
+import { UserRole } from '@nodum/shared';
 
 export type RegisterData = {
     profileType: 'school' | 'operator';
@@ -44,13 +45,10 @@ export type LoginResponse = {
         id: string;
         name: string;
         role: string;
+        roles?: string[]; // Multi-role support
         schoolId?: string;
     };
 };
 
-export enum UserRole {
-    STUDENT = 'STUDENT',
-    GUARDIAN = 'GUARDIAN',
-    SCHOOL_ADMIN = 'SCHOOL_ADMIN',
-    CANTEEN_OPERATOR = 'CANTEEN_OPERATOR'
-}
+// Re-export UserRole from shared for convenience
+export { UserRole };

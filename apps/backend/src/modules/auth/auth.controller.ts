@@ -15,7 +15,7 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import { LoginDto } from './dto/login.dto';
+import { LoginDto } from '@nodum/shared';
 import { RegisterDto } from './dto/register.dto'; // Added RegisterDto import
 import { ChangePasswordDto } from './dto/change-password.dto'; // [v4.5] Security
 import { Public } from './decorators/public.decorator';

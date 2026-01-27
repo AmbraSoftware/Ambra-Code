@@ -8,7 +8,7 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { TransactionService } from '../transactions/transactions.service';
 import { StockService } from '../stock/stock.service';
-import { CreateOrderDto, OrderItemDto } from './dto/create-order.dto';
+import { CreateOrderDto, CreateOrderItemDto } from '@nodum/shared';
 import { randomBytes } from 'crypto';
 import { AuditService } from '../audit/audit.service';
 import { NotificationsGateway } from '../notifications/notifications.gateway';
@@ -253,7 +253,7 @@ export class OrdersService {
   private async checkRestrictions(
     tx: Prisma.TransactionClient,
     studentId: string,
-    items: OrderItemDto[],
+    items: CreateOrderItemDto[],
     products: Product[],
   ) {
     const [prodRest, catRest] = await Promise.all([

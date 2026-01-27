@@ -495,7 +495,7 @@ export default function RegisterPage() {
                                 Voltar
                             </Button>
                         ) : (
-                            <Link href="/login/manager">
+                            <Link href="/login">
                                 <Button variant="ghost" className="text-gray-500">Cancelar</Button>
                             </Link>
                         )}

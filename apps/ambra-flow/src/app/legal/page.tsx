@@ -59,7 +59,7 @@ export default function LegalPage() {
 
                 {/* Footer / Back Link */}
                 <div className="mt-8 text-center">
-                    <Link href="/login/manager" className="text-sm font-medium text-muted-light dark:text-muted-dark hover:text-primary transition-colors flex items-center gap-2">
+                    <Link href="/login" className="text-sm font-medium text-muted-light dark:text-muted-dark hover:text-primary transition-colors flex items-center gap-2">
                         <span className="material-symbols-outlined text-lg">arrow_back</span>
                         Voltar para Login
                     </Link>

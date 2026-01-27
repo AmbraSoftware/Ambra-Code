@@ -106,7 +106,7 @@ export default function UsersPage() {
         } else {
             params.set('filter', filter);
         }
-        router.push(`/manager/students?${params.toString()}`);
+        router.push(`/dashboard/users?${params.toString()}`);
     };
 
     const handleOpenModal = () => {

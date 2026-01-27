@@ -4,10 +4,20 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Logo from '@/components/ui/Logo';
-import { LayoutDashboard, Utensils, Users, Megaphone, Package, Store, DollarSign, Settings, LogOut, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Utensils, Users, Megaphone, Package, Store, DollarSign, Settings, LogOut, Menu, X, UserCog } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';
+import { UserRole } from '@nodum/shared';
+import { removeAuthToken } from '@/lib/auth-utils';
 
+/**
+ * Layout Manager Mode
+ * 
+ * Layout administrativo com Sidebar completa para gestores.
+ * Acesso restrito a: MERCHANT_ADMIN, SCHOOL_ADMIN, SUPER_ADMIN
+ * 
+ * @see AMBRA_CONTEXT.md - Segregação Total de Experiência
+ */
 export default function ManagerLayout({
     children,
 }: {
@@ -17,14 +27,45 @@ export default function ManagerLayout({
     const pathname = usePathname();
     const [isAuthorized, setIsAuthorized] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [user, setUser] = useState<any>(null);
 
     useEffect(() => {
-        // Simple Auth Guard
+        // Auth Guard com validação de Role
         const token = localStorage.getItem('token');
-        if (!token) {
-            router.push('/login/manager');
-        } else {
+        const userStr = localStorage.getItem('user');
+
+        if (!token || !userStr) {
+            router.push('/login');
+            return;
+        }
+
+        try {
+            const userData = JSON.parse(userStr);
+            const userRoles = userData.roles || [userData.role].filter(Boolean);
+
+            // Verifica se tem role de Manager
+            const isManager = userRoles.some((role: string) => 
+                role === UserRole.MERCHANT_ADMIN || 
+                role === UserRole.SCHOOL_ADMIN ||
+                role === UserRole.SUPER_ADMIN ||
+                role === 'OPERATOR_ADMIN' || // Legacy
+                role === 'GLOBAL_ADMIN' // Legacy
+            );
+
+            if (!isManager) {
+                // Usuário sem permissão - redireciona para login
+                alert('Você não tem permissão para acessar esta área.');
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                router.push('/login');
+                return;
+            }
+
+            setUser(userData);
             setIsAuthorized(true);
+        } catch (e) {
+            console.error('Failed to parse user', e);
+            router.push('/login');
         }
     }, [router]);
 
@@ -38,23 +79,24 @@ export default function ManagerLayout({
     }
 
     const navItems = [
-        { section: 'Visão Geral', items: [{ href: '/manager/dashboard', icon: LayoutDashboard, label: 'Dashboard' }] },
+        { section: 'Visão Geral', items: [{ href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' }] },
         {
             section: 'Gestão Escolar',
             items: [
-                { href: '/manager/menu', icon: Utensils, label: 'Produtos de Venda' },
-                { href: '/manager/school-meals', icon: Utensils, label: 'Merenda Escolar' },
-                { href: '/manager/users', icon: Users, label: 'Usuários' },
-                { href: '/manager/communication', icon: Megaphone, label: 'Comunicação' },
-                { href: '/manager/stock', icon: Package, label: 'Estoque' },
+                { href: '/dashboard/menu', icon: Utensils, label: 'Produtos de Venda' },
+                { href: '/dashboard/school-meals', icon: Utensils, label: 'Merenda Escolar' },
+                { href: '/dashboard/users', icon: Users, label: 'Usuários' },
+                { href: '/dashboard/staff', icon: UserCog, label: 'Operadores' },
+                { href: '/dashboard/communication', icon: Megaphone, label: 'Comunicação' },
+                { href: '/dashboard/stock', icon: Package, label: 'Estoque' },
             ]
         },
         {
             section: 'Administrativo',
             items: [
-                { href: '/manager/canteens', icon: Store, label: 'Unidades' },
-                { href: '/manager/financial', icon: DollarSign, label: 'Financeiro' },
-                { href: '/manager/settings', icon: Settings, label: 'Configurações' },
+                { href: '/dashboard/canteens', icon: Store, label: 'Unidades' },
+                { href: '/dashboard/financial', icon: DollarSign, label: 'Financeiro' },
+                { href: '/dashboard/settings', icon: Settings, label: 'Configurações' },
             ]
         }
     ];
@@ -85,9 +127,8 @@ export default function ManagerLayout({
             <div className="p-4 border-t border-border-light dark:border-border-dark">
                 <button
                     onClick={() => {
-                        localStorage.removeItem('token');
-                        localStorage.removeItem('user');
-                        router.push('/login/manager');
+                        removeAuthToken();
+                        router.push('/login');
                     }}
                     className="flex items-center gap-3 w-full px-2 py-2 text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-colors"
                 >

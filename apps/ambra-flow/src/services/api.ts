@@ -4,6 +4,7 @@
  * Configurado com Interceptors para Autenticação (JWT) e Tratamento de Erros.
  */
 import axios from 'axios';
+import { removeAuthToken } from '@/lib/auth-utils';
 
 export const api = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333',
@@ -40,11 +41,9 @@ api.interceptors.response.use(
             // Se receber 401 (Unauthorized), força logout limpo
             if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
                 // Previne loop de redirecionamento se já estiver no login
-                window.localStorage.removeItem('token');
-                window.localStorage.removeItem('user');
-                // Redireciona para a página de login apropriada
-                // Idealmente, deveríamos detectar se é /operator ou /manager, mas o login padrão resolve
-                window.location.href = '/login/manager'; 
+                removeAuthToken();
+                // Redireciona para a página de login
+                window.location.href = '/login'; 
             }
         }
         return Promise.reject(error);

@@ -1,14 +1,7 @@
 import { api } from './api';
 import { Product } from './stock.service';
 import { Student } from './students.service';
-
-export interface CreateOrderDto {
-    items: {
-        productId: string;
-        quantity: number;
-    }[];
-    studentId: string;
-}
+import { CreateOrderDto } from '@nodum/shared';
 
 export const posService = {
     // Get only available products for the POS grid with caching

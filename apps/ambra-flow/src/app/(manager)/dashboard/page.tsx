@@ -12,6 +12,13 @@ import { ShoppingCart, TrendingUp, Users, DollarSign, Package, Link as LinkIcon,
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { toast } from 'sonner';
 
+/**
+ * Dashboard Manager Mode
+ * 
+ * Visão executiva para gestores com métricas e gráficos.
+ * 
+ * @see AMBRA_CONTEXT.md - Segregação Total de Experiência
+ */
 export default function ManagerDashboardPage() {
     const router = useRouter();
     const [userName, setUserName] = useState('Gestor');
@@ -103,13 +110,6 @@ export default function ManagerDashboardPage() {
                         Aqui está o resumo da sua operação hoje.
                     </p>
                 </div>
-                <div>
-                    <Link href="/pos">
-                        <Button variant="primary" size="lg" className="shadow-lg shadow-primary/25" leftIcon={<ShoppingCart className="w-5 h-5" />}>
-                            Novo Pedido
-                        </Button>
-                    </Link>
-                </div>
             </div>
 
             {/* Metrics Grid */}
@@ -190,7 +190,7 @@ export default function ManagerDashboardPage() {
             {/* Link School Modal for Operators */}
             <Modal
                 isOpen={isLinkSchoolModalOpen}
-                onClose={() => {}} // Prevent closing without linking? Or allow close to see empty dashboard?
+                onClose={() => {}}
                 title="Vincular à Escola"
                 size="md"
             >

@@ -103,7 +103,7 @@ export function StockAlertsWidget() {
                                 <Button
                                     size="sm"
                                     variant="primary"
-                                    onClick={() => router.push('/manager/stock')}
+                                    onClick={() => router.push('/dashboard/stock')}
                                     className="shrink-0"
                                 >
                                     Repor

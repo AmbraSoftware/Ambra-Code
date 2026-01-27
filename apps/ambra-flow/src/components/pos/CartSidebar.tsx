@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { CartItem } from '@/app/operator/pos/page';
+import { CartItem } from '@/app/(operator)/pos/page';
 import { Student } from '@/services/students.service';
 import { Button } from '@/components/ui/Button';
 import { StudentSearch } from './StudentSearch';
@@ -30,10 +30,15 @@ export function CartSidebar({
 }: CartSidebarProps) {
     const [isCheckingOut, setIsCheckingOut] = useState(false);
 
-    const total = cart.reduce((acc, item) => acc + (Number(item.price) * item.quantity), 0);
+    // ⚠️ CÁLCULO APENAS VISUAL - Backend é a fonte de verdade para preços finais
+    // Este valor é usado apenas para UX, não para validação ou cobrança
+    const visualTotal = cart.reduce((acc, item) => acc + (Number(item.price) * item.quantity), 0);
     const balance = student ? Number(student.wallet?.balance || 0) : 0;
-    const remainingBalance = balance - total;
-    const canCheckout = cart.length > 0 && student && remainingBalance >= 0;
+    const visualRemainingBalance = balance - visualTotal;
+    
+    // Validação de saldo removida - Backend valida via OrdersService
+    // Frontend apenas verifica se há itens e aluno selecionado
+    const canCheckout = cart.length > 0 && student;
 
     const handleCheckout = async () => {
         if (!student || !canCheckout) return;
@@ -120,23 +125,26 @@ export function CartSidebar({
 
                     <div className="space-y-2 mb-4">
                         <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
-                            <span>Subtotal</span>
-                            <span>R$ {total.toFixed(2)}</span>
+                            <span>Subtotal (estimado)</span>
+                            <span>R$ {visualTotal.toFixed(2)}</span>
                         </div>
                         {student && (
                             <div className="flex justify-between text-sm">
-                                <span className={remainingBalance < 0 ? 'text-red-600 font-medium' : 'text-green-600'}>
-                                    Saldo Restante
+                                <span className={visualRemainingBalance < 0 ? 'text-red-600 font-medium' : 'text-green-600'}>
+                                    Saldo Restante (estimado)
                                 </span>
-                                <span className={`font-bold ${remainingBalance < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                                    R$ {remainingBalance.toFixed(2)}
+                                <span className={`font-bold ${visualRemainingBalance < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                    R$ {visualRemainingBalance.toFixed(2)}
                                 </span>
                             </div>
                         )}
                         <div className="flex justify-between text-xl font-bold text-gray-900 dark:text-white pt-2 border-t border-gray-200 dark:border-zinc-700">
-                            <span>Total</span>
-                            <span>R$ {total.toFixed(2)}</span>
+                            <span>Total (estimado)</span>
+                            <span>R$ {visualTotal.toFixed(2)}</span>
                         </div>
+                        <p className="text-xs text-gray-500 italic">
+                            * Valor final calculado pelo servidor
+                        </p>
                     </div>
 
                     <Button
@@ -148,9 +156,8 @@ export function CartSidebar({
                         size="lg"
                     >
                         {!student ? 'Selecione um Aluno' :
-                            remainingBalance < 0 ? 'Saldo Insuficiente' :
-                                cart.length === 0 ? 'Carrinho Vazio' :
-                                    'Finalizar Venda'}
+                            cart.length === 0 ? 'Carrinho Vazio' :
+                                'Finalizar Venda'}
                     </Button>
                 </div>
             </div>

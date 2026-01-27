@@ -5,7 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CreateUserDto } from './dto/create-user.dto';
+import { CreateUserDto } from '@nodum/shared';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InvitationStatus, UserRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
@@ -15,36 +15,59 @@ export class UsersService {
   constructor(private readonly prisma: PrismaService) { }
 
   async create(createUserDto: CreateUserDto, schoolId: string) {
-    const { password, profile, taxId, mobilePhone, ...userData } = createUserDto;
+    const { password, profile, taxId, mobilePhone, roles, role, ...userData } = createUserDto;
+
+    // Validação: senha obrigatória na criação
+    if (!password) {
+      throw new BadRequestException('Senha é obrigatória para criar usuário.');
+    }
+
+    // Validação: email obrigatório para alguns tipos de usuário
+    // Operadores podem ter email opcional (gerado automaticamente)
+    const isOperator = role === 'OPERATOR_SALES' || role === 'OPERATOR_MEAL' || role === 'CANTEEN_OPERATOR';
+    if (!isOperator && !userData.email) {
+      throw new BadRequestException('Email é obrigatório para este tipo de usuário.');
+    }
 
     return this.prisma.$transaction(
       async (tx) => {
-        const existingUser = await tx.user.findUnique({
-          where: { email: userData.email },
-        });
-        if (existingUser) {
-          throw new ConflictException('Um usuário com este email já existe.');
+        // Se email foi fornecido, verifica duplicata
+        if (userData.email) {
+          const existingUser = await tx.user.findUnique({
+            where: { email: userData.email },
+          });
+          if (existingUser) {
+            throw new ConflictException('Um usuário com este email já existe.');
+          }
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        // Determina roles array: usa roles fornecido ou cria array com role único
+        const rolesArray = roles && roles.length > 0 
+          ? roles.map(r => r as any)
+          : [role as any];
+
         // Prepare Wallet Data (Student only)
-        const walletData = userData.role === 'STUDENT' ? {
+        const walletData = role === 'STUDENT' ? {
             create: {
                 dailySpendLimit: profile?.dailyLimit || 0.00
             }
         } : undefined;
 
+        // Gera email automático para operadores se não fornecido
+        const finalEmail = userData.email || `operator.${Date.now()}@ambra.local`;
+
         const user = await tx.user.create({
           data: {
-            ...userData,
+            name: userData.name,
+            email: finalEmail,
             document: taxId,
-            // mobilePhone (não existe no schema User padrão, talvez precise de outro campo ou ajuste no schema, 
-            // mas por enquanto vamos ignorar ou salvar em meta se houvesse)
-            // Assumindo que class foi adicionado ao schema
             class: profile?.class,
             passwordHash: hashedPassword,
-            mustChangePassword: true, 
+            mustChangePassword: true,
+            role: role as any, // Legacy single role
+            roles: rolesArray, // Multi-role support
             schoolId,
             wallet: walletData,
           },
@@ -80,7 +103,7 @@ export class UsersService {
       try {
         await this.create(userDto, schoolId);
         results.created++;
-        results.details.push({ email: userDto.email, status: 'SUCCESS' });
+        results.details.push({ email: userDto.email || 'N/A', status: 'SUCCESS' });
       } catch (error: any) {
         let msg = 'Erro desconhecido';
         if (error instanceof ConflictException) {
@@ -91,7 +114,7 @@ export class UsersService {
           msg = error.message;
         }
         results.errors.push({ email: userDto.email || 'N/A', error: msg });
-        results.details.push({ email: userDto.email, status: 'ERROR', message: msg });
+        results.details.push({ email: userDto.email || 'N/A', status: 'ERROR', message: msg });
       }
     }
     return results;

@@ -66,7 +66,7 @@ export default function CanteensPage() {
             ) : (
                 <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
                     {canteens.map(canteen => (
-                        <Card key={canteen.id} className="p-0 overflow-hidden hover:shadow-md transition-shadow cursor-pointer" onClick={() => router.push(`/manager/canteens/${canteen.id}`)}>
+                        <Card key={canteen.id} className="p-0 overflow-hidden hover:shadow-md transition-shadow cursor-pointer" onClick={() => router.push(`/dashboard/canteens/${canteen.id}`)}>
                             <div className={`h-2 w-full ${canteen.type === 'COMMERCIAL' ? 'bg-primary' : 'bg-blue-500'}`} />
                             <div className="p-6">
                                 <div className="flex justify-between items-start mb-4">

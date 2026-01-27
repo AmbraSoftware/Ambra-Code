@@ -20,7 +20,7 @@ import {
   ApiResponse,
 } from '@nestjs/swagger';
 import { UsersService } from './users.service';
-import { CreateUserDto } from './dto/create-user.dto';
+import { CreateUserDto } from '@nodum/shared';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { BulkCreateUserDto } from './dto/bulk-create-user.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
