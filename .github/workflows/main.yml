@@ -13,6 +13,8 @@ jobs:
       PUPPETEER_SKIP_DOWNLOAD: 'true'
       PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: 'true'
       PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+      DATABASE_URL: 'postgresql://prisma:prisma@localhost:5432/nodum?schema=public'
+      DIRECT_URL: 'postgresql://prisma:prisma@localhost:5432/nodum?schema=public'
 
     strategy:
       matrix:
@@ -30,7 +32,10 @@ jobs:
 
     # Install Root Dependencies (Turbo/Nx/Monorepo aware if needed, currently assumes standard npm workspaces)
     - name: Install Dependencies
-      run: npm ci
+      run: npm ci --include=dev
+
+    - name: Generate Prisma Client (Backend)
+      run: npm exec --workspace=apps/backend prisma generate -- --schema prisma/schema.prisma
 
     # Build Backend
     - name: Build Backend
