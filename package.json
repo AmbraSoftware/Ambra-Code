@@ -10,7 +10,7 @@
     "scripts": {
         "backend:dev": "npm run start:dev -w apps/backend",
         "backend:build": "npm run build -w apps/backend",
-        "console:dev": "npm run dev -w apps/nodum-console",
+        "console:dev": "npm run dev -w apps/ambra-console",
         "flow:dev": "npm run dev -w apps/ambra-flow",
         "food:dev": "npm run dev -w apps/ambra-food",
         "build:all": "npm run build --workspaces",
