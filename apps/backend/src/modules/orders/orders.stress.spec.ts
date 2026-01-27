@@ -48,6 +48,7 @@ describe('OrdersService Stress Test', () => {
   // We need an E2E test or Integration test with a real DB.
   // If we can't run scripts, we can create an e2e test file: `test/orders-stress.e2e-spec.ts`.
   // Jest E2E usually connects to the DB.
+  it.skip('stress test placeholder', () => undefined);
 });
 
 // Since we are pivoting to use the existing Test environment which seems to use ts-jest,

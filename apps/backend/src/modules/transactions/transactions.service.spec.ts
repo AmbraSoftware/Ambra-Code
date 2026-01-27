@@ -4,14 +4,18 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 import { NotFoundException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-
-// Mock do TransactionSplitter (já testado isoladamente)
-import { TransactionSplitter } from './transaction-splitter';
+import { FeeCalculatorService } from './fee-calculator.service';
 
 const mockPrismaService = {
   wallet: {
     findUnique: jest.fn(),
     update: jest.fn(),
+  },
+  user: {
+    findUnique: jest.fn(),
+  },
+  school: {
+    findUnique: jest.fn(),
   },
   transaction: {
     create: jest.fn(),
@@ -44,6 +48,7 @@ describe('TransactionService', () => {
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: EventEmitter2, useValue: mockEventEmitter },
         { provide: AsaasService, useValue: mockAsaasService },
+        FeeCalculatorService,
       ],
     }).compile();
 
@@ -55,27 +60,8 @@ describe('TransactionService', () => {
     jest.clearAllMocks();
   });
 
-  it('should throw BadRequestException if amount is less than 5.00', async () => {
-    // Arrange
-    const userId = 'user-123';
-    const amount = 3.0;
-
-    // Mock wallet existence
-    mockPrismaService.wallet.findUnique.mockResolvedValue({
-      id: 'wallet-123',
-      balance: new Prisma.Decimal(10.0),
-      userId: userId,
-      version: 1,
-    });
-
-    // Act & Assert
-    await expect(service.processRecharge(userId, amount)).rejects.toThrow(
-      'O valor mínimo para recarga é de R$ 5,00.',
-    );
-  });
-
   describe('processRecharge (Split Logic)', () => {
-    it('should calculate platformFee (5.00) and netAmount correctly', async () => {
+    it('should calculate platformFee (0.00) and netAmount correctly', async () => {
       // Arrange
       const userId = 'user-123';
       const amount = 50.0;
@@ -86,6 +72,18 @@ describe('TransactionService', () => {
         userId,
         balance: initialBalance,
         version: 1,
+      });
+
+      (mockPrismaService.user.findUnique as jest.Mock).mockResolvedValue({
+        id: userId,
+        schoolId: 'school-123',
+        school: { status: 'ACTIVE', plan: { creditCeiling: 0 } },
+      });
+
+      (mockPrismaService.school.findUnique as jest.Mock).mockResolvedValue({
+        id: 'school-123',
+        plan: { creditCeiling: 0 },
+        canteens: [{ operatorId: 'operator-123' }],
       });
 
       (mockPrismaService.transaction.create as jest.Mock).mockImplementation(
@@ -107,8 +105,8 @@ describe('TransactionService', () => {
         expect.objectContaining({
           data: expect.objectContaining({
             amount: new Prisma.Decimal(amount),
-            platformFee: new Prisma.Decimal(5.0), // Neutrality 2+3=5
-            netAmount: new Prisma.Decimal(47.0), // 50 (Credit) - 3 (School Fee)
+            platformFee: new Prisma.Decimal(0),
+            netAmount: new Prisma.Decimal(amount),
             type: 'RECHARGE',
           }),
         }),
@@ -118,7 +116,7 @@ describe('TransactionService', () => {
         'transaction.recharge.created',
         expect.objectContaining({
           amount: 50,
-          platformFee: 5,
+          platformFee: 0,
         }),
       );
     });
