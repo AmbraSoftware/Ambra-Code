@@ -142,7 +142,7 @@ function OperatorsTab() {
               placeholder="Buscar por nome ou CPF..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-[250px]"
+              className="w-64"
             />
           </div>
         </CardHeader>
@@ -174,7 +174,7 @@ function OperatorsTab() {
                         className={
                           operator.status === 'Ativo'
                             ? 'border-green-500 text-green-700 bg-green-50 dark:bg-green-950 dark:text-green-400'
-                            : 'border-gray-500 text-gray-700 bg-gray-50'
+                            : 'border-border text-muted-foreground bg-muted'
                         }
                       >
                         {operator.status}
@@ -336,7 +336,7 @@ function ClientsTab() {
               placeholder="Buscar por nome ou email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-[250px]"
+              className="w-64"
             />
           </div>
         </CardHeader>
@@ -370,7 +370,7 @@ function ClientsTab() {
                         className={
                           client.status === 'Ativo'
                             ? 'border-green-500 text-green-700 bg-green-50 dark:bg-green-950 dark:text-green-400'
-                            : 'border-gray-500 text-gray-700 bg-gray-50'
+                            : 'border-border text-muted-foreground bg-muted'
                         }
                       >
                         {client.status}

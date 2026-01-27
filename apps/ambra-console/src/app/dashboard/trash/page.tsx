@@ -158,7 +158,7 @@ function SystemsTab({ showInactive = false }: { showInactive?: boolean }) {
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Ações</DropdownMenuLabel>
                         <DropdownMenuItem onClick={() => handleRestoreClick(system.id)}>Restaurar</DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-500" onClick={() => handleDeleteClick(system.id)}>Excluir Permanentemente</DropdownMenuItem>
+                        <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteClick(system.id)}>Excluir Permanentemente</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -400,7 +400,7 @@ function MunicipalitiesTab() {
 
 function OperatorsTab() {
   // Fetch ALL operators (including deleted)
-  const { data: allOperators, isLoading, mutate } = useFetch<Operator[]>('/users?role=CANTEEN_OPERATOR,OPERATOR_ADMIN,SCHOOL_ADMIN&deleted=true');
+  const { data: allOperators, isLoading, mutate } = useFetch<Operator[]>('/users?role=OPERATOR_SALES,OPERATOR_MEAL,MERCHANT_ADMIN,SCHOOL_ADMIN&deleted=true');
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState<{ key: keyof Operator, direction: SortDirection } | null>({ key: 'name', direction: 'asc' });
   const [confirmOpen, setConfirmOpen] = useState(false);

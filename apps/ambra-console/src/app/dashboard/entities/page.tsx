@@ -118,7 +118,7 @@ function SystemsTab() {
               placeholder="Buscar sistema..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-[250px]"
+              className="w-64"
             />
           </div>
         </CardHeader>
@@ -258,7 +258,7 @@ function SchoolsTab() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['schools'] });
       queryClient.invalidateQueries({ queryKey: ['schools', 'count-pending'] });
-      toast({ title: "Escola aprovada com sucesso!", className: "bg-green-600 text-white" });
+      toast({ title: "Escola aprovada com sucesso!" }); // Toast padrão já tem estilo de sucesso
       setApproveDialogOpen(false);
     },
     onError: () => toast({ title: "Erro ao aprovar escola", variant: "destructive" })
@@ -356,7 +356,7 @@ function SchoolsTab() {
                     <TableCell>
                       <Badge
                         variant={school.status === 'PENDING' ? 'outline' : school.status === 'ACTIVE' ? 'default' : 'secondary'}
-                        className={school.status === 'PENDING' ? 'border-orange-500 text-orange-600 bg-orange-50' : ''}
+                        className={school.status === 'PENDING' ? 'border-orange-500 text-orange-600 bg-orange-50 dark:bg-orange-950 dark:text-orange-400' : ''}
                       >
                         {school.status === 'PENDING' ? 'Aguardando Aprovação' : school.status}
                       </Badge>
@@ -380,7 +380,7 @@ function SchoolsTab() {
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem onClick={() => { setEditSchool(school); setEditOpen(true); }}>Ver Detalhes</DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-red-600 focus:text-red-600">
+                              <DropdownMenuItem className="text-destructive focus:text-destructive">
                                 <XCircle size={14} className="mr-2" /> Rejeitar
                               </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -607,7 +607,7 @@ function OperatorsTab() {
               placeholder="Buscar operador..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-[250px]"
+              className="w-64"
             />
           </div>
         </CardHeader>
@@ -638,7 +638,7 @@ function OperatorsTab() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => { setEditOperator(op); setEditOpen(true); }}>Editar</DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-red-600" onClick={() => { setOperatorToDelete(op); setConfirmOpen(true); }}>Remover</DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive" onClick={() => { setOperatorToDelete(op); setConfirmOpen(true); }}>Remover</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -692,7 +692,7 @@ export default function EntitiesPage() {
       />
 
       <Tabs defaultValue="systems" className="space-y-4" onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4 lg:w-[600px]">
+        <TabsList className="grid w-full grid-cols-4 lg:max-w-2xl">
           <TabsTrigger value="systems" className="flex items-center gap-2">
             <Network className="h-4 w-4" />
             <span className="hidden sm:inline">Sistemas</span>

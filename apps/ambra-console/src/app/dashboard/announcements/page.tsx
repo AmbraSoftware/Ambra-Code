@@ -38,10 +38,11 @@ import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 
 // Static roles from Schema
 const roles = [
-  { id: 'GLOBAL_ADMIN', label: 'Global Admin' },
+  { id: 'SUPER_ADMIN', label: 'Super Admin' },
   { id: 'GOV_ADMIN', label: 'Gov Admin' },
   { id: 'SCHOOL_ADMIN', label: 'School Admin' },
-  { id: 'CANTEEN_OPERATOR', label: 'Operator' },
+  { id: 'OPERATOR_SALES', label: 'Operador de Vendas' },
+  { id: 'OPERATOR_MEAL', label: 'Operador de Merenda' },
   { id: 'GUARDIAN', label: 'Guardian' },
   { id: 'STUDENT', label: 'Student' }
 ];
@@ -652,7 +653,7 @@ function CampaignsTab() {
                           <DropdownMenuLabel>Ações</DropdownMenuLabel>
                           <DropdownMenuItem>Editar</DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => handleDeactivate(camp.id)} className="text-red-500 hover:text-red-600">
+                          <DropdownMenuItem onClick={() => handleDeactivate(camp.id)} className="text-destructive hover:text-destructive">
                             <Archive className="mr-2 h-4 w-4" />
                             Desativar
                           </DropdownMenuItem>

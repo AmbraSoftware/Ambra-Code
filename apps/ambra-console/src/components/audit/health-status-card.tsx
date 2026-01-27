@@ -42,7 +42,7 @@ export function HealthStatusCard({ title, value, status, icon }: HealthStatusCar
                     "text-xs",
                     statusVariant === 'green' && "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/50 dark:text-green-300",
                     statusVariant === 'yellow' && "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/50 dark:text-yellow-300",
-                    statusVariant === 'red' && "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/50 dark:text-red-300"
+                    statusVariant === 'red' && "bg-destructive/10 text-destructive border-destructive/20 dark:bg-destructive/20 dark:text-destructive"
                 )}>
                     {status}
                 </Badge>

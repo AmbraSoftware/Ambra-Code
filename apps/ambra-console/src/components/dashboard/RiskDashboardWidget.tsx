@@ -59,8 +59,8 @@ export function RiskDashboardWidget() {
         <Card className="col-span-4 border-red-200 shadow-md">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <div>
-                    <CardTitle className="text-lg font-bold text-red-900 flex items-center gap-2">
-                        <ShieldAlert className="h-5 w-5 text-red-600" />
+                    <CardTitle className="text-lg font-bold text-destructive flex items-center gap-2">
+                        <ShieldAlert className="h-5 w-5 text-destructive" />
                         Sala de Guerra (Risco)
                     </CardTitle>
                     <CardDescription>Monitoramento de Crédito e Inadimplência</CardDescription>
@@ -73,7 +73,7 @@ export function RiskDashboardWidget() {
             <CardContent>
                 <div className="flex gap-4 mb-4">
                     {hasCriticalRisk && (
-                        <Alert variant="destructive" className="flex-1 bg-red-50 border-red-200">
+                        <Alert variant="destructive" className="flex-1">
                             <AlertCircle className="h-4 w-4" />
                             <AlertTitle>Risco Crítico Detectado</AlertTitle>
                             <AlertDescription>

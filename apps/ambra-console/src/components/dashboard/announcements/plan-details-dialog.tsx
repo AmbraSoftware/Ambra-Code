@@ -161,7 +161,7 @@ export function PlanDetailsDialog({ planId, planName, open, onOpenChange }: Plan
                                                 Requerem atenção
                                             </p>
                                         </div>
-                                        <AlertCircle className="h-8 w-8 text-red-500" />
+                                        <AlertCircle className="h-8 w-8 text-destructive" />
                                     </div>
                                 </CardContent>
                             </Card>
@@ -200,7 +200,7 @@ export function PlanDetailsDialog({ planId, planName, open, onOpenChange }: Plan
                                                         {formatDate(subscriber.nextPayment)}
                                                     </TableCell>
                                                     <TableCell>
-                                                        <span className={subscriber.daysUntilNextPayment < 0 ? 'text-red-600 font-semibold' : 'text-muted-foreground'}>
+                                                        <span className={subscriber.daysUntilNextPayment < 0 ? 'text-destructive font-semibold' : 'text-muted-foreground'}>
                                                             {subscriber.daysUntilNextPayment < 0
                                                                 ? `${Math.abs(subscriber.daysUntilNextPayment)} dias atrasado`
                                                                 : `${subscriber.daysUntilNextPayment} dias`

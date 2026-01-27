@@ -55,10 +55,10 @@ export function Header() {
               <span className="sr-only">Toggle notifications</span>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-[350px]">
+          <DropdownMenuContent align="end" className="w-80">
             <DropdownMenuLabel>Notificações</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <ScrollArea className="h-[300px]">
+            <ScrollArea className="h-80">
               {notifications.length === 0 ? (
                 <div className="p-4 text-center text-sm text-muted-foreground">
                   Nenhuma notificação recente

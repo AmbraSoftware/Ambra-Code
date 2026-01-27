@@ -385,7 +385,7 @@ function LegalTab() {
                                                         <DropdownMenuLabel>Ações</DropdownMenuLabel>
                                                         <DropdownMenuItem><FileDown className="mr-2 h-4 w-4" />Baixar PDF</DropdownMenuItem>
                                                         <DropdownMenuItem>Ver Detalhes</DropdownMenuItem>
-                                                        <DropdownMenuItem className="text-red-600">Cancelar</DropdownMenuItem>
+                                                        <DropdownMenuItem className="text-destructive">Cancelar</DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
                                             </TableCell>
