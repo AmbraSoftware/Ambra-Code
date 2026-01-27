@@ -32,7 +32,7 @@ import { EditGovernmentDialog } from "@/components/dashboard/dialogs/EditGovernm
 import { CreateOperatorDialog } from "@/components/dashboard/dialogs/CreateOperatorDialog";
 import { EditOperatorDialog } from "@/components/dashboard/dialogs/EditOperatorDialog";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 
 type SortDirection = 'asc' | 'desc';
 

@@ -64,12 +64,13 @@ export default function PlansPage() {
       <PageHeader
         title="Gestão de Planos e Assinaturas"
         description="Configure os planos comerciais disponíveis para Escolas (SaaS) e Famílias (Premium)."
-      >
-        <Button onClick={() => setIsCreateOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Novo Plano
-        </Button>
-      </PageHeader>
+        actions={
+          <Button onClick={() => setIsCreateOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Novo Plano
+          </Button>
+        }
+      />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {/* KPI Cards (Optional Future) */}
