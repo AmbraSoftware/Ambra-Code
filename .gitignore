@@ -11,6 +11,10 @@ apps/*/.next/
 apps/*/dist/
 out/
 .turbo/
+*.tsbuildinfo
+
+# Trae IDE
+.trae/
 
 # Variáveis de Ambiente (Segurança)
 .env
