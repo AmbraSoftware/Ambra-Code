@@ -6,6 +6,7 @@ Este arquivo resume o estado atual do repositório para facilitar continuidade c
 
 - Workflow principal: `.github/workflows/main.yml`
 - Node: `20.x` (necessário por dependências como `resend@6.7.0`)
+- **npm Upgrade:** Workflow atualiza npm para versão mais recente (necessário para suportar `workspace:*` protocol)
 - `npm ci` usa `--include=dev`
 - Downloads de browsers desativados no CI:
   - `PUPPETEER_SKIP_DOWNLOAD=true`
@@ -14,6 +15,9 @@ Este arquivo resume o estado atual do repositório para facilitar continuidade c
 - Prisma no CI:
   - Define `DATABASE_URL` e `DIRECT_URL` dummy (apenas para permitir geração/compilação do client)
   - Executa `prisma generate` no workspace do backend antes do build
+- **Workspace Dependencies:** 
+  - `apps/ambra-flow` e `apps/backend` usam `"@nodum/shared": "workspace:*"`
+  - Requer npm 7+ (garantido pelo upgrade step no workflow)
 
 ## Backend (apps/backend)
 
