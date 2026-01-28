@@ -17,7 +17,9 @@
     "paths": {
       "@/*": [
         "src/*"
-      ]
+      ],
+      "@nodum/shared": ["../../packages/shared/src"],
+      "@nodum/shared/*": ["../../packages/shared/src/*"]
     },
     "incremental": true,
     "skipLibCheck": true,

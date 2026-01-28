@@ -36,7 +36,7 @@ export class MetricsController {
   constructor(private readonly metricsService: MetricsService) {}
 
   @Get('dashboard')
-  @Roles(UserRole.GLOBAL_ADMIN, UserRole.SCHOOL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN)
   @ApiOperation({
     summary: 'Retorna métricas completas para o dashboard administrativo',
     description:
@@ -84,7 +84,7 @@ export class MetricsController {
   }
 
   @Get('revenue')
-  @Roles(UserRole.GLOBAL_ADMIN, UserRole.SCHOOL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN)
   @ApiOperation({
     summary: 'Retorna métricas de receita por dia',
   })
@@ -106,9 +106,10 @@ export class MetricsController {
 
   @Get('top-products')
   @Roles(
-    UserRole.GLOBAL_ADMIN,
+    UserRole.SUPER_ADMIN,
     UserRole.SCHOOL_ADMIN,
-    UserRole.CANTEEN_OPERATOR,
+    UserRole.OPERATOR_SALES,
+    UserRole.OPERATOR_MEAL,
   )
   @ApiOperation({
     summary: 'Retorna os produtos mais vendidos (últimos 7 dias)',

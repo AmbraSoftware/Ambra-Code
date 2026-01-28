@@ -26,7 +26,7 @@ export class PlatformService {
 
   /**
    * Cria uma nova vertical de negócio no ecossistema NODUM.
-   * Apenas GLOBAL_ADMIN tem acesso (protegido no controller).
+   * Apenas SUPER_ADMIN tem acesso (protegido no controller).
    */
   async createSystem(dto: CreateSystemDto) {
     const existing = await this.prisma.platformSystem.findUnique({

@@ -1,40 +1,108 @@
-import { View, Text, TouchableOpacity, Image } from 'react-native';
-import { Link, useRouter } from 'expo-router';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function LandingPage() {
   const router = useRouter();
 
   return (
-    <SafeAreaView className="flex-1 bg-white justify-between p-6">
-      <View className="flex-1 items-center justify-center">
-        <View className="w-32 h-32 bg-primary rounded-full items-center justify-center mb-6">
-            {/* Placeholder Logo */}
-            <Text className="text-4xl font-bold text-white">AF</Text>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.content}>
+        <View style={styles.logo}>
+          <Text style={styles.logoText}>AF</Text>
         </View>
-        <Text className="text-3xl font-title font-bold text-gray-900 text-center mb-2">
-          Ambra Food
-        </Text>
-        <Text className="text-base text-gray-500 text-center px-4">
+        <Text style={styles.title}>Ambra Food</Text>
+        <Text style={styles.subtitle}>
           Alimentação escolar saudável, prática e segura para quem você ama.
         </Text>
       </View>
 
-      <View className="w-full space-y-4 gap-4">
+      <View style={styles.buttons}>
         <TouchableOpacity 
-          className="w-full bg-primary py-4 rounded-xl items-center shadow-sm active:opacity-90"
+          style={styles.primaryButton}
           onPress={() => router.push('/(auth)/login')}
+          activeOpacity={0.9}
         >
-          <Text className="text-white font-bold text-lg">Entrar</Text>
+          <Text style={styles.primaryButtonText}>Entrar</Text>
         </TouchableOpacity>
 
         <TouchableOpacity 
-          className="w-full bg-gray-100 py-4 rounded-xl items-center active:opacity-90"
+          style={styles.secondaryButton}
           onPress={() => router.push('/(auth)/register')}
+          activeOpacity={0.9}
         >
-          <Text className="text-gray-900 font-bold text-lg">Criar Conta</Text>
+          <Text style={styles.secondaryButtonText}>Criar Conta</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    justifyContent: 'space-between',
+    padding: 24,
+  },
+  content: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logo: {
+    width: 128,
+    height: 128,
+    backgroundColor: '#059669', // primary green
+    borderRadius: 64,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+  },
+  logoText: {
+    fontSize: 48,
+    fontWeight: 'bold',
+    color: '#ffffff',
+  },
+  title: {
+    fontSize: 30,
+    fontWeight: 'bold',
+    color: '#111827',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#6B7280',
+    textAlign: 'center',
+    paddingHorizontal: 16,
+  },
+  buttons: {
+    width: '100%',
+    gap: 16,
+  },
+  primaryButton: {
+    width: '100%',
+    backgroundColor: '#059669',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  primaryButtonText: {
+    color: '#ffffff',
+    fontWeight: 'bold',
+    fontSize: 18,
+  },
+  secondaryButton: {
+    width: '100%',
+    backgroundColor: '#F3F4F6',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  secondaryButtonText: {
+    color: '#111827',
+    fontWeight: 'bold',
+    fontSize: 18,
+  },
+});

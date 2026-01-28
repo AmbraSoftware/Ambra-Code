@@ -40,7 +40,7 @@ export class TenancyController {
   constructor(private readonly tenancyService: TenancyService) {}
 
   @Post('schools')
-  @Roles(UserRole.GLOBAL_ADMIN) // Proteção nível 101% - Apenas o Super User
+  @Roles(UserRole.SUPER_ADMIN) // Proteção nível 101% - Apenas o Super User
   @ApiOperation({
     summary: 'Inaugura uma nova escola no SaaS.',
     description:
@@ -59,7 +59,7 @@ export class TenancyController {
   }
 
   @Get('schools')
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({
     summary: 'Lista todas as instituições do ecossistema.',
     description: 'Visão geral para faturamento e gestão do SaaS.',
@@ -73,7 +73,7 @@ export class TenancyController {
   }
 
   @Patch('schools/:id')
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({
     summary: 'Atualiza uma escola existente.',
     description:
@@ -89,7 +89,7 @@ export class TenancyController {
   }
 
   @Delete('schools/:id')
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({
     summary: 'Remove uma escola do ecossistema.',
     description:
@@ -109,7 +109,7 @@ export class TenancyController {
   }
 
   @Get('governments')
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({
     summary: 'B2G: Lista todas as prefeituras e governos.',
   })
@@ -118,21 +118,21 @@ export class TenancyController {
   }
 
   @Post('governments')
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Cadastra uma nova prefeitura/governo.' })
   async createGovernment(@Body() dto: any) {
     return this.tenancyService.createGovernment(dto);
   }
 
   @Patch('governments/:id')
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Atualiza dados de uma prefeitura.' })
   async updateGovernment(@Param('id') id: string, @Body() dto: any) {
     return this.tenancyService.updateGovernment(id, dto);
   }
 
   @Delete('governments/:id')
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Remove uma prefeitura do sistema.' })
   async removeGovernment(@Param('id') id: string) {
     return this.tenancyService.deleteGovernment(id);

@@ -239,12 +239,13 @@ async function main() {
   // 6. USUÁRIOS
   const admin = await prisma.user.upsert({
     where: { email: masterEmail },
-    update: { passwordHash: hashedAdminPassword, role: UserRole.GLOBAL_ADMIN },
+    update: { passwordHash: hashedAdminPassword, role: UserRole.SUPER_ADMIN, roles: [UserRole.SUPER_ADMIN] },
     create: {
       name: 'Gabriel Nodum Master',
       email: masterEmail,
       passwordHash: hashedAdminPassword,
-      role: UserRole.GLOBAL_ADMIN,
+      role: UserRole.SUPER_ADMIN,
+      roles: [UserRole.SUPER_ADMIN],
     },
   });
 
@@ -256,12 +257,13 @@ async function main() {
   // Manager (Colégio Elite)
   const managerElite = await prisma.user.upsert({
     where: { email: 'manager@elite.com' },
-    update: { passwordHash: password123, role: UserRole.SCHOOL_ADMIN, schoolId: schoolElite.id },
+    update: { passwordHash: password123, role: UserRole.SCHOOL_ADMIN, roles: [UserRole.SCHOOL_ADMIN], schoolId: schoolElite.id },
     create: {
       name: 'Diretor Elite',
       email: 'manager@elite.com',
       passwordHash: password123,
       role: UserRole.SCHOOL_ADMIN,
+      roles: [UserRole.SCHOOL_ADMIN],
       schoolId: schoolElite.id,
       termsAccepted: true,
       termsVersion: 'v1',
@@ -269,15 +271,15 @@ async function main() {
   });
 
   // Operator (Colégio Elite)
-  // Need to verify if UserRole has CANTEEN_OPERATOR
   const operatorElite = await prisma.user.upsert({
     where: { email: 'caixa@elite.com' },
-    update: { passwordHash: password123, role: UserRole.CANTEEN_OPERATOR, schoolId: schoolElite.id },
+    update: { passwordHash: password123, role: UserRole.OPERATOR_SALES, roles: [UserRole.OPERATOR_SALES], schoolId: schoolElite.id },
     create: {
       name: 'Operador Caixa 01',
       email: 'caixa@elite.com',
       passwordHash: password123,
-      role: UserRole.CANTEEN_OPERATOR,
+      role: UserRole.OPERATOR_SALES,
+      roles: [UserRole.OPERATOR_SALES],
       schoolId: schoolElite.id,
       termsAccepted: true,
       termsVersion: 'v1',
@@ -287,12 +289,13 @@ async function main() {
   // Student (Colégio Elite)
   const studentElite = await prisma.user.upsert({
     where: { email: 'aluno@elite.com' },
-    update: { passwordHash: password123, role: UserRole.STUDENT, schoolId: schoolElite.id },
+    update: { passwordHash: password123, role: UserRole.STUDENT, roles: [UserRole.STUDENT], schoolId: schoolElite.id },
     create: {
       name: 'Aluno Teste',
       email: 'aluno@elite.com',
       passwordHash: password123,
       role: UserRole.STUDENT,
+      roles: [UserRole.STUDENT],
       schoolId: schoolElite.id,
       termsAccepted: true,
       termsVersion: 'v1',

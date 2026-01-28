@@ -16,7 +16,7 @@ type OperatorWithAsaas = Operator & { asaasId?: string; asaasWalletId?: string }
 
 export function AsaasHealthTab() {
     const { data: schools, isLoading: isLoadingSchools } = useFetch<SchoolWithAsaas[]>('/tenancy/schools');
-    const { data: operators, isLoading: isLoadingOperators } = useFetch<OperatorWithAsaas[]>('/users?role=OPERATOR_ADMIN,CANTEEN_OPERATOR'); // Adjust endpoint as needed
+    const { data: operators, isLoading: isLoadingOperators } = useFetch<OperatorWithAsaas[]>('/users?role=MERCHANT_ADMIN,OPERATOR_SALES,OPERATOR_MEAL'); // Adjust endpoint as needed
 
     const [searchTerm, setSearchTerm] = useState("");
 

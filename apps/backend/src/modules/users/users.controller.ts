@@ -20,7 +20,7 @@ import {
   ApiResponse,
 } from '@nestjs/swagger';
 import { UsersService } from './users.service';
-import { CreateUserDto } from '@nodum/shared';
+import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { BulkCreateUserDto } from './dto/bulk-create-user.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -45,7 +45,7 @@ export class UsersController {
   ) { }
 
   @Post()
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.GLOBAL_ADMIN, UserRole.OPERATOR_ADMIN)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN, UserRole.MERCHANT_ADMIN)
   @UseInterceptors(AuditInterceptor)
   @Audit('CREATE_USER', 'User')
   @ApiOperation({
@@ -61,7 +61,7 @@ export class UsersController {
     this.cacheService.del(cacheKey);
 
     // Operator validation
-    if (user.role === UserRole.OPERATOR_ADMIN && !user.canteenId) {
+    if (user.role === UserRole.MERCHANT_ADMIN && !user.canteenId) {
         throw new BadRequestException('Operador sem cantina vinculada não pode criar usuários.');
     }
 
@@ -70,7 +70,7 @@ export class UsersController {
   }
 
   @Post('bulk')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN)
   @UseInterceptors(AuditInterceptor)
   @Audit('BULK_CREATE_USERS', 'User')
   @ApiOperation({
@@ -85,7 +85,7 @@ export class UsersController {
   }
 
   @Get()
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.GLOBAL_ADMIN, UserRole.OPERATOR_ADMIN)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN, UserRole.MERCHANT_ADMIN)
   @ApiOperation({
     summary: 'Lista todos os utilizadores da escola (Isolamento RLS ativo).',
     description: '[v4.5] Suporta filtros de auditoria: ?filter=negative_balance ou ?filter=inactive_30d',
@@ -108,7 +108,7 @@ export class UsersController {
   }
 
   @Get('stats')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.GLOBAL_ADMIN, UserRole.OPERATOR_ADMIN)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN, UserRole.MERCHANT_ADMIN)
   @ApiOperation({
     summary: '[v4.5] Retorna estatísticas de alunos para contadores de filtros.',
     description: 'Endpoint otimizado com cache de 60s para exibir contadores nos botões de filtro (Total, Saldo Negativo, Inativos 30d).',
@@ -148,7 +148,7 @@ export class UsersController {
   }
 
   @Get('export-csv')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.GLOBAL_ADMIN, UserRole.OPERATOR_ADMIN)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN, UserRole.MERCHANT_ADMIN)
   @ApiOperation({
     summary: '[v4.5] Exporta relatório financeiro em CSV com conformidade brasileira.',
     description: 'Gera CSV formatado para Excel BR (separador ;, fuso horário Brasília).',
@@ -185,7 +185,7 @@ export class UsersController {
   }
 
   @Patch(':id')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.GLOBAL_ADMIN, UserRole.OPERATOR_ADMIN)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN, UserRole.MERCHANT_ADMIN)
   @UseInterceptors(AuditInterceptor)
   @Audit('UPDATE_USER', 'User')
   @ApiOperation({ summary: 'Atualiza dados de um utilizador.' })
@@ -197,7 +197,7 @@ export class UsersController {
   }
 
   @Delete(':id')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.GLOBAL_ADMIN, UserRole.OPERATOR_ADMIN)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN, UserRole.MERCHANT_ADMIN)
   @UseInterceptors(AuditInterceptor)
   @Audit('DELETE_USER', 'User')
   @ApiOperation({
@@ -213,7 +213,7 @@ export class UsersController {
   }
 
   @Delete(':id/permanent')
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({
     summary: 'Exclusão Permanente (Hard Delete). CUIDADO!',
   })
@@ -222,7 +222,7 @@ export class UsersController {
   }
 
   @Patch(':id/restore')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.GLOBAL_ADMIN, UserRole.OPERATOR_ADMIN)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN, UserRole.MERCHANT_ADMIN)
   @UseInterceptors(AuditInterceptor)
   @Audit('RESTORE_USER', 'User')
   async restore(

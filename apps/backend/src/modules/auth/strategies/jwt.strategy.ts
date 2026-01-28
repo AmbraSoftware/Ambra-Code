@@ -5,9 +5,11 @@ import { PrismaService } from '../../../prisma/prisma.service';
 // FIX: Replaced failing import with a local type alias to resolve the type error.
 // import { UserRole } from '@prisma/client';
 type UserRole =
-  | 'GLOBAL_ADMIN'
+  | 'SUPER_ADMIN'
   | 'SCHOOL_ADMIN'
-  | 'CANTEEN_OPERATOR'
+  | 'MERCHANT_ADMIN'
+  | 'OPERATOR_SALES'
+  | 'OPERATOR_MEAL'
   | 'GUARDIAN'
   | 'STUDENT';
 

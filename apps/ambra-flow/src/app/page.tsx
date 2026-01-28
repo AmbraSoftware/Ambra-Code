@@ -38,15 +38,15 @@ export default function LandingPage() {
                 role === UserRole.MERCHANT_ADMIN || 
                 role === UserRole.SCHOOL_ADMIN ||
                 role === UserRole.SUPER_ADMIN ||
-                role === 'OPERATOR_ADMIN' ||
-                role === 'GLOBAL_ADMIN'
+                role === 'MERCHANT_ADMIN' ||
+                role === 'SUPER_ADMIN'
             );
 
             // Verifica se é Operator
             const isOperator = userRoles.some((role: string) => 
                 role === UserRole.OPERATOR_SALES || 
                 role === UserRole.OPERATOR_MEAL ||
-                role === 'CANTEEN_OPERATOR'
+                role === 'OPERATOR_SALES' || role === 'OPERATOR_MEAL'
             );
 
             // Redireciona baseado no role

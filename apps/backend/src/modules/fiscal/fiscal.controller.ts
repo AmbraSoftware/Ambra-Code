@@ -19,7 +19,7 @@ export class FiscalController {
   constructor(private readonly fiscalService: FiscalService) {}
 
   @Get('invoices')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.GLOBAL_ADMIN, UserRole.GOV_ADMIN)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN, UserRole.GOV_ADMIN)
   @ApiOperation({ summary: 'Lista as últimas 50 notas fiscais (RLS Ativo).' })
   @ApiResponse({
     status: 200,
@@ -32,7 +32,7 @@ export class FiscalController {
   }
 
   @Get('commissions/pending')
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({
     summary: 'Lista comissões acumuladas aguardando faturamento.',
   })

@@ -97,7 +97,7 @@ export class WalletService {
         // Validação de acesso (Admins ou Responsável vinculado)
         const isAdmin =
           user.role === UserRole.SCHOOL_ADMIN ||
-          user.role === UserRole.GLOBAL_ADMIN;
+          user.role === UserRole.SUPER_ADMIN;
 
         const isLinkedGuardian =
           dependent.guardianRelations && dependent.guardianRelations.length > 0;
@@ -148,7 +148,7 @@ export class WalletService {
     // 1. Administradores têm passe livre (dentro da escola via RLS)
     if (
       user.role === UserRole.SCHOOL_ADMIN ||
-      user.role === UserRole.GLOBAL_ADMIN
+      user.role === UserRole.SUPER_ADMIN
     )
       return;
 

@@ -16,11 +16,11 @@ import {
 import {
   LayoutDashboard,
   Users,
-  Banknote,
+  Shield,
   LogOut,
   Building,
   Megaphone,
-  Package,
+  DollarSign,
   Trash2,
 } from "lucide-react";
 import { Button } from "../ui/button";
@@ -42,10 +42,10 @@ import { ClientOnly } from "../client-only";
 const navItems = [
   { href: "/dashboard", icon: <LayoutDashboard />, label: "Visão Geral" },
   { href: "/dashboard/entities", icon: <Building />, label: "Entidades" },
-  { href: "/dashboard/plans", icon: <Package />, label: "Planos" },
   { href: "/dashboard/users", icon: <Users />, label: "Usuários" },
-  { href: "/dashboard/financial-audit", icon: <Banknote />, label: "Auditoria" },
+  { href: "/dashboard/commercial", icon: <DollarSign />, label: "Comercial" },
   { href: "/dashboard/announcements", icon: <Megaphone />, label: "Anúncios" },
+  { href: "/dashboard/audit", icon: <Shield />, label: "Auditoria" },
   { href: "/dashboard/trash", icon: <Trash2 />, label: "Lixeira" },
 ];
 

@@ -31,19 +31,6 @@ export function Header() {
           {isCensored ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
           <span className="sr-only">{isCensored ? "Mostrar dados sensíveis" : "Ocultar dados sensíveis"}</span>
         </Button>
-        <div className="flex items-center gap-2">
-          <div className="relative h-2 w-2">
-            <div className={cn("absolute h-2 w-2 rounded-full bg-primary")}></div>
-            <div className={cn("absolute h-2 w-2 animate-ping rounded-full bg-primary")}></div>
-          </div>
-          <span className="text-sm text-muted-foreground hidden md:inline">System Latency: <span className="text-foreground font-medium font-code">12ms</span></span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="relative h-2 w-2">
-            <div className={cn("absolute h-2 w-2 rounded-full bg-primary")}></div>
-          </div>
-          <span className="text-sm text-muted-foreground hidden md:inline">Gateway: <span className="text-foreground font-medium">Connected</span></span>
-        </div>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

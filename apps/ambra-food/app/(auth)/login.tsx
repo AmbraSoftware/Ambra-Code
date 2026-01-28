@@ -2,7 +2,8 @@ import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState } from 'react';
-import { api } from '../../services/api';
+import { LoginDto, UserRole } from '../../types';
+import { authAPI } from '../../services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function LoginScreen() {
@@ -12,20 +13,50 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
+    // Validação básica
     if (!email || !password) {
       Alert.alert('Erro', 'Preencha todos os campos.');
       return;
     }
 
+    // Validação de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      Alert.alert('Erro', 'Digite um email válido.');
+      return;
+    }
+
+    // Validação de senha mínima (8 caracteres conforme LoginDto)
+    if (password.length < 8) {
+      Alert.alert('Erro', 'A senha deve ter no mínimo 8 caracteres.');
+      return;
+    }
+
     setLoading(true);
     try {
-      const response = await api.post('/auth/login', { email, password });
-      const { access_token, user } = response.data;
+      // Usa LoginDto do @nodum/shared
+      const credentials: LoginDto = { email, password };
+      const { access_token, user } = await authAPI.login(credentials);
 
+      // Verifica se o usuário tem role GUARDIAN ou STUDENT
+      const hasAllowedRole = user.roles.some(
+        (role) => role === UserRole.GUARDIAN || role === UserRole.STUDENT
+      );
+
+      if (!hasAllowedRole) {
+        Alert.alert(
+          'Acesso Negado',
+          'Este app é exclusivo para Pais/Responsáveis e Alunos.'
+        );
+        return;
+      }
+
+      // Armazena token e dados do usuário
       await AsyncStorage.setItem('token', access_token);
       await AsyncStorage.setItem('user', JSON.stringify(user));
 
-      router.replace('/(tabs)/home');
+      // Redireciona para a tela de wallet (será implementada a seguir)
+      router.replace('/(tabs)/wallet');
     } catch (error: any) {
       const msg = error.response?.data?.message || 'Falha no login. Verifique suas credenciais.';
       Alert.alert('Erro', msg);

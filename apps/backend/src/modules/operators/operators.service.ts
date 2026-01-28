@@ -119,11 +119,11 @@ export class OperatorsService {
     
     // Se o usuário tem um operatorId direto (assumindo que User tem esse campo, se não, usamos a lógica da cantina)
     // No schema atual, o vínculo pode ser indireto. Vamos verificar se o user é um operador.
-    // Para simplificar, assumimos que o OPERATOR_ADMIN foi criado junto com o Operator.
+    // Para simplificar, assumimos que o MERCHANT_ADMIN foi criado junto com o Operator.
     
     // Buscar se o usuário administra alguma cantina ou operador
     // Esta lógica depende do seu schema exato. 
-    // Vamos assumir que o usuário logado (OPERATOR_ADMIN) deve estar vinculado a uma cantina ou operador.
+    // Vamos assumir que o usuário logado (MERCHANT_ADMIN) deve estar vinculado a uma cantina ou operador.
     
     // Alternativa: Se o usuário ainda não tem cantina, ele pode estar "solto".
     // Mas ele precisa estar atrelado a um `Operator` (entidade fiscal).
@@ -144,10 +144,10 @@ export class OperatorsService {
         operatorId = canteen?.operatorId || null;
     } else {
         // Tentar encontrar uma cantina onde este usuário é staff?
-        // Ou assumir que o usuário DEVE ter um operatorId no payload do token se for OPERATOR_ADMIN?
+        // Ou assumir que o usuário DEVE ter um operatorId no payload do token se for MERCHANT_ADMIN?
         // Se não tiver, vamos buscar a primeira cantina vinculada a ele (se houver relação N:N)
         
-        // Simplificação: Vamos assumir que o usuário OPERATOR_ADMIN tem acesso a um Operator.
+        // Simplificação: Vamos assumir que o usuário MERCHANT_ADMIN tem acesso a um Operator.
         // Se o seu sistema permite múltiplos operadores, isso precisa ser revisto.
         // Por hora, vamos lançar erro se não encontrar.
         throw new BadRequestException('Usuário não está vinculado a uma operação ativa. Contate o suporte.');

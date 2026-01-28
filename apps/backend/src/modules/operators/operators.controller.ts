@@ -13,7 +13,7 @@ export class OperatorsController {
 
   @Post()
   @UseGuards(JwtAuthGuard)
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN)
   async create(@Body() data: any) {
     // Validation should be added (DTO)
     return this.operatorsService.createOperator(data);
@@ -21,14 +21,14 @@ export class OperatorsController {
 
   @Get()
   @UseGuards(JwtAuthGuard)
-  @Roles(UserRole.GLOBAL_ADMIN, UserRole.OPERATOR_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.MERCHANT_ADMIN)
   async findAll() {
     return this.operatorsService.findAll();
   }
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard)
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Atualiza dados de um operador (Global Admin)' })
   async update(@Param('id') id: string, @Body() data: any) {
     return this.operatorsService.update(id, data);
@@ -36,7 +36,7 @@ export class OperatorsController {
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Remove um operador (Global Admin)' })
   async remove(@Param('id') id: string) {
     return this.operatorsService.remove(id);
@@ -44,7 +44,7 @@ export class OperatorsController {
 
   @Post('link-school')
   @UseGuards(JwtAuthGuard)
-  @Roles(UserRole.OPERATOR_ADMIN)
+  @Roles(UserRole.MERCHANT_ADMIN)
   @ApiOperation({ summary: 'Vincula o operador a uma escola via código de acesso' })
   async linkSchool(@Request() req, @Body() body: { accessCode: string }) {
     if (!body.accessCode) {

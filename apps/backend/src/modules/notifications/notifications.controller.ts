@@ -36,7 +36,7 @@ export class NotificationsController {
   constructor(private readonly notificationService: NotificationService) {}
 
   @Post('broadcast')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN)
   @UseInterceptors(AuditInterceptor)
   @Audit('SEND_BROADCAST', 'Notification')
   @ApiOperation({
@@ -49,7 +49,7 @@ export class NotificationsController {
     @CurrentUser() user: AuthenticatedUserPayload,
   ) {
     // Se for SCHOOL_ADMIN, força o schoolId dele.
-    // Se for GLOBAL_ADMIN, poderia permitir schoolId opcional no DTO,
+    // Se for SUPER_ADMIN, poderia permitir schoolId opcional no DTO,
     // mas por segurança e simplicidade, vamos assumir o contexto atual.
     const schoolId = user.schoolId || undefined;
 

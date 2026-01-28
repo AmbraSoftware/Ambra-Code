@@ -5,6 +5,16 @@
  *              to ensure type safety and data consistency.
  */
 
+// UserRole enum - duplicated from @prisma/client for frontend use
+export enum UserRole {
+  SUPER_ADMIN = 'SUPER_ADMIN',
+  MERCHANT_ADMIN = 'MERCHANT_ADMIN',
+  SCHOOL_ADMIN = 'SCHOOL_ADMIN',
+  OPERATOR_SALES = 'OPERATOR_SALES',
+  STUDENT = 'STUDENT',
+  GUARDIAN = 'GUARDIAN',
+}
+
 export interface System {
   id: string;
   name: string;

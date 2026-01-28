@@ -48,8 +48,8 @@ export default function ManagerLayout({
                 role === UserRole.MERCHANT_ADMIN || 
                 role === UserRole.SCHOOL_ADMIN ||
                 role === UserRole.SUPER_ADMIN ||
-                role === 'OPERATOR_ADMIN' || // Legacy
-                role === 'GLOBAL_ADMIN' // Legacy
+                role === 'MERCHANT_ADMIN' ||
+                role === 'SUPER_ADMIN'
             );
 
             if (!isManager) {

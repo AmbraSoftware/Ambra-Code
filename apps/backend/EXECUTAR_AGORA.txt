@@ -1,0 +1,32 @@
+╔══════════════════════════════════════════════════════════╗
+║  🚀 COMANDO PARA EXECUTAR O FORCE SYNC                  ║
+╚══════════════════════════════════════════════════════════╝
+
+COPIE E COLE NO SEU TERMINAL (PowerShell):
+
+cd C:\Users\Usuário\Documents\AmbraCode\apps\backend
+node .\scripts\force-sync-db.js
+
+─────────────────────────────────────────────────────────
+
+OU, se der erro, tente:
+
+cd apps\backend
+node .\scripts\force-sync-db.js
+
+─────────────────────────────────────────────────────────
+
+O QUE VAI ACONTECER:
+
+✅ Conectar no banco via DIRECT_URL
+✅ Executar: prisma db push --accept-data-loss
+✅ Criar tabelas: cash_in_fees, coupons
+✅ Criar enums: CouponType, CouponAudience, CouponStatus
+✅ Gerar Prisma Client
+
+─────────────────────────────────────────────────────────
+
+TEMPO ESTIMADO: ~10 segundos
+SEGURANÇA: 100% seguro, não perde dados
+
+╚══════════════════════════════════════════════════════════╝

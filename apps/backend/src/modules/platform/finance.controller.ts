@@ -16,7 +16,7 @@ import { UserRole } from '@prisma/client';
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class FinanceController {
   @Get('costs')
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Lista custos operacionais da plataforma.' })
   async getCosts() {
     return [

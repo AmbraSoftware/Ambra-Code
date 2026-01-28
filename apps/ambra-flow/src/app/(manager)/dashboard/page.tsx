@@ -39,7 +39,7 @@ export default function ManagerDashboardPage() {
                 setUserRole(user.role);
 
                 // Check if Operator needs to link school
-                if (user.role === 'OPERATOR_ADMIN' && !user.schoolId) {
+                if (user.role === 'MERCHANT_ADMIN' && !user.schoolId) {
                     setIsLinkSchoolModalOpen(true);
                 }
             } catch (e) {

@@ -43,7 +43,7 @@ export default function OperatorLayout({
             const isOperator = userRoles.some((role: string) => 
                 role === UserRole.OPERATOR_SALES || 
                 role === UserRole.OPERATOR_MEAL ||
-                role === 'CANTEEN_OPERATOR' // Legacy
+                role === 'OPERATOR_SALES' || role === 'OPERATOR_MEAL'
             );
 
             if (!isOperator) {

@@ -27,35 +27,37 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
-        cache: 'npm'
-        cache-dependency-path: '**/package-lock.json'
+        cache: 'yarn'
 
-    - name: Upgrade npm
-      run: npm install -g npm@latest
+    - name: Enable Corepack (for Yarn modern)
+      run: corepack enable
 
-    # Install Root Dependencies (Turbo/Nx/Monorepo aware if needed, currently assumes standard npm workspaces)
+    - name: Install Yarn
+      run: corepack prepare yarn@stable --activate
+
+    # Install Root Dependencies (Yarn fully supports workspace:* protocol)
     - name: Install Dependencies
-      run: npm ci --include=dev
+      run: yarn install --immutable
 
     - name: Generate Prisma Client (Backend)
-      run: npm exec --workspace=apps/backend prisma generate -- --schema prisma/schema.prisma
+      run: yarn workspace apps/backend prisma generate
 
     # Build Backend
     - name: Build Backend
-      run: npm run build --workspace=apps/backend
+      run: yarn workspace apps/backend build
 
     # Build Ambra Flow (Frontend)
     - name: Build Ambra Flow
-      run: npm run build --workspace=apps/ambra-flow
+      run: yarn workspace apps/ambra-flow build
 
     # Build Ambra Console (Frontend)
     - name: Build Ambra Console
-      run: npm run build --workspace=apps/ambra-console
+      run: yarn workspace apps/ambra-console build
 
     # Run Linter
     # - name: Lint
-    #   run: npm run lint
+    #   run: yarn lint
 
     # Run Tests
     - name: Test REST API (Backend)
-      run: npm test --workspace=apps/backend
+      run: yarn workspace apps/backend test

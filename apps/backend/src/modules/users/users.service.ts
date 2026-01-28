@@ -5,7 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CreateUserDto } from '@nodum/shared';
+import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InvitationStatus, UserRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
@@ -24,7 +24,7 @@ export class UsersService {
 
     // Validação: email obrigatório para alguns tipos de usuário
     // Operadores podem ter email opcional (gerado automaticamente)
-    const isOperator = role === 'OPERATOR_SALES' || role === 'OPERATOR_MEAL' || role === 'CANTEEN_OPERATOR';
+    const isOperator = role === 'OPERATOR_SALES' || role === 'OPERATOR_MEAL';
     if (!isOperator && !userData.email) {
       throw new BadRequestException('Email é obrigatório para este tipo de usuário.');
     }

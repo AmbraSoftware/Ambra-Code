@@ -41,7 +41,7 @@ export class TransactionsController {
 
   @Post('recharge')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Realiza recarga manual de saldo (Admin).' })
   async createRecharge(@Body() body: { userId: string; amount: number }) {
     return this.transactionsService.processRecharge(body.userId, body.amount);

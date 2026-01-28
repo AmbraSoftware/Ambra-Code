@@ -14,7 +14,7 @@ import { AuditModule } from './modules/audit/audit.module';
 import { MetricsModule } from './modules/metrics/metrics.module';
 import { StorageModule } from './modules/storage/storage.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
-import { QueueModule } from './modules/queue/queue.module';
+// import { QueueModule } from './modules/queue/queue.module'; // DESABILITADO: Redis atingiu limite
 import { TasksModule } from './modules/tasks/tasks.module';
 
 // --- 2. BUSINESS DOMAIN MODULES ---
@@ -88,7 +88,7 @@ import { TenantThrottlerGuard } from './common/guards/tenant-throttler.guard';
     MetricsModule,
     StorageModule,
     NotificationsModule,
-    QueueModule,
+    // QueueModule, // DESABILITADO: Redis atingiu limite (não bloqueia MVP)
     TasksModule,
 
     // D. Domain Layer

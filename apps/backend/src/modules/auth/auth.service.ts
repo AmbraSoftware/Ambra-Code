@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../prisma/prisma.service';
-import { LoginDto } from '@nodum/shared';
+import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
 import { UserRole, SchoolStatus } from '@prisma/client';
 import { UserProfileDto } from './dto/user-payload.dto';
@@ -116,7 +116,7 @@ export class AuthService {
    */
   private validateTenantAccess(roles: UserRole[], schoolStatus?: SchoolStatus) {
     // [v5.0] Multi-Role Support
-    if (roles.includes('SUPER_ADMIN' as UserRole) || roles.includes('GLOBAL_ADMIN' as UserRole)) return;
+    if (roles.includes('SUPER_ADMIN' as UserRole)) return;
 
     if (!schoolStatus || schoolStatus !== SchoolStatus.ACTIVE) {
       throw new ForbiddenException(

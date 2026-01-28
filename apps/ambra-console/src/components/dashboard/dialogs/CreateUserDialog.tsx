@@ -6,21 +6,23 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/lib/api";
 import { PlusCircle, Loader2 } from "lucide-react";
 import { useSchools } from "@/hooks/use-api";
+import { UserRole } from "@/types";
 
-// Schema handles all potential user fields
+// Schema com suporte a multi-role
 const formSchema = z.object({
     name: z.string().min(2, { message: "Nome é obrigatório" }),
-    email: z.string().email({ message: "Email inválido" }),
+    email: z.string().email({ message: "Email inválido" }).optional(),
     document: z.string().optional(),
     password: z.string().min(6, { message: "Senha deve ter no mínimo 6 caracteres" }),
-    role: z.string().min(1, { message: "Selecione uma função" }),
+    roles: z.array(z.nativeEnum(UserRole)).min(1, { message: "Selecione pelo menos uma função" }),
     schoolId: z.string().uuid().optional().or(z.literal('')),
     nfcId: z.string().optional(),
 });
@@ -43,21 +45,36 @@ export function CreateUserDialog({ onSuccess, defaultRole, triggerLabel = "Adici
             email: "",
             document: "",
             password: "",
-            role: defaultRole || "STUDENT",
+            roles: defaultRole ? [defaultRole as UserRole] : [UserRole.STUDENT],
             schoolId: "",
             nfcId: ""
         },
     });
 
+    // Watch selected roles for UI
+    const selectedRoles = form.watch("roles") || [];
+
     async function onSubmit(values: z.infer<typeof formSchema>) {
         try {
-            // Clean up empty strings to undefined if backend expects
-            const payload = {
-                ...values,
-                schoolId: values.schoolId === "" ? undefined : values.schoolId,
-                document: values.document === "" ? undefined : values.document,
-                nfcId: values.nfcId === "" ? undefined : values.nfcId,
+            // Usa CreateUserDto do shared para type safety
+            const payload: CreateUserDto = {
+                name: values.name,
+                email: values.email && values.email.trim() ? values.email.trim() : undefined,
+                password: values.password,
+                roles: values.roles, // Array de roles
+                role: values.roles[0], // Mantém role para compatibilidade (primeira role)
+                taxId: values.document && values.document.trim() ? values.document.trim() : undefined,
+                // Campos opcionais
+                canteenId: undefined, // Será definido depois se necessário
             };
+
+            // Adiciona campos opcionais se fornecidos
+            if (values.schoolId && values.schoolId !== "") {
+                (payload as any).schoolId = values.schoolId;
+            }
+            if (values.nfcId && values.nfcId.trim()) {
+                (payload as any).nfcId = values.nfcId.trim();
+            }
 
             await api.post('/users', payload);
 
@@ -71,10 +88,19 @@ export function CreateUserDialog({ onSuccess, defaultRole, triggerLabel = "Adici
             if (onSuccess) onSuccess();
         } catch (error: any) {
             console.error(error);
+            // Extrai mensagem amigável do backend
+            const errorMessage = error.response?.data?.message || 
+                                error.response?.data?.error ||
+                                (error.response?.status === 409 ? "Este email já está cadastrado no sistema." :
+                                 error.response?.status === 400 ? "Dados inválidos. Verifique os campos preenchidos." :
+                                 error.response?.status === 401 ? "Você não tem permissão para realizar esta ação." :
+                                 error.response?.status === 500 ? "Erro interno do servidor. Tente novamente mais tarde." :
+                                 "Ocorreu um erro inesperado. Tente novamente.");
+            
             toast({
                 variant: "destructive",
                 title: "Erro ao criar usuário",
-                description: error.response?.data?.message || "Ocorreu um erro inesperado.",
+                description: errorMessage,
             });
         }
     }
@@ -155,60 +181,173 @@ export function CreateUserDialog({ onSuccess, defaultRole, triggerLabel = "Adici
                             />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <FormField
-                                control={form.control}
-                                name="role"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Função (Role)</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                            <FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Selecione..." />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                <SelectItem value="STUDENT">Estudante (Client)</SelectItem>
-                                                <SelectItem value="GUARDIAN">Responsável (Client)</SelectItem>
-                                                <SelectItem value="CANTEEN_OPERATOR">Operador de Cantina</SelectItem>
-                                                <SelectItem value="OPERATOR_ADMIN">Admin da Operadora</SelectItem>
-                                                <SelectItem value="SCHOOL_ADMIN">Admin da Escola</SelectItem>
-                                                <SelectItem value="GOV_ADMIN">Gestor Público (Gov)</SelectItem>
-                                                <SelectItem value="SYSTEM_ADMIN">Admin do Sistema (Vertical)</SelectItem>
-                                                <SelectItem value="GLOBAL_ADMIN">Super Admin (Nodum)</SelectItem>
-                                                <SelectItem value="RETIRED">Inativo/Aposentado</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                        <FormField
+                            control={form.control}
+                            name="roles"
+                            render={() => (
+                                <FormItem>
+                                    <div className="mb-4">
+                                        <FormLabel className="text-base">Funções (Roles)</FormLabel>
+                                        <FormDescription>
+                                            Selecione uma ou mais funções para o usuário. Pelo menos uma é obrigatória.
+                                        </FormDescription>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {/* Admin Roles */}
+                                        <div className="space-y-2">
+                                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Administração</p>
+                                            {[
+                                                { value: UserRole.SUPER_ADMIN, label: "Super Admin" },
+                                                { value: UserRole.SCHOOL_ADMIN, label: "Admin da Escola" },
+                                                { value: UserRole.MERCHANT_ADMIN, label: "Admin da Cantina" },
+                                            ].map((role) => (
+                                                <FormField
+                                                    key={role.value}
+                                                    control={form.control}
+                                                    name="roles"
+                                                    render={({ field }) => {
+                                                        return (
+                                                            <FormItem
+                                                                key={role.value}
+                                                                className="flex flex-row items-start space-x-3 space-y-0"
+                                                            >
+                                                                <FormControl>
+                                                                    <Checkbox
+                                                                        checked={field.value?.includes(role.value)}
+                                                                        onCheckedChange={(checked) => {
+                                                                            return checked
+                                                                                ? field.onChange([...field.value, role.value])
+                                                                                : field.onChange(
+                                                                                      field.value?.filter(
+                                                                                          (value) => value !== role.value
+                                                                                      )
+                                                                                  );
+                                                                        }}
+                                                                    />
+                                                                </FormControl>
+                                                                <FormLabel className="font-normal cursor-pointer">
+                                                                    {role.label}
+                                                                </FormLabel>
+                                                            </FormItem>
+                                                        );
+                                                    }}
+                                                />
+                                            ))}
+                                        </div>
 
-                            <FormField
-                                control={form.control}
-                                name="schoolId"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Escola Vinculada (Opcional)</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                            <FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Selecione..." />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                <SelectItem value="unassigned">Nenhuma</SelectItem>
-                                                {schools?.map((s) => (
-                                                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </div>
+                                        {/* Operator Roles */}
+                                        <div className="space-y-2">
+                                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Operação</p>
+                                            {[
+                                                { value: UserRole.OPERATOR_SALES, label: "Operador de Vendas" },
+                                                { value: UserRole.OPERATOR_MEAL, label: "Operador de Merenda" },
+                                                // CANTEEN_OPERATOR removido - usar OPERATOR_SALES ou OPERATOR_MEAL
+                                            ].map((role) => (
+                                                <FormField
+                                                    key={role.value}
+                                                    control={form.control}
+                                                    name="roles"
+                                                    render={({ field }) => {
+                                                        return (
+                                                            <FormItem
+                                                                key={role.value}
+                                                                className="flex flex-row items-start space-x-3 space-y-0"
+                                                            >
+                                                                <FormControl>
+                                                                    <Checkbox
+                                                                        checked={field.value?.includes(role.value)}
+                                                                        onCheckedChange={(checked) => {
+                                                                            return checked
+                                                                                ? field.onChange([...field.value, role.value])
+                                                                                : field.onChange(
+                                                                                      field.value?.filter(
+                                                                                          (value) => value !== role.value
+                                                                                      )
+                                                                                  );
+                                                                        }}
+                                                                    />
+                                                                </FormControl>
+                                                                <FormLabel className="font-normal cursor-pointer">
+                                                                    {role.label}
+                                                                </FormLabel>
+                                                            </FormItem>
+                                                        );
+                                                    }}
+                                                />
+                                            ))}
+                                        </div>
+
+                                        {/* Client Roles */}
+                                        <div className="space-y-2">
+                                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Clientes</p>
+                                            {[
+                                                { value: UserRole.STUDENT, label: "Estudante" },
+                                                { value: UserRole.GUARDIAN, label: "Responsável" },
+                                            ].map((role) => (
+                                                <FormField
+                                                    key={role.value}
+                                                    control={form.control}
+                                                    name="roles"
+                                                    render={({ field }) => {
+                                                        return (
+                                                            <FormItem
+                                                                key={role.value}
+                                                                className="flex flex-row items-start space-x-3 space-y-0"
+                                                            >
+                                                                <FormControl>
+                                                                    <Checkbox
+                                                                        checked={field.value?.includes(role.value)}
+                                                                        onCheckedChange={(checked) => {
+                                                                            return checked
+                                                                                ? field.onChange([...field.value, role.value])
+                                                                                : field.onChange(
+                                                                                      field.value?.filter(
+                                                                                          (value) => value !== role.value
+                                                                                      )
+                                                                                  );
+                                                                        }}
+                                                                    />
+                                                                </FormControl>
+                                                                <FormLabel className="font-normal cursor-pointer">
+                                                                    {role.label}
+                                                                </FormLabel>
+                                                            </FormItem>
+                                                        );
+                                                    }}
+                                                />
+                                            ))}
+                                        </div>
+
+                                        {/* Legacy Roles removidos - usar MERCHANT_ADMIN e SUPER_ADMIN */}
+                                    </div>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name="schoolId"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Escola Vinculada (Opcional)</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Selecione..." />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="unassigned">Nenhuma</SelectItem>
+                                            {schools?.map((s) => (
+                                                <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
 
                         <FormField
                             control={form.control}

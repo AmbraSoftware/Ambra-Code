@@ -13,14 +13,14 @@ export class DashboardController {
     constructor(private readonly dashboardService: DashboardService) { }
 
     @Get('metrics')
-    @Roles(UserRole.SCHOOL_ADMIN, UserRole.CANTEEN_OPERATOR)
+    @Roles(UserRole.SCHOOL_ADMIN, UserRole.OPERATOR_SALES, UserRole.OPERATOR_MEAL)
     @ApiOperation({ summary: 'Retorna métricas do dashboard (vendas, pedidos, alunos)' })
     async getMetrics() {
         return this.dashboardService.getMetrics();
     }
 
     @Get('stock-alerts')
-    @Roles(UserRole.SCHOOL_ADMIN, UserRole.CANTEEN_OPERATOR)
+    @Roles(UserRole.SCHOOL_ADMIN, UserRole.OPERATOR_SALES, UserRole.OPERATOR_MEAL)
     @ApiOperation({
         summary: '[v4.5] Alertas de ruptura de estoque',
         description: 'Retorna produtos com estoque baixo (stock <= minStockAlert) ordenados por criticidade.',
@@ -30,7 +30,7 @@ export class DashboardController {
     }
 
     @Get('sales-chart')
-    @Roles(UserRole.SCHOOL_ADMIN, UserRole.CANTEEN_OPERATOR, UserRole.OPERATOR_ADMIN)
+    @Roles(UserRole.SCHOOL_ADMIN, UserRole.OPERATOR_SALES, UserRole.OPERATOR_MEAL, UserRole.MERCHANT_ADMIN)
     @ApiOperation({ summary: 'Dados do gráfico de vendas' })
     @ApiQuery({ name: 'period', required: false, enum: ['day', 'week', 'month'] })
     async getSalesChart(

@@ -156,7 +156,8 @@ async function bootstrap() {
                     name: `Dono ${name}`,
                     email: `owner_${i}_${testSuffix}@nodum.com`,
                     passwordHash: 'hash',
-                    role: UserRole.OPERATOR_ADMIN,
+                    role: UserRole.MERCHANT_ADMIN,
+                    roles: [UserRole.MERCHANT_ADMIN],
                     schoolId: school.id
                 }
             });

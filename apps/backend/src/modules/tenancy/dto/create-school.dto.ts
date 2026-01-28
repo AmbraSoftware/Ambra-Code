@@ -1,17 +1,11 @@
-import {
-  IsString,
-  IsNotEmpty,
-  IsEmail,
-  Matches,
-  MinLength,
-  IsUUID,
-} from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
 import { IsCpfCnpj } from '../../../common/validators/is-cpf-cnpj.validator';
+import { Validate, IsString, IsNotEmpty, IsEmail, Matches, MinLength, IsUUID, IsBoolean, IsOptional } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
 /**
- * CREATE SCHOOL DTO v3.8.5 - NODUM KERNEL READY
+ * CREATE SCHOOL DTO
  * Valida a criação de novos tenants dentro da hierarquia Multi-multi-tenant.
+ * Suporta configuração híbrida (Merenda + Cantina).
  */
 export class CreateSchoolDto {
   @ApiProperty({
@@ -20,7 +14,7 @@ export class CreateSchoolDto {
   })
   @IsUUID('4', { message: 'O systemId deve ser um UUID v4 válido.' })
   @IsNotEmpty()
-  systemId: string;
+  systemId!: string;
 
   @ApiProperty({
     example: 'Colégio Vitta Unidade 1',
@@ -28,7 +22,7 @@ export class CreateSchoolDto {
   })
   @IsString()
   @IsNotEmpty()
-  name: string;
+  name!: string;
 
   @ApiProperty({
     example: '12.345.678/0001-99',
@@ -36,8 +30,8 @@ export class CreateSchoolDto {
   })
   @IsString()
   @IsNotEmpty()
-  @IsCpfCnpj({ message: 'O CNPJ informado é inválido.' })
-  taxId: string;
+  @Validate(IsCpfCnpj, { message: 'O CNPJ informado é inválido.' })
+  taxId!: string;
 
   @ApiProperty({
     example: 'vitta-itape',
@@ -48,7 +42,7 @@ export class CreateSchoolDto {
   @Matches(/^[a-z0-9-]+$/, {
     message: 'O slug deve conter apenas letras minúsculas, números e hifens.',
   })
-  slug: string;
+  slug!: string;
 
   @ApiProperty({
     example: '9657c91e-3558-45b0-9f5b-b9d5690b9687',
@@ -56,9 +50,7 @@ export class CreateSchoolDto {
   })
   @IsUUID('4', { message: 'O planId deve ser um UUID v4 válido.' })
   @IsNotEmpty()
-  planId: string;
-
-  // --- DADOS DO ADMINISTRADOR INICIAL DA ESCOLA ---
+  planId!: string;
 
   @ApiProperty({
     example: 'Admin Vitta',
@@ -66,14 +58,14 @@ export class CreateSchoolDto {
   })
   @IsString()
   @IsNotEmpty()
-  adminName: string;
+  adminName!: string;
 
   @ApiProperty({
     example: 'admin@vitta.com',
     description: 'E-mail de login do gestor da escola',
   })
   @IsEmail({}, { message: 'Por favor, insira um e-mail válido.' })
-  adminEmail: string;
+  adminEmail!: string;
 
   @ApiProperty({
     example: 'Senha@123',
@@ -81,5 +73,23 @@ export class CreateSchoolDto {
   })
   @IsString()
   @MinLength(8, { message: 'A senha deve ter pelo menos 8 caracteres.' })
-  adminPassword: string;
+  adminPassword!: string;
+
+  @ApiProperty({
+    example: true,
+    description: 'Habilita gestão de merenda governamental (gratuita)',
+    required: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  hasMerenda?: boolean;
+
+  @ApiProperty({
+    example: true,
+    description: 'Habilita vendas comerciais de lanches e produtos',
+    required: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  hasCanteen?: boolean;
 }

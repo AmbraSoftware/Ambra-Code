@@ -230,7 +230,8 @@ export class CanteenService {
         name: data.name,
         email: data.email,
         passwordHash: hashedPassword,
-        role: 'CANTEEN_OPERATOR',
+        role: 'OPERATOR_SALES',
+        roles: ['OPERATOR_SALES'],
         schoolId,
         canteenId,
         mustChangePassword: true, // Força troca de senha no primeiro login para segurança

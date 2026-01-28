@@ -40,14 +40,14 @@ export class PlatformController {
   ) {}
 
   @Get('health')
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Monitoramento de Infraestrutura em Tempo Real' })
   async checkHealth() {
     return this.healthService.checkHealth();
   }
 
   @Get('search')
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({
     summary: 'Omni-Search Global (Users, Schools, Transactions)',
   })
@@ -56,7 +56,7 @@ export class PlatformController {
   }
 
   @Post('systems')
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({
     summary: 'Cadastra uma nova vertical de negócio (Ex: AMBRA)',
   })
@@ -65,14 +65,14 @@ export class PlatformController {
   }
 
   @Get('systems')
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Lista todos os sistemas afiliados na plataforma' })
   async findAll() {
     return this.platformService.findAllSystems();
   }
 
   @Patch('systems/:id')
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Atualiza uma vertical de negócio existente' })
   @ApiParam({ name: 'id', description: 'ID do sistema' })
   async update(@Param('id') id: string, @Body() dto: UpdateSystemDto) {
@@ -80,7 +80,7 @@ export class PlatformController {
   }
 
   @Delete('systems/:id')
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({
     summary:
       'Remove uma vertical de negócio (se não houver escolas vinculadas)',
@@ -91,21 +91,21 @@ export class PlatformController {
   }
 
   @Get('plans')
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Lista todos os planos ativos' })
   async listPlans() {
     return this.platformService.listAllPlans();
   }
 
   @Post('plans')
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Cria um novo plano (SaaS ou B2C)' })
   async createPlan(@Body() dto: CreatePlanDto) {
     return this.platformService.createPlan(dto);
   }
 
   @Get('dashboard')
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Painel de Comando Estratégico (KPIs)' })
   async getDashboard() {
     return this.platformService.getDashboardStats();
@@ -116,7 +116,7 @@ export class PlatformController {
    * Retorna lista de escolas que assinam o plano com métricas financeiras
    */
   @Get('plans/:id/subscribers')
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Detalhes de assinantes de um plano' })
   @ApiParam({ name: 'id', description: 'ID do plano' })
   async getSubscribers(@Param('id') planId: string) {
@@ -124,14 +124,14 @@ export class PlatformController {
   }
 
   @Get('plans/:id')
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Obter detalhes de um plano' })
   async getPlan(@Param('id') id: string) {
     return this.platformService.findOnePlan(id);
   }
 
   @Patch('plans/:id')
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Atualizar um plano' })
   async updatePlan(@Param('id') id: string, @Body() dto: any) {
     return this.platformService.updatePlan(id, dto);
@@ -140,58 +140,58 @@ export class PlatformController {
 
   // SYSTEMS
   @Patch('systems/:id/deactivate')
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN)
   async deactivateSystem(@Param('id') id: string) {
     return this.platformService.deactivateSystem(id);
   }
 
   @Patch('systems/:id/restore')
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN)
   async restoreSystem(@Param('id') id: string) {
     return this.platformService.restoreSystem(id);
   }
 
   // SCHOOLS
   @Patch('schools/:id/deactivate')
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN)
   async deactivateSchool(@Param('id') id: string) {
     return this.platformService.deactivateSchool(id);
   }
 
   @Patch('schools/:id/restore')
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN)
   async restoreSchool(@Param('id') id: string) {
     return this.platformService.restoreSchool(id);
   }
 
   // PLANS
   @Patch('plans/:id/deactivate')
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN)
   async deactivatePlan(@Param('id') id: string) {
     return this.platformService.deactivatePlan(id);
   }
 
   @Patch('plans/:id/restore')
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN)
   async restorePlan(@Param('id') id: string) {
     return this.platformService.restorePlan(id);
   }
 
   // HARD DELETE & TRASH
   @Delete('systems/:id')
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN)
   async deleteSystem(@Param('id') id: string) {
     return this.platformService.deleteSystem(id);
   }
 
   @Delete('plans/:id')
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN)
   async deletePlan(@Param('id') id: string) {
     return this.platformService.deletePlan(id);
   }
 
   @Delete('trash')
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({
     summary: 'Esvazia a lixeira (Remove itens inativos/deletados).',
   })

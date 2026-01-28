@@ -20,9 +20,7 @@ type UserRole =
   | 'STUDENT'
   | 'CONSUMER'
   // Legacy
-  | 'GLOBAL_ADMIN'
-  | 'OPERATOR_ADMIN'
-  | 'CANTEEN_OPERATOR';
+  // Legacy roles removidos - usar SUPER_ADMIN, MERCHANT_ADMIN, OPERATOR_SALES, OPERATOR_MEAL
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -50,7 +48,7 @@ export class RolesGuard implements CanActivate {
     const userRoles = user.roles || [user.role];
 
     // "God Mode": Global Admin tem acesso irrestrito a todas as rotas
-    if (userRoles.includes('SUPER_ADMIN' as UserRole) || userRoles.includes('GLOBAL_ADMIN' as UserRole)) {
+    if (userRoles.includes('SUPER_ADMIN' as UserRole)) {
       return true;
     }
 

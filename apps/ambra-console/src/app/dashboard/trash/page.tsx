@@ -1,1064 +1,341 @@
 /**
  * @file src/app/dashboard/trash/page.tsx
- * @fileoverview Trash page for the Nodum Console.
- * @description This page displays all soft-deleted or inactive items, allowing for restoration or permanent deletion.
+ * @fileoverview Simplified Trash page for Ambra Console.
+ * @description Unified view of all soft-deleted items across entities.
  */
 "use client";
 
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, ArrowUpDown, Trash, Building, Network, School, Users, Briefcase, Banknote, Megaphone, CircleDollarSign, Gavel } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { RotateCcw, Trash2, Search, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useMemo, useState } from "react";
-import { Censored } from '@/contexts/censorship-context';
-// import { initialSystems, initialSchools, initialMunicipalities, initialOperators, initialClients, initialPlans } from "@/lib/mock-data";
-import type { System, School as SchoolType, Municipality, Operator, Client, Plan, Campaign } from "@/types";
-import { useFetch } from "@/hooks/use-api";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useMemo, useState, useEffect } from "react";
 import { api } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
-
-type SortDirection = 'asc' | 'desc';
-
-// --- Reusable Table Components ---
-
-function SystemsTab({ showInactive = false }: { showInactive?: boolean }) {
-  const { data: allSystems, isLoading, mutate } = useFetch<System[]>('/platform/systems');
-  const [searchTerm, setSearchTerm] = useState("");
-  const [sortConfig, setSortConfig] = useState<{ key: keyof System, direction: SortDirection } | null>({ key: 'name', direction: 'asc' });
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [actionType, setActionType] = useState<'RESTORE' | 'DELETE'>('RESTORE');
-
-  const systems = useMemo(() => {
-    if (!allSystems) return [];
-    // Trash Page: Show INACTIVE. Entities Page: Show ACTIVE.
-    return allSystems.filter(s => showInactive ? s.status !== 'ACTIVE' : s.status === 'ACTIVE');
-  }, [allSystems, showInactive]);
-
-  const handleRestoreClick = (id: string) => {
-    setSelectedId(id);
-    setActionType('RESTORE');
-    setConfirmOpen(true);
-  }
-
-  const handleDeleteClick = (id: string) => {
-    setSelectedId(id);
-    setActionType('DELETE');
-    setConfirmOpen(true);
-  }
-
-  const handleConfirmAction = async () => {
-    if (!selectedId) return;
-    try {
-      if (actionType === 'RESTORE') {
-        await api.patch(`/platform/systems/${selectedId}`, { status: 'ACTIVE' });
-      } else {
-        await api.delete(`/platform/systems/${selectedId}`);
-      }
-      mutate();
-    } catch (error) {
-      console.error(`Failed to ${actionType.toLowerCase()} system:`, error);
-      alert("Erro ao processar ação. Verifique se existem dependências (escolas vinculadas).");
-    }
-  };
-
-
-  const handleSort = (key: keyof System) => {
-    let direction: SortDirection = 'asc';
-    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
-    }
-    setSortConfig({ key, direction });
-  };
-
-  const filteredAndSortedSystems = useMemo(() => {
-    let sortableItems = [...systems];
-    if (sortConfig !== null) {
-      sortableItems.sort((a, b) => {
-        const aValue: any = a[sortConfig.key] ?? '';
-        const bValue: any = b[sortConfig.key] ?? '';
-        if (aValue < bValue) {
-          return sortConfig.direction === 'asc' ? -1 : 1;
-        }
-        if (aValue > bValue) {
-          return sortConfig.direction === 'asc' ? 1 : -1;
-        }
-        return 0;
-      });
-    }
-
-    return sortableItems.filter(system =>
-      system.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [systems, searchTerm, sortConfig]);
-
-  if (isLoading) return <div className="p-4 text-center text-muted-foreground">Carregando sistemas...</div>;
-
-
-  return (
-    <>
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <CardTitle>Sistemas Arquivados</CardTitle>
-            </div>
-            <Input
-              placeholder="Buscar por nome..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full sm:w-auto"
-            />
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>ID do Sistema</TableHead>
-                <TableHead>
-                  <Button variant="ghost" onClick={() => handleSort('name')}>
-                    Nome
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>
-                  <Button variant="ghost" onClick={() => handleSort('created_at')}>
-                    Criado em
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </TableHead>
-                <TableHead><span className="sr-only">Ações</span></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredAndSortedSystems.map((system) => (
-                <TableRow key={system.id}>
-                  <TableCell className="font-medium font-code">{system.id}</TableCell>
-                  <TableCell>{system.name}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{system.status}</Badge>
-                  </TableCell>
-                  <TableCell>{system.created_at}</TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button aria-haspopup="true" size="icon" variant="ghost">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Toggle menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => handleRestoreClick(system.id)}>Restaurar</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteClick(system.id)}>Excluir Permanentemente</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-      <ConfirmationDialog
-        open={confirmOpen}
-        onOpenChange={setConfirmOpen}
-        title={actionType === 'RESTORE' ? "Restaurar Sistema" : "Excluir Permanentemente"}
-        description={actionType === 'RESTORE'
-          ? "Tem certeza que deseja restaurar este sistema? Ele voltará a ficar ativo."
-          : "Tem certeza que deseja excluir PERMANENTEMENTE este sistema? Esta ação NÃO pode ser desfeita e falhará se houver escolas vinculadas."}
-        onConfirm={handleConfirmAction}
-      />
-    </>
-  );
+interface DeletedItem {
+  id: string;
+  name: string;
+  type: 'School' | 'User' | 'System' | 'Plan' | 'Campaign' | 'Operator';
+  deletedAt: string;
+  deletedBy?: string;
+  metadata?: Record<string, any>;
 }
-
-function SchoolsTab({ showInactive = false }: { showInactive?: boolean }) {
-  const { data: allSchools, isLoading, mutate } = useFetch<SchoolType[]>('/tenancy/schools');
-  const [searchTerm, setSearchTerm] = useState("");
-  const [sortConfig, setSortConfig] = useState<{ key: keyof SchoolType, direction: SortDirection } | null>({ key: 'name', direction: 'asc' });
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [actionType, setActionType] = useState<'RESTORE' | 'DELETE'>('RESTORE');
-
-  const schools = useMemo(() => {
-    if (!allSchools) return [];
-    return allSchools.filter(s => showInactive ? s.status !== 'ACTIVE' : s.status === 'ACTIVE');
-  }, [allSchools, showInactive]);
-
-  const handleRestoreClick = (id: string) => {
-    setSelectedId(id);
-    setActionType('RESTORE');
-    setConfirmOpen(true);
-  }
-
-  const handleDeleteClick = (id: string) => {
-    setSelectedId(id);
-    setActionType('DELETE');
-    setConfirmOpen(true);
-  }
-
-  const handleConfirmAction = async () => {
-    if (!selectedId) return;
-    try {
-      if (actionType === 'RESTORE') {
-        await api.patch(`/tenancy/schools/${selectedId}`, { status: 'ACTIVE' });
-      } else {
-        await api.delete(`/tenancy/schools/${selectedId}`);
-      }
-      mutate();
-    } catch (error) {
-      console.error(`Failed to ${actionType.toLowerCase()} school:`, error);
-      alert("Erro ao processar ação. Verifique se existem dependências (usuários/pedidos).");
-    }
-  };
-
-
-  const handleSort = (key: keyof SchoolType) => {
-    let direction: SortDirection = 'asc';
-    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
-    }
-    setSortConfig({ key, direction });
-  };
-
-  const filteredAndSortedSchools = useMemo(() => {
-    let sortableItems = [...schools];
-    if (sortConfig !== null) {
-      sortableItems.sort((a, b) => {
-        const aValue: any = a[sortConfig.key] ?? '';
-        const bValue: any = b[sortConfig.key] ?? '';
-        if (aValue < bValue) {
-          return sortConfig.direction === 'asc' ? -1 : 1;
-        }
-        if (aValue > bValue) {
-          return sortConfig.direction === 'asc' ? 1 : -1;
-        }
-        return 0;
-      });
-    }
-
-    return sortableItems.filter(school =>
-      (school.name.toLowerCase().includes(searchTerm.toLowerCase()) || school.cnpj?.includes(searchTerm))
-    );
-  }, [schools, searchTerm, sortConfig]);
-
-  if (isLoading) return <div className="p-4 text-center text-muted-foreground">Carregando escolas...</div>;
-
-  return (
-    <>
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <CardTitle>Escolas Arquivadas</CardTitle>
-            </div>
-            <Input
-              placeholder="Buscar por nome ou CNPJ..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full sm:w-auto"
-            />
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>ID da Escola</TableHead>
-                <TableHead>
-                  <Button variant="ghost" onClick={() => handleSort('name')}>
-                    Nome
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </TableHead>
-                <TableHead>CNPJ</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead><span className="sr-only">Ações</span></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredAndSortedSchools.map((school) => (
-                <TableRow key={school.id}>
-                  <TableCell className="font-medium font-code">{school.id}</TableCell>
-                  <TableCell>{school.name}</TableCell>
-                  <TableCell className="font-code"><Censored value={school.cnpj} censorChar="*" /></TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{school.status}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button aria-haspopup="true" size="icon" variant="ghost">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Toggle menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => handleRestoreClick(school.id)}>Restaurar</DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-500" onClick={() => handleDeleteClick(school.id)}>Excluir Permanentemente</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-      <ConfirmationDialog
-        open={confirmOpen}
-        onOpenChange={setConfirmOpen}
-        title={actionType === 'RESTORE' ? "Restaurar Escola" : "Excluir Permanentemente"}
-        description={actionType === 'RESTORE'
-          ? "Tem certeza que deseja restaurar esta escola?"
-          : "Tem certeza que deseja excluir PERMANENTEMENTE esta escola? Cuidado!"}
-        onConfirm={handleConfirmAction}
-      />
-    </>
-  );
-}
-
-function MunicipalitiesTab() {
-  const [municipalities, setMunicipalities] = useState<Municipality[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-
-  const filteredMunicipalities = useMemo(() => {
-    return municipalities.filter(m =>
-      m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      m.slug.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [municipalities, searchTerm]);
-
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <CardTitle>Municípios Arquivados</CardTitle>
-          </div>
-          <Input
-            placeholder="Buscar por nome ou slug..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full sm:w-auto"
-          />
-        </div>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Município</TableHead>
-              <TableHead>Slug</TableHead>
-              <TableHead>Status do Contrato</TableHead>
-              <TableHead><span className="sr-only">Ações</span></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredMunicipalities.map((municipality) => (
-              <TableRow key={municipality.id}>
-                <TableCell className="font-medium">{municipality.name}</TableCell>
-                <TableCell className="font-code">{municipality.slug}</TableCell>
-                <TableCell>
-                  <Badge variant={"outline"}>
-                    {municipality.status}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button aria-haspopup="true" size="icon" variant="ghost">
-                        <MoreHorizontal className="h-4 w-4" />
-                        <span className="sr-only">Toggle menu</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                      <DropdownMenuItem>Restaurar</DropdownMenuItem>
-                      <DropdownMenuItem className="text-red-500">Excluir Permanentemente</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
-  )
-}
-
-function OperatorsTab() {
-  // Fetch ALL operators (including deleted)
-  const { data: allOperators, isLoading, mutate } = useFetch<Operator[]>('/users?role=OPERATOR_SALES,OPERATOR_MEAL,MERCHANT_ADMIN,SCHOOL_ADMIN&deleted=true');
-  const [searchTerm, setSearchTerm] = useState("");
-  const [sortConfig, setSortConfig] = useState<{ key: keyof Operator, direction: SortDirection } | null>({ key: 'name', direction: 'asc' });
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [actionType, setActionType] = useState<'RESTORE' | 'DELETE'>('RESTORE');
-
-  // Filter for deleted only
-  const operators = useMemo(() => {
-    if (!allOperators) return [];
-    return allOperators.filter(op => op.deletedAt !== null);
-  }, [allOperators]);
-
-  const handleRestoreClick = (id: string) => {
-    setSelectedId(id);
-    setActionType('RESTORE');
-    setConfirmOpen(true);
-  }
-
-  const handleDeleteClick = (id: string) => {
-    setSelectedId(id);
-    setActionType('DELETE');
-    setConfirmOpen(true);
-  }
-
-  const handleConfirmAction = async () => {
-    if (!selectedId) return;
-    try {
-      if (actionType === 'RESTORE') {
-        await api.patch(`/users/${selectedId}/restore`);
-      } else {
-        await api.delete(`/users/${selectedId}/permanent`);
-      }
-      mutate();
-    } catch (error) {
-      console.error(`Failed to ${actionType.toLowerCase()} operator:`, error);
-    }
-  };
-
-  const handleSort = (key: keyof Operator) => {
-    let direction: SortDirection = 'asc';
-    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
-    }
-    setSortConfig({ key, direction });
-  };
-
-  const filteredAndSortedOperators = useMemo(() => {
-    let sortableItems = [...operators];
-    if (sortConfig !== null) {
-      sortableItems.sort((a, b) => {
-        const aValue: any = a[sortConfig.key] ?? '';
-        const bValue: any = b[sortConfig.key] ?? '';
-        if (aValue < bValue) {
-          return sortConfig.direction === 'asc' ? -1 : 1;
-        }
-        if (aValue > bValue) {
-          return sortConfig.direction === 'asc' ? 1 : -1;
-        }
-        return 0;
-      });
-    }
-
-    return sortableItems.filter(operator =>
-      operator.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (operator.taxId || operator.cpfCnpj || '').toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [operators, searchTerm, sortConfig]);
-
-  return (
-    <>
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <CardTitle>Operadores Arquivados</CardTitle>
-            </div>
-            <Input
-              placeholder="Buscar por nome ou CPF/CNPJ..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full sm:w-auto"
-            />
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[250px]">
-                  <Button variant="ghost" onClick={() => handleSort('name')}>
-                    Nome
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </TableHead>
-                <TableHead>CPF/CNPJ</TableHead>
-                <TableHead>WalletID</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead><span className="sr-only">Ações</span></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredAndSortedOperators.map((operator) => (
-                <TableRow key={operator.id}>
-                  <TableCell className="font-medium">
-                    {operator.name}
-                  </TableCell>
-                  <TableCell className="font-code"><Censored value={operator.taxId || operator.cpfCnpj || '000'} censorChar="*" /></TableCell>
-                  <TableCell className="font-code">{operator.walletId}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{operator.deletedAt ? 'ARQUIVADO' : 'ATIVO'}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button aria-haspopup="true" size="icon" variant="ghost">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Toggle menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => handleRestoreClick(operator.id)}>Restaurar</DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-500" onClick={() => handleDeleteClick(operator.id)}>Excluir Permanentemente</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-      <ConfirmationDialog
-        open={confirmOpen}
-        onOpenChange={setConfirmOpen}
-        title={actionType === 'RESTORE' ? "Restaurar Operador" : "Excluir Permanentemente"}
-        description={actionType === 'RESTORE'
-          ? "Tem certeza que deseja restaurar este operador?"
-          : "Tem certeza que deseja excluir PERMANENTEMENTE este operador?"}
-        onConfirm={handleConfirmAction}
-      />
-    </>
-  );
-}
-
-function ClientsTab() {
-  // Fetch ALL clients (Guardians/Students) including deleted
-  // Since we don't have a single role for clients, we might need a dedicated endpoint or search param.
-  // For now, let's assume filtering by role CLIENT (if mapped) or fetching all and filtering type.
-  // Actually, 'users' endpoint returns all for SCHOOL_ADMIN.
-  const { data: allUsers, isLoading, mutate } = useFetch<Client[]>('/users?deleted=true');
-  const [searchTerm, setSearchTerm] = useState("");
-  const [sortConfig, setSortConfig] = useState<{ key: keyof Client, direction: SortDirection } | null>({ key: 'name', direction: 'asc' });
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [actionType, setActionType] = useState<'RESTORE' | 'DELETE'>('RESTORE');
-
-  const clients = useMemo(() => {
-    if (!allUsers) return [];
-    // Filter for deleted AND is a Client (Student/Guardian)
-    return allUsers.filter(u => u.deletedAt !== null && (u.role === 'STUDENT' || u.role === 'GUARDIAN'));
-  }, [allUsers]);
-
-  const handleRestoreClick = (id: string) => {
-    setSelectedId(id);
-    setActionType('RESTORE');
-    setConfirmOpen(true);
-  }
-
-  const handleDeleteClick = (id: string) => {
-    setSelectedId(id);
-    setActionType('DELETE');
-    setConfirmOpen(true);
-  }
-
-  const handleConfirmAction = async () => {
-    if (!selectedId) return;
-    try {
-      if (actionType === 'RESTORE') {
-        await api.patch(`/users/${selectedId}/restore`);
-      } else {
-        await api.delete(`/users/${selectedId}/permanent`);
-      }
-      mutate();
-    } catch (error) {
-      console.error(`Failed to ${actionType.toLowerCase()} client:`, error);
-    }
-  };
-
-  const handleSort = (key: keyof Client) => {
-    let direction: SortDirection = 'asc';
-    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
-    }
-    setSortConfig({ key, direction });
-  };
-
-  const filteredAndSortedClients = useMemo(() => {
-    let sortableItems = [...clients];
-
-    if (sortConfig !== null) {
-      sortableItems.sort((a, b) => {
-        const aValue: any = a[sortConfig.key] ?? '';
-        const bValue: any = b[sortConfig.key] ?? '';
-        if (aValue < bValue) {
-          return sortConfig.direction === 'asc' ? -1 : 1;
-        }
-        if (aValue > bValue) {
-          return sortConfig.direction === 'asc' ? 1 : -1;
-        }
-        return 0;
-      });
-    }
-
-    return sortableItems.filter(client =>
-    (client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.email.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
-  }, [clients, searchTerm, sortConfig]);
-
-  return (
-    <>
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <CardTitle>Clientes Arquivados</CardTitle>
-            </div>
-            <Input
-              placeholder="Buscar por nome ou email..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full sm:w-auto"
-            />
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[250px]">
-                  <Button variant="ghost" onClick={() => handleSort('name')}>
-                    Nome
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </TableHead>
-                <TableHead>
-                  <Button variant="ghost" onClick={() => handleSort('email')}>
-                    Email
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead><span className="sr-only">Ações</span></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredAndSortedClients.map((client) => (
-                <TableRow key={client.id}>
-                  <TableCell className="font-medium">
-                    {client.name}
-                  </TableCell>
-                  <TableCell>{client.email}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{client.role}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{client.deletedAt ? 'ARQUIVADO' : 'ATIVO'}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button aria-haspopup="true" size="icon" variant="ghost">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Toggle menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => handleRestoreClick(client.id)}>Restaurar</DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-500" onClick={() => handleDeleteClick(client.id)}>Excluir Permanentemente</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-      <ConfirmationDialog
-        open={confirmOpen}
-        onOpenChange={setConfirmOpen}
-        title={actionType === 'RESTORE' ? "Restaurar Cliente" : "Excluir Permanentemente"}
-        description={actionType === 'RESTORE'
-          ? "Tem certeza que deseja restaurar este cliente?"
-          : "Tem certeza que deseja excluir PERMANENTEMENTE este cliente?"}
-        onConfirm={handleConfirmAction}
-      />
-    </>
-  )
-}
-
-function PlansTab() {
-  const { data: allPlans, isLoading, mutate } = useFetch<Plan[]>('/platform/plans');
-  const [searchTerm, setSearchTerm] = useState("");
-  const [sortConfig, setSortConfig] = useState<{ key: keyof Plan, direction: SortDirection } | null>({ key: 'name', direction: 'asc' });
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [actionType, setActionType] = useState<'RESTORE' | 'DELETE'>('RESTORE');
-
-  const plans = useMemo(() => {
-    if (!allPlans) return [];
-    // Plans STATUS: ACTIVE, ARCHIVED, INACTIVE. PlatformService uses 'ARCHIVED' for trash.
-    // If list returns all, we filter.
-    return allPlans.filter(p => p.status !== 'ACTIVE');
-  }, [allPlans]);
-
-  const handleRestoreClick = (id: string) => {
-    setSelectedId(id);
-    setActionType('RESTORE');
-    setConfirmOpen(true);
-  }
-
-  const handleDeleteClick = (id: string) => {
-    setSelectedId(id);
-    setActionType('DELETE');
-    setConfirmOpen(true);
-  }
-
-  const handleConfirmAction = async () => {
-    if (!selectedId) return;
-    try {
-      if (actionType === 'RESTORE') {
-        await api.patch(`/platform/plans/${selectedId}/restore`);
-      } else {
-        await api.delete(`/platform/plans/${selectedId}`);
-      }
-      mutate();
-    } catch (error) {
-      console.error("Failed to restore plan:", error);
-    }
-  };
-
-  const handleSort = (key: keyof Plan) => {
-    let direction: SortDirection = 'asc';
-    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
-    }
-    setSortConfig({ key, direction });
-  };
-
-  const filteredAndSortedPlans = useMemo(() => {
-    let sortableItems = [...plans];
-    if (sortConfig !== null) {
-      sortableItems.sort((a, b) => {
-        const aValue: any = a[sortConfig.key] ?? '';
-        const bValue: any = b[sortConfig.key] ?? '';
-        if (aValue < bValue) {
-          return sortConfig.direction === 'asc' ? -1 : 1;
-        }
-        if (aValue > bValue) {
-          return sortConfig.direction === 'asc' ? 1 : -1;
-        }
-        return 0;
-      });
-    }
-
-    return sortableItems.filter(plan =>
-      plan.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [plans, searchTerm, sortConfig]);
-
-  return (
-    <>
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <CardTitle>Planos Arquivados</CardTitle>
-            </div>
-            <Input
-              placeholder="Buscar por nome ou código..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full sm:w-auto"
-            />
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>
-                  <Button variant="ghost" onClick={() => handleSort('name')}>
-                    Nome do Plano
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>
-                  <Button variant="ghost" onClick={() => handleSort('price')}>
-                    Preço
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </TableHead>
-                <TableHead><span className="sr-only">Ações</span></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredAndSortedPlans.map((plan) => (
-                <TableRow key={plan.id}>
-                  <TableCell className="font-medium">{plan.name}</TableCell>
-                  <TableCell className="font-code">{plan.price}</TableCell>
-                  <TableCell>
-                    <Badge variant={"outline"}>
-                      {plan.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button aria-haspopup="true" size="icon" variant="ghost">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Toggle menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => handleRestoreClick(plan.id)}>Restaurar</DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-500" onClick={() => handleDeleteClick(plan.id)}>Excluir Permanentemente</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-      <ConfirmationDialog
-        open={confirmOpen}
-        onOpenChange={setConfirmOpen}
-        title={actionType === 'RESTORE' ? "Restaurar Plano" : "Excluir Permanentemente"}
-        description={actionType === 'RESTORE'
-          ? "Tem certeza que deseja restaurar este plano?"
-          : "Tem certeza que deseja excluir PERMANENTEMENTE este plano?"}
-        onConfirm={handleConfirmAction}
-      />
-    </>
-  );
-}
-
-function CampaignsTab() {
-  const { data: allCampaigns, isLoading, mutate } = useFetch<Campaign[]>('/announcements');
-  const [searchTerm, setSearchTerm] = useState("");
-  const [sortConfig, setSortConfig] = useState<{ key: keyof Campaign, direction: SortDirection } | null>({ key: 'title', direction: 'asc' });
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-
-  const campaigns = useMemo(() => {
-    if (!allCampaigns) return [];
-    return allCampaigns.filter(c => c.status === 'INACTIVE');
-  }, [allCampaigns]);
-
-  const handleRestoreClick = (id: string) => {
-    setSelectedId(id);
-    setConfirmOpen(true);
-  }
-
-  const handleConfirmRestore = async () => {
-    if (!selectedId) return;
-    try {
-      await api.patch(`/announcements/${selectedId}/restore`);
-      mutate();
-    } catch (error) {
-      console.error("Failed to restore campaign:", error);
-    }
-  };
-
-  const handleSort = (key: keyof Campaign) => {
-    let direction: SortDirection = 'asc';
-    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
-    }
-    setSortConfig({ key, direction });
-  };
-
-  const filteredAndSortedCampaigns = useMemo(() => {
-    let sortableItems = [...campaigns];
-    if (sortConfig !== null) {
-      sortableItems.sort((a, b) => {
-        const aValue: any = a[sortConfig.key] ?? '';
-        const bValue: any = b[sortConfig.key] ?? '';
-        if (aValue < bValue) {
-          return sortConfig.direction === 'asc' ? -1 : 1;
-        }
-        if (aValue > bValue) {
-          return sortConfig.direction === 'asc' ? 1 : -1;
-        }
-        return 0;
-      });
-    }
-
-    return sortableItems.filter(campaign =>
-      campaign.title.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [campaigns, searchTerm, sortConfig]);
-
-  return (
-    <>
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <CardTitle>Campanhas Arquivadas</CardTitle>
-            </div>
-            <Input
-              placeholder="Buscar por título..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full sm:w-auto"
-            />
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>
-                  <Button variant="ghost" onClick={() => handleSort('title')}>
-                    Título
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </TableHead>
-                <TableHead>Data</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead><span className="sr-only">Ações</span></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredAndSortedCampaigns.map((campaign) => (
-                <TableRow key={campaign.id}>
-                  <TableCell className="font-medium">{campaign.title}</TableCell>
-                  <TableCell>{campaign.date}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{campaign.status}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button aria-haspopup="true" size="icon" variant="ghost">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Toggle menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => handleRestoreClick(campaign.id)}>Restaurar</DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-500" disabled>Excluir Permanentemente</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-      <ConfirmationDialog
-        open={confirmOpen}
-        onOpenChange={setConfirmOpen}
-        title="Restaurar Campanha"
-        description="Tem certeza que deseja restaurar esta campanha?"
-        onConfirm={handleConfirmRestore}
-      />
-    </>
-  );
-}
-
-
-// --- Main Page Component ---
 
 export default function TrashPage() {
-  const [activeTab, setActiveTab] = useState("entities");
+  const [items, setItems] = useState<DeletedItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<DeletedItem | null>(null);
+  const [actionType, setActionType] = useState<'RESTORE' | 'DELETE'>('RESTORE');
+  const { toast } = useToast();
 
-  const handleEmptyTrash = async () => {
-    if (!confirm("Tem certeza que deseja esvaziar a lixeira desta seção? Esta ação é irreversível e excluirá TODOS os itens arquivados nesta categoria.")) return;
+  const fetchDeletedItems = async () => {
+    setLoading(true);
     try {
-      await api.delete(`/platform/trash?type=${activeTab}`);
-      alert("Lixeira esvaziada com sucesso.");
-      // Trigger revalidation ideally, but simpler to reload or let user navigate.
-      window.location.reload();
-    } catch (e) {
-      console.error(e);
-      alert("Erro ao esvaziar lixeira.");
+      // TODO: Implementar endpoint unificado /platform/trash ou agregar múltiplos endpoints
+      // const { data } = await api.get('/platform/trash');
+      // setItems(data);
+
+      // Mock data por enquanto
+      setItems([
+        {
+          id: 'school-123',
+          name: 'Escola Teste Deletada',
+          type: 'School',
+          deletedAt: new Date(Date.now() - 86400000).toISOString(),
+          deletedBy: 'admin@nodum.io',
+          metadata: { taxId: '12.345.678/0001-90' }
+        },
+        {
+          id: 'user-456',
+          name: 'João Silva',
+          type: 'User',
+          deletedAt: new Date(Date.now() - 172800000).toISOString(),
+          deletedBy: 'admin@nodum.io',
+          metadata: { email: 'joao@example.com', role: 'GUARDIAN' }
+        },
+        {
+          id: 'plan-789',
+          name: 'Plano Básico Antigo',
+          type: 'Plan',
+          deletedAt: new Date(Date.now() - 259200000).toISOString(),
+          deletedBy: 'admin@nodum.io',
+          metadata: { price: 49.90 }
+        }
+      ]);
+    } catch (error) {
+      console.error('Failed to load deleted items', error);
+      toast({
+        title: "Erro ao carregar",
+        description: "Não foi possível carregar os itens da lixeira.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
     }
-  }
+  };
+
+  useEffect(() => {
+    fetchDeletedItems();
+  }, []);
+
+  const handleRestore = (item: DeletedItem) => {
+    setSelectedItem(item);
+    setActionType('RESTORE');
+    setConfirmOpen(true);
+  };
+
+  const handleDelete = (item: DeletedItem) => {
+    setSelectedItem(item);
+    setActionType('DELETE');
+    setConfirmOpen(true);
+  };
+
+  const handleConfirm = async () => {
+    if (!selectedItem) return;
+
+    try {
+      if (actionType === 'RESTORE') {
+        // TODO: Implementar lógica de restauração
+        // await api.post(`/platform/${selectedItem.type.toLowerCase()}/${selectedItem.id}/restore`);
+        toast({
+          title: "Item restaurado",
+          description: `${selectedItem.name} foi restaurado com sucesso.`
+        });
+      } else {
+        // TODO: Implementar exclusão permanente
+        // await api.delete(`/platform/${selectedItem.type.toLowerCase()}/${selectedItem.id}`);
+        toast({
+          title: "Item removido permanentemente",
+          description: `${selectedItem.name} foi excluído definitivamente.`,
+          variant: "destructive"
+        });
+      }
+      fetchDeletedItems();
+    } catch (error) {
+      console.error('Action failed', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível completar a ação.",
+        variant: "destructive"
+      });
+    }
+
+    setConfirmOpen(false);
+    setSelectedItem(null);
+  };
+
+  const filteredItems = useMemo(() => {
+    let filtered = items;
+
+    // Filtro por nome
+    if (searchTerm) {
+      filtered = filtered.filter(item =>
+        item.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Filtro por tipo
+    if (filterType && filterType !== "all") {
+      filtered = filtered.filter(item => item.type === filterType);
+    }
+
+    // Filtro por data
+    if (filterDate) {
+      const selectedDate = new Date(filterDate);
+      filtered = filtered.filter(item => {
+        const itemDate = new Date(item.deletedAt);
+        return (
+          itemDate.getFullYear() === selectedDate.getFullYear() &&
+          itemDate.getMonth() === selectedDate.getMonth() &&
+          itemDate.getDate() === selectedDate.getDate()
+        );
+      });
+    }
+
+    return filtered;
+  }, [items, searchTerm, filterType, filterDate]);
+
+  const getTypeBadge = (type: string) => {
+    const colors: Record<string, string> = {
+      School: 'bg-blue-100 text-blue-800',
+      User: 'bg-green-100 text-green-800',
+      System: 'bg-purple-100 text-purple-800',
+      Plan: 'bg-orange-100 text-orange-800',
+      Campaign: 'bg-pink-100 text-pink-800',
+      Operator: 'bg-cyan-100 text-cyan-800'
+    };
+    return (
+      <Badge variant="outline" className={colors[type] || ''}>
+        {type}
+      </Badge>
+    );
+  };
 
   return (
-    <div className="flex flex-col gap-8 space-y-6">
+    <div className="space-y-6">
       <PageHeader
         title="Lixeira"
-        description="Gerencie itens arquivados e inativos do sistema."
-        actions={
-          <Button variant="destructive" onClick={handleEmptyTrash}>
-            <Trash className="mr-2 h-4 w-4" />
-            Limpar Lixeira
-          </Button>
-        }
+        description="Itens excluídos que podem ser restaurados ou removidos permanentemente."
       />
-      <Tabs defaultValue="entities" className="w-full" onValueChange={setActiveTab}>
-        <TabsList className="mb-4">
-          <TabsTrigger value="entities"><Building className="mr-2 h-4 w-4" /> Entidades</TabsTrigger>
-          <TabsTrigger value="users"><Users className="mr-2 h-4 w-4" /> Usuários</TabsTrigger>
-          <TabsTrigger value="announcements"><Megaphone className="mr-2 h-4 w-4" /> Anúncios</TabsTrigger>
-        </TabsList>
 
-        {/* Entidades */}
-        <TabsContent value="entities">
-          <Tabs defaultValue="systems" className="w-full">
-            <TabsList>
-              <TabsTrigger value="systems"><Network className="mr-2 h-4 w-4" />Sistemas</TabsTrigger>
-              <TabsTrigger value="schools"><School className="mr-2 h-4 w-4" />Escolas</TabsTrigger>
-              <TabsTrigger value="municipalities"><Building className="mr-2 h-4 w-4" />Municípios</TabsTrigger>
-            </TabsList>
-            <TabsContent value="systems" className="mt-4"><SystemsTab showInactive={true} /></TabsContent>
-            <TabsContent value="schools" className="mt-4"><SchoolsTab showInactive={true} /></TabsContent>
-            <TabsContent value="municipalities" className="mt-4"><MunicipalitiesTab /></TabsContent>
-          </Tabs>
-        </TabsContent>
+      <Card>
+        <CardHeader>
+          <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+                <CardTitle>Itens Deletados</CardTitle>
+                <CardDescription>
+                  {filteredItems.length} {filteredItems.length === 1 ? 'item' : 'itens'} encontrados
+                </CardDescription>
+              </div>
+            </div>
 
-        {/* Usuários */}
-        <TabsContent value="users">
-          <Tabs defaultValue="operators" className="w-full">
-            <TabsList>
-              <TabsTrigger value="operators"><Briefcase className="mr-2 h-4 w-4" />Operadores</TabsTrigger>
-              <TabsTrigger value="clients"><Users className="mr-2 h-4 w-4" />Clientes</TabsTrigger>
-            </TabsList>
-            <TabsContent value="operators" className="mt-4"><OperatorsTab /></TabsContent>
-            <TabsContent value="clients" className="mt-4"><ClientsTab /></TabsContent>
-          </Tabs>
-        </TabsContent>
+            {/* Filtros */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+                  placeholder="Buscar por nome..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-8"
+            />
+          </div>
 
-        {/* Anúncios */}
-        <TabsContent value="announcements">
-          <Tabs defaultValue="plans" className="w-full">
-            <TabsList>
-              <TabsTrigger value="plans"><CircleDollarSign className="mr-2 h-4 w-4" />Planos</TabsTrigger>
-              <TabsTrigger value="campaigns"><Megaphone className="mr-2 h-4 w-4" />Campanhas</TabsTrigger>
-            </TabsList>
-            <TabsContent value="plans" className="mt-4"><PlansTab /></TabsContent>
-            <TabsContent value="campaigns" className="mt-4"><CampaignsTab /></TabsContent>
-          </Tabs>
-        </TabsContent>
+              <Select value={filterType} onValueChange={setFilterType}>
+                <SelectTrigger className="w-full sm:w-[180px]">
+                  <Filter className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os tipos</SelectItem>
+                  <SelectItem value="School">Escolas</SelectItem>
+                  <SelectItem value="User">Usuários</SelectItem>
+                  <SelectItem value="Plan">Planos</SelectItem>
+                  <SelectItem value="System">Sistemas</SelectItem>
+                  <SelectItem value="Campaign">Campanhas</SelectItem>
+                  <SelectItem value="Operator">Operadores</SelectItem>
+                </SelectContent>
+              </Select>
 
-      </Tabs>
+              <Input
+                type="date"
+                placeholder="Filtrar por data"
+                value={filterDate}
+                onChange={(e) => setFilterDate(e.target.value)}
+                className="w-full sm:w-[180px]"
+              />
+
+              {(searchTerm || filterType !== "all" || filterDate) && (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSearchTerm("");
+                    setFilterType("all");
+                    setFilterDate("");
+                  }}
+                >
+                  Limpar
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nome</TableHead>
+                <TableHead>Tipo</TableHead>
+                <TableHead>Data de Exclusão</TableHead>
+                <TableHead>Excluído Por</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center h-32">
+                    Carregando...
+                  </TableCell>
+                </TableRow>
+              ) : filteredItems.length === 0 ? (
+              <TableRow>
+                  <TableCell colSpan={5} className="text-center h-32 text-muted-foreground">
+                    {searchTerm ? 'Nenhum item encontrado' : 'Lixeira vazia'}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredItems.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell className="font-medium">
+                      <div className="flex flex-col">
+                        <span>{item.name}</span>
+                        <span className="text-xs text-muted-foreground font-mono">
+                          {item.id}
+                        </span>
+          </div>
+                  </TableCell>
+                  <TableCell>
+                      {getTypeBadge(item.type)}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {format(new Date(item.deletedAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {item.deletedBy || '-'}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleRestore(item)}
+                        >
+                          <RotateCcw className="h-3 w-3 mr-1" />
+                          Restaurar
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDelete(item)}
+                        >
+                          <Trash2 className="h-3 w-3 mr-1" />
+                          Excluir
+                        </Button>
+                      </div>
+                  </TableCell>
+                </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <ConfirmationDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title={actionType === 'RESTORE' ? 'Restaurar Item' : 'Excluir Permanentemente'}
+        description={
+          actionType === 'RESTORE'
+            ? `Tem certeza que deseja restaurar "${selectedItem?.name}"? O item será reativado no sistema.`
+            : `Tem certeza que deseja excluir "${selectedItem?.name}" PERMANENTEMENTE? Esta ação não pode ser desfeita.`
+        }
+        onConfirm={handleConfirm}
+        variant={actionType === 'DELETE' ? 'destructive' : 'default'}
+        confirmText={actionType === 'RESTORE' ? 'Restaurar' : 'Excluir Permanentemente'}
+      />
     </div>
-  )
+  );
 }

@@ -10,7 +10,7 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateSchoolDto } from './dto/create-school.dto';
 import { UpdateSchoolDto } from './dto/update-school.dto';
-import { UserRole, SchoolStatus, Prisma, PlanStatus } from '@prisma/client';
+import { UserRole, SchoolStatus, Prisma, PlanStatus, CanteenType } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 /**
@@ -66,6 +66,14 @@ export class TenancyService {
         }
 
         // 4. Criar a Unidade (Tenant)
+        const schoolConfig: any = {
+          primaryColor: '#FC5407', // Aerospace Orange (AMBRA Default)
+          logo: 'https://cdn.nodum.app/ambra-default.png',
+          // Salva flags de módulos híbridos
+          hasMerenda: dto.hasMerenda || false,
+          hasCanteen: dto.hasCanteen || false,
+        };
+
         const school = await tx.school.create({
           data: {
             name: dto.name,
@@ -74,10 +82,7 @@ export class TenancyService {
             systemId: system.id,
             planId: plan.id,
             status: SchoolStatus.ACTIVE,
-            config: {
-              primaryColor: '#FC5407', // Aerospace Orange (AMBRA Default)
-              logo: 'https://cdn.nodum.app/ambra-default.png',
-            },
+            config: schoolConfig,
           } as any,
         });
 
@@ -98,6 +103,7 @@ export class TenancyService {
             email: dto.adminEmail,
             passwordHash: hashedPassword,
             role: UserRole.SCHOOL_ADMIN,
+            roles: [UserRole.SCHOOL_ADMIN],
             schoolId: school.id,
             wallet: {
               create: {
@@ -109,12 +115,47 @@ export class TenancyService {
           },
         });
 
+        // 7. Criar Cantinas Automaticamente (se configurado)
+        const createdCanteens: any[] = [];
+
+        if (dto.hasCanteen) {
+          // Cria cantina comercial (requer operador)
+          const commercialCanteen = await tx.canteen.create({
+            data: {
+              name: `Cantina - ${school.name}`,
+              type: CanteenType.COMMERCIAL,
+              schoolId: school.id,
+              status: 'ACTIVE',
+              openingTime: '07:00',
+              closingTime: '18:00',
+            },
+          });
+          createdCanteens.push(commercialCanteen);
+        }
+
+        if (dto.hasMerenda) {
+          // Cria cantina governamental (merenda - não requer operador)
+          const governmentalCanteen = await tx.canteen.create({
+            data: {
+              name: `Refeitório Merenda - ${school.name}`,
+              type: CanteenType.GOVERNMENTAL,
+              schoolId: school.id,
+              operatorId: null, // Merenda não requer operador (governo)
+              status: 'ACTIVE',
+              openingTime: '07:00',
+              closingTime: '18:00',
+            },
+          });
+          createdCanteens.push(governmentalCanteen);
+        }
+
         return {
           message: 'Unidade industrial inaugurada com sucesso.',
           schoolId: school.id,
           adminId: admin.id,
           system: system.name,
           plan: plan.name,
+          canteens: createdCanteens.map(c => ({ id: c.id, name: c.name, type: c.type })),
         };
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },

@@ -13,6 +13,7 @@
         "console:dev": "npm run dev -w apps/ambra-console",
         "flow:dev": "npm run dev -w apps/ambra-flow",
         "food:dev": "npm run dev -w apps/ambra-food",
+        "food-web:dev": "npm run dev -w apps/ambra-food-web",
         "build:all": "npm run build --workspaces",
         "install:all": "npm install --workspaces"
     },

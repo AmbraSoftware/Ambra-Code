@@ -35,7 +35,8 @@ async function bootstrap() {
                 name: 'Operador Sem Escola',
                 email: userEmail,
                 passwordHash: hash,
-                role: UserRole.OPERATOR_ADMIN,
+                role: UserRole.MERCHANT_ADMIN,
+                roles: [UserRole.MERCHANT_ADMIN],
                 // schoolId: null (default)
                 // canteenId: null (default)
                 termsAccepted: true

@@ -7,11 +7,6 @@ export enum UserRole {
   GUARDIAN = 'GUARDIAN',
   STUDENT = 'STUDENT',
   CONSUMER = 'CONSUMER', // Genérico
-  
-  // Legacy Roles (Compatibilidade)
-  GLOBAL_ADMIN = 'GLOBAL_ADMIN',
-  OPERATOR_ADMIN = 'OPERATOR_ADMIN',
-  CANTEEN_OPERATOR = 'CANTEEN_OPERATOR',
 }
 
 export enum ProductType {

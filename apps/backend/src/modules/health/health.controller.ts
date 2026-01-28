@@ -87,7 +87,7 @@ export class HealthController {
 
   @Get('simulate-fail')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'SIMULAÇÃO: Força um evento de falha para testar alertas.',

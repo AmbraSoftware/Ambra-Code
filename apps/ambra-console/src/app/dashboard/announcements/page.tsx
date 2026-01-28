@@ -1,6 +1,7 @@
 /**
  * @file src/app/dashboard/announcements/page.tsx
- * @fileoverview Announcements management page for the Nodum Console.
+ * @fileoverview Announcements management page for the Ambra Console.
+ * Gerencia APENAS anúncios e comunicações em massa.
  */
 "use client"
 
@@ -8,10 +9,10 @@ import * as React from "react";
 import { useState, useMemo } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, PlusCircle, Send, CheckCircle, ChevronDown, Calendar as CalendarIcon, ArrowUpDown, Filter, Layers, Mail, Megaphone, Plus, Search, Target, Users, CreditCard, Archive, Loader2 } from "lucide-react";
+import { MoreHorizontal, PlusCircle, Send, CheckCircle, ChevronDown, Calendar as CalendarIcon, ArrowUpDown, Megaphone, Search, Target, Users, Mail, Archive, Loader2 } from "lucide-react";
 import { format, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -24,15 +25,12 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useSystems, useFetch, useSchools } from "@/hooks/use-api";
-import type { Plan, Campaign } from "@/types";
-import { PlanDetailsDialog } from "@/components/dashboard/announcements/plan-details-dialog";
-import { EditPlanDialog } from "@/components/dashboard/dialogs/EditPlanDialog";
+import type { Campaign } from "@/types";
 import { api } from "@/lib/api";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 
@@ -103,14 +101,14 @@ function DateRangePicker({ className }: React.HTMLAttributes<HTMLDivElement>) {
             {date?.from ? (
               date.to ? (
                 <>
-                  {format(date.from, "LLL dd, y")} -{" "}
-                  {format(date.to, "LLL dd, y")}
+                  {format(date.from, "dd/MM/yyyy", { locale: ptBR })} -{" "}
+                  {format(date.to, "dd/MM/yyyy", { locale: ptBR })}
                 </>
               ) : (
-                format(date.from, "LLL dd, y")
+                format(date.from, "dd/MM/yyyy", { locale: ptBR })
               )
             ) : (
-              <span>Escolha um período</span>
+              <span>Selecione as datas</span>
             )}
           </Button>
         </PopoverTrigger>
@@ -129,41 +127,48 @@ function DateRangePicker({ className }: React.HTMLAttributes<HTMLDivElement>) {
   )
 }
 
-// --- Abas ---
-
-// --- Abas ---
-
-function PlansTab() {
-  const { data: plansData, isLoading, mutate } = useFetch<Plan[]>('/platform/plans');
-  const plans = plansData || [];
-
-  // Archive State
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [planToArchive, setPlanToArchive] = useState<{ id: string, name: string } | null>(null);
+// --- Aba de Campanhas (ÚNICA ABA) ---
+function CampaignsTab() {
+  const { systems } = useSystems();
+  const { schools } = useSchools();
+  const { data: campaignsData, isLoading, mutate } = useFetch<Campaign[]>('/announcements');
+  const campaigns = campaignsData || [];
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortConfig, setSortConfig] = useState<{ key: keyof Plan, direction: SortDirection } | null>({ key: 'name', direction: 'asc' });
-  const [selectedPlan, setSelectedPlan] = useState<{ id: string, name: string } | null>(null);
-  const [editingPlan, setEditingPlan] = useState<{ id: string, name: string } | null>(null);
+  const [sortConfig, setSortConfig] = useState<{ key: keyof Campaign, direction: SortDirection } | null>({ key: 'title', direction: 'asc' });
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [campaignToDeactivate, setCampaignToDeactivate] = useState<{ id: string, title: string } | null>(null);
 
-  const handleArchive = (plan: { id: string, name: string }) => {
-    setPlanToArchive(plan);
+  const { toast } = useToast();
+
+  const handleDeactivate = (camp: { id: string, title: string }) => {
+    setCampaignToDeactivate(camp);
     setConfirmOpen(true);
   };
 
-  const handleConfirmArchive = async () => {
-    if (!planToArchive) return;
+  const handleConfirmDeactivate = async () => {
+    if (!campaignToDeactivate) return;
     try {
-      await api.patch(`/platform/plans/${planToArchive.id}/deactivate`);
+      await api.patch(`/announcements/${campaignToDeactivate.id}/deactivate`);
       mutate();
+      toast({
+        title: "Campanha desativada",
+        description: `A campanha "${campaignToDeactivate.title}" foi arquivada.`
+      });
     } catch (error) {
-      console.error("Failed to archive plan:", error);
+      console.error("Failed to deactivate campaign:", error);
+      toast({
+        title: "Erro ao desativar",
+        description: "Não foi possível arquivar a campanha.",
+        variant: "destructive"
+      });
     }
     setConfirmOpen(false);
-    setPlanToArchive(null);
+    setCampaignToDeactivate(null);
   };
 
-  const handleSort = (key: keyof Plan) => {
+  const handleSort = (key: keyof Campaign) => {
     let direction: SortDirection = 'asc';
     if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
       direction = 'desc';
@@ -171,242 +176,14 @@ function PlansTab() {
     setSortConfig({ key, direction });
   };
 
-  const filteredAndSortedPlans = useMemo(() => {
-    // [FIX] Removido filtro restritivo de status para mostrar todos os planos
-    let sortableItems = [...plans];
-    if (sortConfig !== null) {
-      sortableItems.sort((a, b) => {
-        const aValue: any = a[sortConfig.key] ?? '';
-        const bValue: any = b[sortConfig.key] ?? '';
-
-        if (aValue < bValue) {
-          return sortConfig.direction === 'asc' ? -1 : 1;
-        }
-        if (aValue > bValue) {
-          return sortConfig.direction === 'asc' ? 1 : -1;
-        }
-        return 0;
-      });
-    }
-
-    return sortableItems.filter(plan =>
-      (plan.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-      (plan.code?.toLowerCase() || '').includes(searchTerm.toLowerCase())
-    );
-  }, [plans, searchTerm, sortConfig]);
-
-  return (
-    <>
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <CardTitle>Planos de Subscrição</CardTitle>
-              <CardDescription>Gerencie os planos, preços e funcionalidades oferecidas.</CardDescription>
-            </div>
-            <Input
-              placeholder="Buscar por nome ou código..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full sm:w-auto"
-            />
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>
-                  <Button variant="ghost" onClick={() => handleSort('name')}>
-                    Nome do Plano
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </TableHead>
-                <TableHead>Código</TableHead>
-                <TableHead>Preço</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>White Label</TableHead>
-                <TableHead><span className="sr-only">Ações</span></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredAndSortedPlans.map((plan) => (
-                <TableRow
-                  key={plan.id}
-                  className="cursor-pointer hover:bg-muted/50 transition-colors"
-                  onClick={() => setSelectedPlan({ id: plan.id, name: plan.name })}
-                >
-                  <TableCell className="font-medium">{plan.name}</TableCell>
-                  <TableCell className="font-code">{plan.code}</TableCell>
-                  <TableCell className="font-code">{plan.price}</TableCell>
-                  <TableCell>
-                    <Badge variant={plan.status === "Ativo" ? "default" : "outline"} className={plan.status === "Ativo" ? "bg-green-100 text-green-800" : ""}>
-                      {plan.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={plan.whiteLabel ? "secondary" : "outline"}>{plan.whiteLabel ? "Sim" : "Não"}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button aria-haspopup="true" size="icon" variant="ghost">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Toggle menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => { setSelectedPlan({ id: plan.id, name: plan.name }); }}>
-                          Ver Detalhes
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(plan.id); }}>
-                          Copiar ID
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setEditingPlan({ id: plan.id, name: plan.name }); }}>
-                          Editar
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleArchive({ id: plan.id, name: plan.name }); }}>
-                          Arquivar
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      {selectedPlan && (
-        <PlanDetailsDialog
-          planId={selectedPlan.id}
-          planName={selectedPlan.name}
-          open={!!selectedPlan}
-          onOpenChange={(open) => !open && setSelectedPlan(null)}
-        />
-      )}
-
-      {editingPlan && (
-        <EditPlanDialog
-          plan={editingPlan}
-          open={!!editingPlan}
-          onOpenChange={(open) => !open && setEditingPlan(null)}
-          onSuccess={() => mutate()}
-        />
-      )}
-
-      <ConfirmationDialog
-        open={confirmOpen}
-        onOpenChange={setConfirmOpen}
-        title="Arquivar Plano"
-        description={`Tem certeza que deseja arquivar o plano ${planToArchive?.name}? Ele ficará inativo.`}
-        onConfirm={handleConfirmArchive}
-        variant="destructive"
-      />
-    </>
-  );
-}
-
-function TrashTab() {
-  const { data: campaignsData, isLoading, mutate } = useFetch<Campaign[]>('/announcements');
-  const deletedCampaigns = (campaignsData || []).filter(c => c.status === 'INACTIVE');
-
-  const handleRestore = async (id: string) => {
-    try {
-      await api.patch(`/announcements/${id}/restore`);
-      mutate();
-    } catch (error) {
-      console.error('Erro ao restaurar:', error);
-    }
-  };
-
-  const handlePermanentDelete = async (id: string) => {
-    if (confirm("Tem certeza? Esta ação é irreversível.")) {
-      try {
-        await api.delete(`/announcements/${id}`);
-        mutate();
-      } catch (error) {
-        console.error('Erro ao deletar:', error);
-      }
-    }
-  };
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Lixeira</CardTitle>
-        <CardDescription>Itens desativados que podem ser restaurados ou removidos permanentemente.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Título</TableHead>
-              <TableHead>Data Original</TableHead>
-              <TableHead>Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {deletedCampaigns.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={3} className="h-32 text-center text-muted-foreground">
-                  Lixeira vazia
-                </TableCell>
-              </TableRow>
-            ) : (
-              deletedCampaigns.map(camp => (
-                <TableRow key={camp.id}>
-                  <TableCell className="font-medium text-muted-foreground line-through">{camp.title}</TableCell>
-                  <TableCell>{camp.date}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => handleRestore(camp.id)}>Restaurar</Button>
-                      <Button variant="destructive" size="sm" onClick={() => handlePermanentDelete(camp.id)}>Excluir</Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
-  )
-}
-
-function CampaignsTab() {
-  const { data: campaignsData, isLoading, mutate } = useFetch<Campaign[]>('/announcements');
-  const campaigns = (campaignsData || []).filter(c => c.status !== 'INACTIVE');
-
-  // Segmentation Data
-  const { systems: systemsData } = useSystems();
-  const systems = (systemsData || []).map(s => ({ id: s.id, label: s.name }));
-
-  const { data: municipalitiesData } = useFetch<any[]>('/tenancy/governments'); // Using generic for Govs
-  const municipalities = (municipalitiesData || []).map(g => ({ id: g.id, label: g.name }));
-
-  const [searchTerm, setSearchTerm] = useState("");
-  const [sortConfig, setSortConfig] = useState<{ key: keyof Campaign, direction: SortDirection } | null>({ key: 'date', direction: 'desc' });
-
-  const handleDeactivate = async (id: string) => {
-    try {
-      await api.patch(`/announcements/${id}/deactivate`);
-      mutate(); // Recarregar lista
-    } catch (error) {
-      console.error('Erro ao desativar:', error);
-    }
-  };
+  const activeCampaigns = campaigns.filter(c => c.status === 'ACTIVE' || c.status === 'SCHEDULED');
 
   const filteredAndSortedCampaigns = useMemo(() => {
-    let sortableItems = [...campaigns];
+    let sortableItems = [...activeCampaigns];
     if (sortConfig !== null) {
       sortableItems.sort((a, b) => {
         const aValue: any = a[sortConfig.key] ?? '';
         const bValue: any = b[sortConfig.key] ?? '';
-
         if (aValue < bValue) {
           return sortConfig.direction === 'asc' ? -1 : 1;
         }
@@ -418,308 +195,172 @@ function CampaignsTab() {
     }
 
     return sortableItems.filter(campaign =>
-      campaign.title.toLowerCase().includes(searchTerm.toLowerCase())
+      (campaign.title?.toLowerCase() || '').includes(searchTerm.toLowerCase())
     );
-  }, [campaigns, searchTerm, sortConfig]);
-
-
-  // Form State
-  const [formData, setFormData] = useState({
-    title: '',
-    message: '',
-    scope: 'GLOBAL' as 'GLOBAL' | 'GOVERNMENT' | 'SYSTEM' | 'SCHOOL' | 'INDIVIDUAL',
-    targetRole: undefined as string | undefined,
-    targetIds: [] as string[]
-  });
-  const [date, setDate] = React.useState<DateRange | undefined>({
-    from: new Date(),
-    to: addDays(new Date(), 7),
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const { toast } = useToast(); // Ensure you have this hook imported or available, otherwise use a simple alert or console
-  // Note: If useToast is not imported in the file top-level, we might need to add it. 
-  // Looking at the file imports, I don't see useToast imported. 
-  // I will check if I can import it. If not, I will use a basic alert for now or add the import in a separate step.
-  // Wait, I can't import in this block. I'll adhere to the existing code structure. 
-  // Let's assume for this block we just log or use window.alert if toast isn't available, 
-  // BUT the file actually imports "useToast" in other files usually. 
-  // Let's check imports in the original file... 
-  // The original file imports are:
-  // import { ... } from "lucide-react";
-  // import { ... } from "@/components/ui/button";
-  // NO useToast. I will have to add it.
-
-  const handleSend = async () => {
-    if (!formData.title || !formData.message) {
-      alert("Por favor, preencha o título e a descrição."); // Fallback
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      await api.post('/announcements', {
-        ...formData,
-        // If date logic is needed in backend, add it here. 
-        // For now backend CreateAnnouncementDto doesn't seem to enforce dates, 
-        // but let's assume 'status' or metadata might usage it.
-        // Keeping it simple as per DTO.
-      });
-
-      // Reset
-      setFormData({
-        title: '',
-        message: '',
-        scope: 'GLOBAL',
-        targetRole: undefined,
-        targetIds: []
-      });
-
-      mutate(); // Refresh list
-      alert("Campanha agendada com sucesso!");
-    } catch (error) {
-      console.error(error);
-      alert("Erro ao criar campanha.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  }, [activeCampaigns, searchTerm, sortConfig]);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-      {/* Coluna do Formulário */}
-      <div className="md:col-span-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Criar Nova Campanha</CardTitle>
-            <CardDescription>Envie anúncios e notificações para segmentos específicos de usuários.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="camp-title">Título</Label>
-              <Input
-                id="camp-title"
-                placeholder="Ex: Manutenção Programada"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="camp-desc">Descrição</Label>
-              <Textarea
-                id="camp-desc"
-                placeholder="Detalhe a comunicação aqui..."
-                value={formData.message}
-                onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-              />
-            </div>
-
-            <Separator />
-
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h4 className="font-medium mb-4">Agendamento</h4>
-              <div className="space-y-2">
-                <Label>Período de veiculação</Label>
-                {/* DatePicker component needs to lift state up if we want to use it, 
-                     but for now it controls its own state. 
-                     We are just keeping it visual as per 'Wiring' instructions 
-                     unless backend supports start/end dates. 
-                     The current DTO doesn't have start/end dates.
-                 */}
-                <DateRangePicker />
-              </div>
+              <CardTitle>Campanhas de Comunicação</CardTitle>
+              <CardDescription>Envie anúncios segmentados para usuários específicos.</CardDescription>
             </div>
-
-            <Separator />
-
-            <div>
-              <h4 className="font-medium mb-4">Segmentação</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label>Sistema</Label>
-                  {/* Simplified Scope Selection for Wiring */}
-                  <select
-                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    value={formData.scope}
-                    onChange={(e) => setFormData({ ...formData, scope: e.target.value as any })}
-                  >
-                    <option value="GLOBAL">Global</option>
-                    <option value="GOVERNMENT">Municípios</option>
-                    <option value="SYSTEM">Sistemas</option>
-                    <option value="SCHOOL">Escolas</option>
-                  </select>
-                </div>
-
-                {formData.scope === 'GOVERNMENT' && (
-                  <div className="space-y-2 col-span-2">
-                    <Label>Município Alvo</Label>
-                    {/* Mock Select for ID */}
-                    <select
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setFormData({ ...formData, targetIds: val ? [val] : [] })
-                      }}
-                    >
-                      <option value="">Selecione...</option>
-                      {municipalities.map(m => (
-                        <option key={m.id} value={m.id}>{m.label}</option>
-                      ))}
-                    </select>
-                  </div>
+            <Input
+              placeholder="Buscar campanhas..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-64"
+            />
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="flex justify-center items-center h-32">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>
+                    <Button variant="ghost" onClick={() => handleSort('title')}>
+                      Título
+                      <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Segmentação</TableHead>
+                  <TableHead>Data de Envio</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredAndSortedCampaigns.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
+                      Nenhuma campanha encontrada
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredAndSortedCampaigns.map((campaign) => (
+                    <TableRow key={campaign.id}>
+                      <TableCell className="font-medium">{campaign.title}</TableCell>
+                      <TableCell>
+                        <Badge variant={campaign.status === "ACTIVE" ? "default" : "secondary"}>
+                          {campaign.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {campaign.targetRoles?.length || 0} roles, {campaign.targetSchools?.length || 0} escolas
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {campaign.scheduledDate 
+                          ? format(new Date(campaign.scheduledDate), "dd/MM/yyyy HH:mm", { locale: ptBR })
+                          : 'Não agendada'}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Abrir menu</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                            <DropdownMenuItem>Ver Detalhes</DropdownMenuItem>
+                            <DropdownMenuItem>Duplicar</DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => handleDeactivate(campaign)} className="text-destructive hover:text-destructive">
+                              <Archive className="mr-2 h-4 w-4" />
+                              Arquivar
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
                 )}
-                {formData.scope === 'SYSTEM' && (
-                  <div className="space-y-2 col-span-2">
-                    <Label>Sistema Alvo</Label>
-                    <select
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setFormData({ ...formData, targetIds: val ? [val] : [] })
-                      }}
-                    >
-                      <option value="">Selecione...</option>
-                      {systems.map(s => (
-                        <option key={s.id} value={s.id}>{s.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
 
+      {/* Dialog de Criação (implementar posteriormente) */}
+      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Nova Campanha</DialogTitle>
+            <DialogDescription>
+              Crie uma campanha de comunicação segmentada
+            </DialogDescription>
+          </DialogHeader>
+          {/* Formulário aqui */}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancelar</Button>
+            <Button>Criar Campanha</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-                <div className="space-y-2">
-                  <Label>Role de Usuário</Label>
-                  {/* Role Selector */}
-                  <select
-                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    value={formData.targetRole || ''}
-                    onChange={(e) => setFormData({ ...formData, targetRole: e.target.value || undefined })}
-                  >
-                    <option value="">Todos</option>
-                    {roles.map(r => (
-                      <option key={r.id} value={r.id}>{r.label}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-          <CardFooter>
-            <Button onClick={handleSend} disabled={isSubmitting}>
-              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-              Agendar Campanha
-            </Button>
-          </CardFooter>
-        </Card>
-      </div>
-      {/* Coluna do Histórico */}
-      <div>
-        <Card>
-          <CardHeader>
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <div>
-                <CardTitle>Histórico</CardTitle>
-                <CardDescription>Campanhas enviadas.</CardDescription>
-              </div>
-              <Input
-                placeholder="Buscar..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full sm:w-auto"
-              />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-96">
-              <div className="space-y-4">
-                {filteredAndSortedCampaigns.map(camp => (
-                  <div key={camp.id} className="flex items-center justify-between">
-                    <div className="flex items-center flex-1">
-                      <CheckCircle className="h-4 w-4 text-green-500 mr-3" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">{camp.title}</p>
-                        <p className="text-xs text-muted-foreground">{camp.date}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary">{camp.status}</Badge>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                          <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                          <DropdownMenuItem>Editar</DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => handleDeactivate(camp.id)} className="text-destructive hover:text-destructive">
-                            <Archive className="mr-2 h-4 w-4" />
-                            Desativar
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+      <ConfirmationDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Arquivar Campanha"
+        description={`Tem certeza que deseja arquivar a campanha "${campaignToDeactivate?.title}"? Ela ficará inativa.`}
+        onConfirm={handleConfirmDeactivate}
+        variant="destructive"
+      />
+    </>
   );
 }
 
 // --- Componente da Página ---
-
 export default function AnnouncementsPage() {
-  const [activeTab, setActiveTab] = useState("plans");
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Comunicados & Planos"
-        description="Gerencie os planos de assinatura e envie comunicados em massa."
+        title="Comunicados & Anúncios"
+        description="Gerencie comunicações em massa e anúncios para usuários específicos."
         actions={
-          activeTab === 'plans' ? (
-            <Button>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Adicionar Plano
-            </Button>
-          ) : (
-            <Button>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Nova Campanha
-            </Button>
-          )
+          <Button onClick={() => setIsCreateOpen(true)}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Nova Campanha
+          </Button>
         }
       />
-      <Tabs defaultValue="plans" className="space-y-4" onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="plans">
-            <CreditCard className="mr-2 h-4 w-4" />
-            Planos
-          </TabsTrigger>
-          <TabsTrigger value="campaigns">
-            <Megaphone className="mr-2 h-4 w-4" />
-            Campanhas
-          </TabsTrigger>
-          <TabsTrigger value="trash">
-            <Archive className="mr-2 h-4 w-4" />
-            Lixeira
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent value="plans" className="space-y-4">
-          <PlansTab />
-        </TabsContent>
-        <TabsContent value="campaigns" className="space-y-4">
-          <CampaignsTab />
-        </TabsContent>
-        <TabsContent value="trash" className="space-y-4">
-          <TrashTab />
-        </TabsContent>
-      </Tabs>
+      <CampaignsTab />
+
+      {/* Create Dialog (placeholder) */}
+      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Nova Campanha</DialogTitle>
+            <DialogDescription>
+              Crie uma campanha de comunicação segmentada
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-muted-foreground">
+              Formulário de criação de campanha será implementado aqui.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancelar</Button>
+            <Button>Criar Campanha</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -11,9 +11,7 @@ export type UserRole =
   | 'STUDENT'
   | 'CONSUMER'
   // Legacy
-  | 'GLOBAL_ADMIN'
-  | 'OPERATOR_ADMIN'
-  | 'CANTEEN_OPERATOR';
+  // Legacy roles removidos
 
 export interface AuthenticatedUserPayload {
   id: string;

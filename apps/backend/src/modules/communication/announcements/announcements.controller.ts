@@ -34,7 +34,7 @@ export class AnnouncementsController {
   }
 
   @Post()
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.GLOBAL_ADMIN, UserRole.GOV_ADMIN)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN, UserRole.GOV_ADMIN)
   async create(@Request() req, @Body() dto: CreateAnnouncementDto) {
     // Enforce RLS: Authenticated user's schoolId
     const schoolId = req.user.schoolId;
@@ -43,7 +43,7 @@ export class AnnouncementsController {
   }
 
   @Get()
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.GLOBAL_ADMIN, UserRole.GOV_ADMIN)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN, UserRole.GOV_ADMIN)
   async findAll(@Request() req) {
     const schoolId = req.user.schoolId;
     const userId = req.user.id;
@@ -51,19 +51,19 @@ export class AnnouncementsController {
   }
 
   @Patch(':id/deactivate')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN)
   async deactivate(@Request() req, @Param('id') id: string) {
     return this.announcementsService.deactivate(req.user.schoolId, id);
   }
 
   @Patch(':id/restore')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN)
   async restore(@Request() req, @Param('id') id: string) {
     return this.announcementsService.restore(req.user.schoolId, id);
   }
 
   @Delete(':id')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN)
   async remove(@Request() req, @Param('id') id: string) {
     return this.announcementsService.remove(req.user.schoolId, id);
   }

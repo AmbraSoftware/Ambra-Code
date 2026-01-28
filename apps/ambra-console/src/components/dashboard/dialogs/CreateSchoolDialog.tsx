@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/lib/api";
 import { useSystems, usePlans } from "@/hooks/use-api";
@@ -25,7 +26,16 @@ const formSchema = z.object({
     adminName: z.string().min(2, { message: "Nome do admin muito curto." }),
     adminEmail: z.string().email({ message: "Email inválido." }),
     adminPassword: z.string().min(8, { message: "A senha deve ter pelo menos 8 caracteres." }),
-});
+    // Configuração Híbrida: Escola pode ter Merenda e/ou Cantina
+    hasMerenda: z.boolean().default(false),
+    hasCanteen: z.boolean().default(false),
+}).refine(
+    (data) => data.hasMerenda || data.hasCanteen,
+    {
+        message: "Selecione pelo menos uma opção: Merenda ou Cantina",
+        path: ["hasMerenda"], // Mostra erro no primeiro campo
+    }
+);
 
 interface CreateSchoolDialogProps {
     onSuccess?: () => void;
@@ -48,6 +58,8 @@ export function CreateSchoolDialog({ onSuccess }: CreateSchoolDialogProps) {
             adminName: "",
             adminEmail: "",
             adminPassword: "",
+            hasMerenda: false,
+            hasCanteen: false,
         },
     });
 
@@ -70,11 +82,34 @@ export function CreateSchoolDialog({ onSuccess }: CreateSchoolDialogProps) {
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
         try {
-            await api.post('/tenancy/schools', values);
+            // Cria a escola com configuração híbrida
+            const schoolPayload = {
+                systemId: values.systemId,
+                name: values.name,
+                taxId: values.taxId,
+                slug: values.slug,
+                planId: values.planId,
+                adminName: values.adminName,
+                adminEmail: values.adminEmail,
+                adminPassword: values.adminPassword,
+                hasMerenda: values.hasMerenda,
+                hasCanteen: values.hasCanteen,
+            };
+
+            const schoolResponse = await api.post('/tenancy/schools', schoolPayload);
+            const schoolId = schoolResponse.data.schoolId;
+            const createdCanteens = schoolResponse.data.canteens || [];
+
+            // Monta mensagem de sucesso com informações das cantinas criadas
+            let description = `A escola ${values.name} foi adicionada ao ecossistema.`;
+            if (createdCanteens.length > 0) {
+                const canteenNames = createdCanteens.map((c: any) => c.name).join(', ');
+                description += ` ${createdCanteens.length} cantina(s) criada(s) automaticamente: ${canteenNames}.`;
+            }
 
             toast({
                 title: "Escola criada com sucesso!",
-                description: `A escola ${values.name} foi adicionada ao ecossistema.`,
+                description: description,
             });
 
             setOpen(false);
@@ -83,10 +118,19 @@ export function CreateSchoolDialog({ onSuccess }: CreateSchoolDialogProps) {
             if (onSuccess) onSuccess();
         } catch (error: any) {
             console.error(error);
+            // Extrai mensagem amigável do backend
+            const errorMessage = error.response?.data?.message || 
+                                error.response?.data?.error ||
+                                (error.response?.status === 409 ? "Já existe uma escola com este CNPJ ou slug cadastrado." :
+                                 error.response?.status === 400 ? "Dados inválidos. Verifique os campos preenchidos." :
+                                 error.response?.status === 401 ? "Você não tem permissão para realizar esta ação." :
+                                 error.response?.status === 500 ? "Erro interno do servidor. Tente novamente mais tarde." :
+                                 "Ocorreu um erro inesperado. Tente novamente.");
+            
             toast({
                 variant: "destructive",
                 title: "Erro ao criar escola",
-                description: error.response?.data?.message || "Ocorreu um erro inesperado.",
+                description: errorMessage,
             });
         }
     }
@@ -205,6 +249,63 @@ export function CreateSchoolDialog({ onSuccess }: CreateSchoolDialogProps) {
                                     </FormItem>
                                 )}
                             />
+                        </div>
+
+                        {/* Configuração Híbrida */}
+                        <div className="border-t pt-4 mt-4">
+                            <h3 className="text-sm font-medium mb-3 text-muted-foreground">Configuração Híbrida</h3>
+                            <p className="text-xs text-muted-foreground mb-4">
+                                Escolas podem operar em modo híbrido, oferecendo tanto merenda governamental quanto vendas comerciais.
+                            </p>
+                            <div className="grid grid-cols-1 gap-4">
+                                <FormField
+                                    control={form.control}
+                                    name="hasMerenda"
+                                    render={({ field }) => (
+                                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 bg-muted/30">
+                                            <div className="space-y-1 flex-1 pr-4">
+                                                <FormLabel className="text-base font-semibold">Merenda IQ</FormLabel>
+                                                <FormDescription className="text-xs">
+                                                    Habilita controle de estoque público e gestão de cardápios governamentais. 
+                                                    Permite registrar consumo de merenda gratuita sem transações financeiras.
+                                                </FormDescription>
+                                            </div>
+                                            <FormControl>
+                                                <Switch
+                                                    checked={field.value}
+                                                    onCheckedChange={field.onChange}
+                                                />
+                                            </FormControl>
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="hasCanteen"
+                                    render={({ field }) => (
+                                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 bg-muted/30">
+                                            <div className="space-y-1 flex-1 pr-4">
+                                                <FormLabel className="text-base font-semibold">Cantina Privada</FormLabel>
+                                                <FormDescription className="text-xs">
+                                                    Habilita financeiro e vendas comerciais. Permite cadastro de produtos, 
+                                                    operadores de vendas e transações com pagamento via carteira digital.
+                                                </FormDescription>
+                                            </div>
+                                            <FormControl>
+                                                <Switch
+                                                    checked={field.value}
+                                                    onCheckedChange={field.onChange}
+                                                />
+                                            </FormControl>
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+                            {form.formState.errors.hasMerenda && (
+                                <p className="text-sm text-destructive mt-2">
+                                    {form.formState.errors.hasMerenda.message}
+                                </p>
+                            )}
                         </div>
 
                         <div className="border-t pt-4 mt-4">

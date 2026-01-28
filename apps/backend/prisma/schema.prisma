@@ -120,6 +120,7 @@ model Plan {
   schools         School[]
   governments     Government[]
   planHistory     SchoolPlanHistory[]
+  coupons         Coupon[]             // [v4.8] Cupons restritos a este plano
   
   createdAt       DateTime             @default(now()) @db.Timestamptz(3)
   updatedAt       DateTime             @updatedAt @db.Timestamptz(3)
@@ -395,11 +396,6 @@ enum UserRole {
   GUARDIAN
   STUDENT
   CONSUMER         // [v5.0] Genérico
-  
-  // Legacy Roles (Mantidas para compatibilidade)
-  GLOBAL_ADMIN
-  OPERATOR_ADMIN
-  CANTEEN_OPERATOR
 }
 
 enum ProductType {
@@ -450,7 +446,7 @@ model Wallet {
   dailySpendLimit  Decimal       @default(0.00) @db.Decimal(12, 2)
   canPurchaseAlone Boolean       @default(true)
   canRechargeAlone Boolean       @default(true)
-  allowedDays      Int[]         @default([1,2,3,4,5,6]) 
+  allowedDays      Int[]         @default([1,2,3,4,5]) 
   
   transactions     Transaction[]
   dailySpending    DailySpend[]
@@ -873,3 +869,67 @@ enum PlanTarget {
   GUARDIAN_PREMIUM  // Planos para Pais (B2C) - Ambra Food Premium
 }
 
+enum CouponType {
+  PERCENTAGE
+  FIXED
+}
+
+enum CouponAudience {
+  B2B // Escolas/Gestores
+  B2C // Pais/Alunos
+}
+
+enum CouponStatus {
+  ACTIVE
+  EXPIRED
+  DISABLED
+}
+
+model Coupon {
+  id          String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code        String         @unique
+  type        CouponType
+  value       Float          // Valor do desconto (% ou R$)
+  audience    CouponAudience
+  
+  planId      String?        @db.Uuid
+  plan        Plan?          @relation(fields: [planId], references: [id])
+  
+  validUntil  DateTime       @db.Timestamptz(3)
+  maxUses     Int?           // Null = ilimitado
+  usedCount   Int            @default(0)
+  status      CouponStatus   @default(ACTIVE)
+  
+  createdAt   DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime       @updatedAt @db.Timestamptz(3)
+
+  @@index([code, status])
+  @@map("coupons")
+}
+
+model CashInFee {
+  id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  
+  // Boleto
+  boletoGatewayCost     Float    @default(3.49)
+  boletoChargeCustomer  Boolean  @default(true)
+  boletoCustomerFixed   Float    @default(4.00)
+  boletoCustomerPercent Float    @default(0)
+  boletoChargeMerchant  Boolean  @default(false)
+  boletoMerchantFixed   Float    @default(0)
+  boletoMerchantPercent Float    @default(2.5)
+  
+  // PIX
+  pixGatewayCost        Float    @default(0.99)
+  pixChargeCustomer     Boolean  @default(true)
+  pixCustomerFixed      Float    @default(2.00)
+  pixCustomerPercent    Float    @default(0)
+  pixChargeMerchant     Boolean  @default(true)
+  pixMerchantFixed      Float    @default(0)
+  pixMerchantPercent    Float    @default(1.5)
+  
+  createdAt             DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime @updatedAt @db.Timestamptz(3)
+
+  @@map("cash_in_fees")
+}

@@ -8,7 +8,7 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { TransactionService } from '../transactions/transactions.service';
 import { StockService } from '../stock/stock.service';
-import { CreateOrderDto, CreateOrderItemDto } from '@nodum/shared';
+import { CreateOrderDto, CreateOrderItemDto } from './dto/create-order.dto';
 import { randomBytes } from 'crypto';
 import { AuditService } from '../audit/audit.service';
 import { NotificationsGateway } from '../notifications/notifications.gateway';

@@ -13,7 +13,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { OrdersService } from './orders.service';
-import { CreateOrderDto } from '@nodum/shared';
+import { CreateOrderDto } from './dto/create-order.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -117,7 +117,7 @@ export class OrdersController {
   }
 
   @Patch(':id/status')
-  @Roles(UserRole.CANTEEN_OPERATOR, UserRole.SCHOOL_ADMIN)
+  @Roles(UserRole.OPERATOR_SALES, UserRole.OPERATOR_MEAL, UserRole.SCHOOL_ADMIN)
   @UseInterceptors(AuditInterceptor)
   @Audit('UPDATE_ORDER_STATUS', 'Order')
   @ApiOperation({ summary: 'Atualiza o status do pedido (Canteen Flow).' })

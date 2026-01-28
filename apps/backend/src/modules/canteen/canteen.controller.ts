@@ -37,7 +37,7 @@ export class CanteenController {
   constructor(private readonly canteenService: CanteenService) { }
 
   @Get('order/scan/:hash')
-  @Roles(UserRole.CANTEEN_OPERATOR)
+  @Roles(UserRole.OPERATOR_SALES, UserRole.OPERATOR_MEAL)
   @ApiOperation({
     summary: 'Valida QR Code e busca detalhes do pedido para entrega.',
   })
@@ -51,7 +51,7 @@ export class CanteenController {
   }
 
   @Get('orders')
-  @Roles(UserRole.CANTEEN_OPERATOR, UserRole.SCHOOL_ADMIN)
+  @Roles(UserRole.OPERATOR_SALES, UserRole.OPERATOR_MEAL, UserRole.SCHOOL_ADMIN)
   @ApiOperation({
     summary: 'Lista a fila de pedidos da cantina (Padrão: PAID).',
   })
@@ -64,7 +64,7 @@ export class CanteenController {
 
   @Post('orders/:orderId/deliver')
   @HttpCode(HttpStatus.OK)
-  @Roles(UserRole.CANTEEN_OPERATOR)
+  @Roles(UserRole.OPERATOR_SALES, UserRole.OPERATOR_MEAL)
   @UseInterceptors(AuditInterceptor)
   @Audit('DELIVER_ORDER', 'Order')
   @ApiOperation({

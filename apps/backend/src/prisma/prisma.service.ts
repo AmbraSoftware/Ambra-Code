@@ -86,7 +86,7 @@ export class PrismaService
             ];
 
             // Só injetamos o filtro se houver um schoolId no contexto e o modelo for protegido
-            // Se o usuário for um GLOBAL_ADMIN (schoolId null), o filtro é ignorado.
+            // Se o usuário for um SUPER_ADMIN (schoolId null), o filtro é ignorado.
             if (schoolId && modelsWithSchoolId.includes(model)) {
               // 1. Injeção no filtro WHERE (Leitura/Update/Delete)
               const needsWhere = [

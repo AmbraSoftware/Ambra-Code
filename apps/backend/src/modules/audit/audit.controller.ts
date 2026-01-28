@@ -29,7 +29,7 @@ export class AuditController {
   constructor(private readonly auditService: AuditService) {}
 
   @Get('logs')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({
     summary: 'Busca os logs de auditoria da escola com paginação.',
   })
@@ -43,14 +43,14 @@ export class AuditController {
   }
 
   @Get('global-recent')
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Stream de auditoria global (últimos 50 eventos).' })
   async getGlobalRecentLogs() {
     return this.auditService.getGlobalRecentLogs();
   }
 
   @Get('verify-integrity')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({
     summary:
       'Verifica a integridade da blockchain-style chain de logs de auditoria.',
@@ -69,7 +69,7 @@ export class AuditController {
     },
   })
   async verifyIntegrity(@CurrentUser() user: AuthenticatedUserPayload) {
-    // GLOBAL_ADMIN pode verificar qualquer escola, outros verificam a própria
+    // SUPER_ADMIN pode verificar qualquer escola, outros verificam a própria
     const schoolId = user.schoolId;
 
     if (!schoolId) {
@@ -85,9 +85,9 @@ export class AuditController {
   }
 
   @Get('verify-integrity/:schoolId')
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({
-    summary: '[GLOBAL ADMIN] Verifica integridade de logs de qualquer escola.',
+    summary: '[SUPER ADMIN] Verifica integridade de logs de qualquer escola.',
   })
   @ApiResponse({
     status: 200,

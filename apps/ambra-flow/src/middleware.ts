@@ -35,8 +35,8 @@ const managerRoles = [
     UserRole.SCHOOL_ADMIN,
     UserRole.SUPER_ADMIN,
     // Legacy roles para compatibilidade
-    'OPERATOR_ADMIN',
-    'GLOBAL_ADMIN',
+    'MERCHANT_ADMIN',
+    'SUPER_ADMIN',
 ];
 
 // Roles permitidas para Operator Mode
@@ -44,7 +44,8 @@ const operatorRoles = [
     UserRole.OPERATOR_SALES,
     UserRole.OPERATOR_MEAL,
     // Legacy roles para compatibilidade
-    'CANTEEN_OPERATOR',
+    'OPERATOR_SALES',
+    'OPERATOR_MEAL',
 ];
 
 /**

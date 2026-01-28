@@ -51,7 +51,7 @@ export default function StaffManagementPage() {
             // Busca usuários com roles de operador
             const response = await api.get('/users', {
                 params: {
-                    role: 'OPERATOR_SALES,OPERATOR_MEAL,CANTEEN_OPERATOR', // Inclui legacy
+                    role: 'OPERATOR_SALES,OPERATOR_MEAL',
                 },
             });
             
@@ -61,7 +61,7 @@ export default function StaffManagementPage() {
                 return roles.some((r: string) => 
                     r === UserRole.OPERATOR_SALES || 
                     r === UserRole.OPERATOR_MEAL ||
-                    r === 'CANTEEN_OPERATOR' // Legacy
+                    r === 'OPERATOR_SALES' || r === 'OPERATOR_MEAL'
                 );
             });
             
