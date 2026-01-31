@@ -12,6 +12,8 @@ import {
   Query,
   Res,
   BadRequestException,
+  ConflictException,
+  ForbiddenException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -85,7 +87,13 @@ export class UsersController {
   }
 
   @Get()
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles(
+    UserRole.SCHOOL_ADMIN,
+    UserRole.SUPER_ADMIN,
+    UserRole.MERCHANT_ADMIN,
+    UserRole.OPERATOR_SALES,
+    UserRole.OPERATOR_MEAL,
+  )
   @ApiOperation({
     summary: 'Lista todos os utilizadores da escola (Isolamento RLS ativo).',
     description: '[v4.5] Suporta filtros de auditoria: ?filter=negative_balance ou ?filter=inactive_30d',
@@ -95,7 +103,28 @@ export class UsersController {
     @Query('role') role?: string,
     @Query('deleted') deleted?: string,
     @Query('filter') filter?: 'negative_balance' | 'inactive_30d', // [v4.5] Audit Filters
+    @Query('search') search?: string,
+    @Query('take') take?: string,
   ) {
+    const isOperator =
+      user.roles?.includes('OPERATOR_SALES') || user.roles?.includes('OPERATOR_MEAL');
+
+    if (isOperator) {
+      const normalizedSearch = (search || '').trim();
+      if (normalizedSearch.length < 3) {
+        throw new BadRequestException(
+          'Parâmetro search é obrigatório (mín. 3 caracteres) para operadores.',
+        );
+      }
+
+      // Operador não pode listar arbitrariamente usuários. Só é permitido buscar alunos.
+      if (role && role !== 'STUDENT') {
+        throw new ForbiddenException(
+          'Operadores só podem buscar usuários com role=STUDENT.',
+        );
+      }
+    }
+
     // Se for Global Admin, vê tudo (schoolId undefined), se não, vê só da escola
     const withDeleted = deleted === 'true';
     const roles = role ? (role.split(',') as UserRole[]) : undefined;
@@ -104,7 +133,38 @@ export class UsersController {
       roles,
       withDeleted,
       filter, // [v4.5] Pass filter to service
+      search,
+      take,
     );
+  }
+
+  @Post(':userId/nfc')
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN, UserRole.MERCHANT_ADMIN)
+  @UseInterceptors(AuditInterceptor)
+  @Audit('BIND_NFC', 'User')
+  @ApiOperation({
+    summary: '[P0] Vincula NFC (UID Hex) a um usuário.',
+  })
+  @ApiResponse({ status: 200, description: 'NFC vinculado com sucesso.' })
+  @ApiResponse({ status: 409, description: 'NFC já está vinculado a outro usuário.' })
+  async bindNfc(
+    @Param('userId', ParseUUIDPipe) userId: string,
+    @Body('nfcId') nfcId: string,
+    @CurrentUser() user: AuthenticatedUserPayload,
+  ) {
+    if (!nfcId || typeof nfcId !== 'string') {
+      throw new BadRequestException('nfcId é obrigatório.');
+    }
+
+    try {
+      return await this.usersService.bindNfcId(userId, nfcId, user.schoolId || undefined, user.id);
+    } catch (error: any) {
+      if (error instanceof ConflictException) throw error;
+      if (error?.code === 'P2002') {
+        throw new ConflictException('Este NFC já está vinculado a outro usuário.');
+      }
+      throw error;
+    }
   }
 
   @Get('stats')

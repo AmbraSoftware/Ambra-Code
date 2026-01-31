@@ -1,10 +1,3 @@
-// -----------------------------------------------------------------------------
-// NODUM KERNEL SCHEMA - SOBERANIA v4.0 (Alpha Refined)
-// Versão: 4.0.1
-// Foco: Separação de Local (Escola) vs Operador (Financeiro) + Merenda IQ + Fiscal.
-// Estabilidade: 10/10 - Enterprise Grade com HMAC Chain e Explicit Tutelage.
-// -----------------------------------------------------------------------------
-
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["driverAdapters"]
@@ -14,313 +7,227 @@ datasource db {
   provider = "postgresql"
 }
 
-// ==========================================
-// 1. GESTÃO DE SOBERANIA (Multi-Multi-Tenant)
-// ==========================================
-
 model PlatformSystem {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name        String   
-  slug        String   @unique 
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String
+  slug        String       @unique
   description String?
-  status      String   @default("ACTIVE")
-  
-  schools     School[] 
-  governments Government[] 
-  sysConfig   SysConfig?   // [v3.9.2] Configuração global do sistema
-  
-  createdAt   DateTime @default(now()) @db.Timestamptz(3)
-  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+  status      String       @default("ACTIVE")
+  createdAt   DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime     @updatedAt @db.Timestamptz(3)
+  governments Government[]
+  schools     School[]
+  sysConfig   SysConfig?
 
   @@map("platform_systems")
 }
 
 model Government {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name        String   // Ex: Estado de SP ou Prefeitura de Santos
-  taxId       String   @unique 
-  slug        String   @unique
-  
-  systemId    String   @db.Uuid
-  system      PlatformSystem @relation(fields: [systemId], references: [id])
-  
-  planId      String   @db.Uuid
-  plan        Plan     @relation(fields: [planId], references: [id])
-  
-  schools     School[] // Escolas físicas ligadas a este governo
-  users       User[]   // Gestores do Município (GOV_ADMIN)
-  
-  config      Json?    // { "primaryColor": "#hex", "heraldry": "url_brasao" }
-  
-  createdAt   DateTime @default(now()) @db.Timestamptz(3)
-  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+  id        String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String
+  taxId     String         @unique
+  slug      String         @unique
+  systemId  String         @db.Uuid
+  planId    String         @db.Uuid
+  config    Json?
+  createdAt DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime       @updatedAt @db.Timestamptz(3)
+  plan      Plan           @relation(fields: [planId], references: [id])
+  system    PlatformSystem @relation(fields: [systemId], references: [id])
+  schools   School[]
+  users     User[]
 
   @@map("governments")
 }
 
 model Operator {
-  // [v4.0 NEW] Define a Entidade Financeira Independente (MEI/Empresa de Catering)
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name        String   // Ex: MEI do Seu João
-  taxId       String   @unique 
-  asaasApiKey String?  // [v4.0 NEW] API Key da Subconta
-  asaasId     String?  @unique // [v4.0.2] ID da Subconta Asaas (acc_123)
-  asaasWalletId String? // [v4.0.2] Wallet ID para Split (b38...)
-  
-  asaasToken  String?  // [v4.0.2] Token de autorização para webhooks
-  
-  // [v4.6] Coherence (ViaCEP/Contact)
-  mobilePhone   String?
-  postalCode    String?
-  address       String?
-  addressNumber String?
-
-  // [v4.5] Compliance 2026 (Bacen Annual Confirmation)
-  dataExpirationDate DateTime? @db.Date // "scheduledDate" from Asaas
-  isDataExpired      Boolean   @default(false)
-  
-  canteens    Canteen[] // Um operador pode gerir várias cantinas em várias escolas
-  transactions Transaction[]
-  invoices    Invoice[]
-  fiscalItems FiscalPendingItem[] // [v4.1] Batch Invoicing Accumulator
-  
-  createdAt   DateTime @default(now()) @db.Timestamptz(3)
-  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+  id                 String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name               String
+  taxId              String              @unique
+  asaasId            String?             @unique
+  createdAt          DateTime            @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime            @updatedAt @db.Timestamptz(3)
+  asaasToken         String?
+  asaasWalletId      String?
+  address            String?
+  addressNumber      String?
+  asaasApiKey        String?
+  dataExpirationDate DateTime?           @db.Date
+  isDataExpired      Boolean             @default(false)
+  mobilePhone        String?
+  postalCode         String?
+  canteens           Canteen[]
+  fiscalItems        FiscalPendingItem[]
+  invoices           Invoice[]
+  transactions       Transaction[]
 
   @@map("operators")
 }
 
 model WebhookEvent {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  eventId     String   @unique // ID único do evento no Asaas (evt_...)
-  provider    String   @default("ASAAS")
-  eventType   String   // Ex: PAYMENT_RECEIVED
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  eventId     String    @unique
+  provider    String    @default("ASAAS")
+  eventType   String
   payload     Json
   processedAt DateTime? @db.Timestamptz(3)
-  status      String   @default("PENDING") // PENDING, PROCESSED, FAILED, IGNORED
-  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  status      String    @default("PENDING")
+  createdAt   DateTime  @default(now()) @db.Timestamptz(3)
 
   @@map("webhook_events")
 }
 
 model Plan {
-  id              String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id              String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name            String
   description     String?
-  price           Decimal              @db.Decimal(12, 2)
-  target          PlanTarget           @default(SCHOOL_SAAS) // [v4.7] B2B vs B2C
-  feesConfig      Json?                // [v4.7] { "rechargeFixed": 3.00, "rechargePercent": 5.0 }
-  discountPercent Decimal              @default(0.00) @db.Decimal(5, 2)
-  maxStudents     Int                  @default(100)
-  maxCanteens     Int                  @default(1)
-  creditCeiling   Decimal              @default(0.00) @db.Decimal(12, 2) // [v4.2] Risk Engine Ceiling
-  status          PlanStatus           @default(ACTIVE)
-  features        Json?                
-  
-  schools         School[]
+  price           Decimal             @db.Decimal(12, 2)
+  discountPercent Decimal             @default(0.00) @db.Decimal(5, 2)
+  maxStudents     Int                 @default(100)
+  maxCanteens     Int                 @default(1)
+  status          PlanStatus          @default(ACTIVE)
+  features        Json?
+  createdAt       DateTime            @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime            @updatedAt @db.Timestamptz(3)
+  creditCeiling   Decimal             @default(0.00) @db.Decimal(12, 2)
+  feesConfig      Json?
+  target          PlanTarget          @default(SCHOOL_SAAS)
+  coupons         Coupon[]
   governments     Government[]
   planHistory     SchoolPlanHistory[]
-  coupons         Coupon[]             // [v4.8] Cupons restritos a este plano
-  
-  createdAt       DateTime             @default(now()) @db.Timestamptz(3)
-  updatedAt       DateTime             @updatedAt @db.Timestamptz(3)
+  schools         School[]
 
   @@index([status])
   @@map("plans")
-}
-
-enum PlanStatus {
-  ACTIVE
-  RETIRED
 }
 
 model SchoolPlanHistory {
   id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   schoolId  String    @db.Uuid
   planId    String    @db.Uuid
-  school    School    @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-  plan      Plan      @relation(fields: [planId], references: [id], onDelete: Restrict)
   startedAt DateTime  @default(now()) @db.Timestamptz(3)
   endedAt   DateTime? @db.Timestamptz(3)
+  plan      Plan      @relation(fields: [planId], references: [id])
+  school    School    @relation(fields: [schoolId], references: [id])
 
   @@index([schoolId, startedAt])
   @@map("school_plan_histories")
 }
 
-// ==========================================
-// 2. UNIDADES FÍSICAS (Tenancy & Local)
-// ==========================================
-
 model School {
-  id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name         String
-  taxId        String        @unique 
-  slug         String        @unique
-  customDomain String?       @unique
-  status       SchoolStatus  @default(PENDING)
-  active       Boolean       @default(true)
-  
-  // [v4.6] Contact & Address
-  mobilePhone   String?
-  postalCode    String?
-  address       String?
-  addressNumber String?
-  
-  systemId     String        @db.Uuid
-  system       PlatformSystem @relation(fields: [systemId], references: [id], onDelete: Restrict)
-  
-  planId       String        @db.Uuid
-  plan         Plan          @relation(fields: [planId], references: [id], onDelete: Restrict)
-  planHistory  SchoolPlanHistory[]
-  
-  governmentId String?       @db.Uuid
-  government   Government?   @relation(fields: [governmentId], references: [id])
-  
-  // Growth Engine
-  referredBy          String?      
-  affiliateCommission Float        @default(0.0)
-
-  // [v4.1] SaaS Monetization (Asaas)
+  id                  String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                String
+  taxId               String               @unique
+  slug                String               @unique
+  customDomain        String?              @unique
+  status              SchoolStatus         @default(PENDING)
+  active              Boolean              @default(true)
+  systemId            String               @db.Uuid
+  planId              String               @db.Uuid
+  governmentId        String?              @db.Uuid
+  referredBy          String?
+  affiliateCommission Float                @default(0.0)
+  config              Json?
+  createdAt           DateTime             @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime             @updatedAt @db.Timestamptz(3)
   asaasCustomerId     String?
   subscriptionId      String?
-
-  // [v4.5] Asaas Connect (Split & Subaccount)
-  asaasWalletId       String?
+  address             String?
+  addressNumber       String?
+  asaasAccountId      String?
   asaasApiKey         String?
-  asaasAccountId      String? // ID da Subconta (acc_...)      
-  
-  users        User[]
-  canteens     Canteen[]
-  products     Product[]
-  orders       Order[]
-  auditLogs    AuditLog[]
-  invoices     Invoice[]
-  invitations  GuardianInvitation[]
-  announcements Announcement[]
-  discountRules DiscountRule[]
-  
-  config       Json?               
-  customFeesConfig Json?  // [v4.7] Override Fees (Escola/Governo Flexível)
-  
-  createdAt    DateTime      @default(now()) @db.Timestamptz(3)
-  updatedAt    DateTime      @updatedAt @db.Timestamptz(3)
+  asaasWalletId       String?
+  customFeesConfig    Json?
+  mobilePhone         String?
+  postalCode          String?
+  announcements       Announcement[]
+  auditLogs           AuditLog[]
+  canteens            Canteen[]
+  discountRules       DiscountRule[]
+  invitations         GuardianInvitation[]
+  invoices            Invoice[]
+  orders              Order[]
+  products            Product[]
+  planHistory         SchoolPlanHistory[]
+  government          Government?          @relation(fields: [governmentId], references: [id])
+  plan                Plan                 @relation(fields: [planId], references: [id])
+  system              PlatformSystem       @relation(fields: [systemId], references: [id])
+  users               User[]
 
   @@index([status, slug])
   @@index([governmentId])
   @@map("schools")
 }
 
-enum SchoolStatus {
-  PENDING
-  ACTIVE
-  SUSPENDED
-  CANCELED
-}
-
 model Canteen {
-  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name        String        // Ex: "Cantina Central" ou "Refeitório Merenda"
-  type        CanteenType   @default(COMMERCIAL) // [v4.0] Diferencia Lanches de Merenda
-  
-  schoolId    String        @db.Uuid
-  school      School        @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-  
-  // [v4.0] Se for Merenda, o operador pode ser NULL (Governo)
-  operatorId  String?       @db.Uuid 
-  operator    Operator?     @relation(fields: [operatorId], references: [id])
-  
-  status      String        @default("ACTIVE")
-  openingTime String        @default("07:00")
-  closingTime String        @default("18:00")
-  
-  operators     User[]      // Funcionários alocados nesta unidade
-  products      Product[]
-  menus         WeeklyMenu[] // [v4.0] Cardápios da Merenda
-  reservations  StockReservation[]
+  id            String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name          String
+  type          CanteenType        @default(COMMERCIAL)
+  schoolId      String             @db.Uuid
+  operatorId    String?            @db.Uuid
+  status        String             @default("ACTIVE")
+  openingTime   String             @default("07:00")
+  closingTime   String             @default("18:00")
+  createdAt     DateTime           @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime           @updatedAt @db.Timestamptz(3)
+  deletedAt     DateTime?          @db.Timestamptz(3)
+  operator      Operator?          @relation(fields: [operatorId], references: [id])
+  school        School             @relation(fields: [schoolId], references: [id])
   inventoryLogs InventoryLog[]
-  
-  createdAt   DateTime      @default(now()) @db.Timestamptz(3)
-  updatedAt   DateTime      @updatedAt @db.Timestamptz(3)
-  deletedAt   DateTime?     @db.Timestamptz(3)
+  products      Product[]
+  reservations  StockReservation[]
+  operators     User[]
+  menus         WeeklyMenu[]
 
   @@index([schoolId, status])
   @@map("canteens")
 }
 
-enum CanteenType {
-  COMMERCIAL   // Vende lanches (Requer Operador)
-  GOVERNMENTAL // Merenda gratuita (Informativa/Governo)
-}
-
-// ==========================================
-// 3. IDENTIDADE, TUTELA & LGPD
-// ==========================================
-
 model User {
-  id                  String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name                String
-  email               String               @unique 
-  passwordHash        String               
-  document            String?              
-  documentHash        String?              
-  birthDate           DateTime?            @db.Date
-  role                UserRole?            @default(STUDENT) // Legacy (kept for safety)
-  roles               UserRole[]           @default([STUDENT]) // [v5.0] Multi-Role Support
-  
-  // [v4.8] Academic Info
-  class               String?              // Turma/Série (Ex: "5º Ano A")
-
-  // [v4.5] Security: Force password change on first login
-  mustChangePassword  Boolean              @default(false)
-
-  // [v4.7] Ambra Food Premium
-  subscriptionPlanId String?              @db.Uuid
-  subscriptionStatus String?              // ACTIVE, INACTIVE, CANCELLED
-  subscriptionExpiresAt DateTime?         @db.Timestamptz(3)
-
-  // [v4.2] Physical World (NFC/RFID)
-  nfcId               String?              @unique // Para login com cartão/pulseira
-
-  
-  schoolId            String?              @db.Uuid
-  school              School?              @relation(fields: [schoolId], references: [id], onDelete: SetNull)
-  
-  governmentId        String?              @db.Uuid
-  government          Government?          @relation(fields: [governmentId], references: [id])
-
-  canteenId           String?              @db.Uuid
-  canteen             Canteen?             @relation(fields: [canteenId], references: [id], onDelete: SetNull)
-
-  wallet              Wallet?
-  transactions        Transaction[]
-
-  // [v3.9.2 유지] TUTELA EXPLÍCITA (Mapeamento Industrial v3.9.2)
-  guardianRelations   UserDependency[]     @relation("DependentToGuardian")
-  dependentRelations  UserDependency[]     @relation("GuardianToDependent")
-  
-  nutritionalProfile  NutritionalProfile?
-  ratings             MenuRating[]         // [v4.0] Feedback da Merenda
-
-  termsAccepted       Boolean              @default(false)
-  termsVersion        String?              
-  consentLogs         ConsentLog[]
-
-  sentInvitations     GuardianInvitation[] @relation("Sender")
-  receivedInvitations GuardianInvitation[] @relation("Receiver")
+  id                    String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                  String
+  email                 String                @unique
+  passwordHash          String
+  document              String?
+  documentHash          String?
+  birthDate             DateTime?             @db.Date
+  role                  UserRole?             @default(STUDENT)
+  schoolId              String?               @db.Uuid
+  governmentId          String?               @db.Uuid
+  canteenId             String?               @db.Uuid
+  termsAccepted         Boolean               @default(false)
+  termsVersion          String?
+  lastLoginAt           DateTime?             @db.Timestamptz(3)
+  createdAt             DateTime              @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime              @updatedAt @db.Timestamptz(3)
+  deletedAt             DateTime?             @db.Timestamptz(3)
+  mustChangePassword    Boolean               @default(false)
+  nfcId                 String?               @unique
+  avatarUrl             String?
+  subscriptionExpiresAt DateTime?             @db.Timestamptz(3)
+  subscriptionPlanId    String?               @db.Uuid
+  subscriptionStatus    String?
+  class                 String?
+  roles                 UserRole[]            @default([STUDENT])
+  dependentRelations    UserDependency[]      @relation("GuardianToDependent")
+  guardianRelations     UserDependency[]      @relation("DependentToGuardian")
   authoredAnnouncements Announcement[]
-
-  ordersAsBuyer       Order[]              @relation("BuyerOrders")
-  ordersAsStudent     Order[]              @relation("StudentOrders")
-  
-  restrictedProducts  ProductRestriction[]
-  restrictedCategories CategoryRestriction[]
-  favorites           Favorite[]
-  auditLogs           AuditLog[]
-  
-  lastLoginAt         DateTime?            @db.Timestamptz(3)
-  createdAt           DateTime             @default(now()) @db.Timestamptz(3)
-  updatedAt           DateTime             @updatedAt @db.Timestamptz(3)
-  deletedAt           DateTime?            @db.Timestamptz(3)
+  auditLogs             AuditLog[]
+  restrictedCategories  CategoryRestriction[]
+  consentLogs           ConsentLog[]
+  favorites             Favorite[]
+  receivedInvitations   GuardianInvitation[]  @relation("Receiver")
+  sentInvitations       GuardianInvitation[]  @relation("Sender")
+  ratings               MenuRating[]
+  nutritionalProfile    NutritionalProfile?
+  ordersAsBuyer         Order[]               @relation("BuyerOrders")
+  ordersAsStudent       Order[]               @relation("StudentOrders")
+  restrictedProducts    ProductRestriction[]
+  transactions          Transaction[]
+  canteen               Canteen?              @relation(fields: [canteenId], references: [id])
+  government            Government?           @relation(fields: [governmentId], references: [id])
+  school                School?               @relation(fields: [schoolId], references: [id])
+  wallet                Wallet?
 
   @@index([schoolId, role])
   @@index([governmentId])
@@ -328,10 +235,8 @@ model User {
 }
 
 model UserDependency {
-  // [v3.9.2 FIX] Mantendo o mapeamento para colunas A e B para compatibilidade Supabase
-  guardianId  String @db.Uuid @map("A")
-  dependentId String @db.Uuid @map("B")
-  
+  guardianId  String @map("A") @db.Uuid
+  dependentId String @map("B") @db.Uuid
   guardian    User   @relation("GuardianToDependent", fields: [guardianId], references: [id], onDelete: Cascade)
   dependent   User   @relation("DependentToGuardian", fields: [dependentId], references: [id], onDelete: Cascade)
 
@@ -340,14 +245,14 @@ model UserDependency {
 }
 
 model ConsentLog {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId      String   @db.Uuid
-  user        User     @relation(fields: [userId], references: [id])
-  action      String   // Ex: "ACCEPT_TERMS", "REJECT_MARKETING"
-  ipAddress   String?
-  userAgent   String?
-  version     String   
-  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @db.Uuid
+  action    String
+  ipAddress String?
+  userAgent String?
+  version   String
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  user      User     @relation(fields: [userId], references: [id])
 
   @@map("consent_logs")
 }
@@ -357,138 +262,91 @@ model AuditKey {
   keyAlias  String   @unique @map("key_alias")
   secret    String
   isActive  Boolean  @default(true) @map("is_active")
-  createdAt DateTime @default(now()) @db.Timestamptz(3) @map("created_at")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   @@map("audit_keys")
 }
 
 model GuardianInvitation {
-  id          String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  schoolId    String           @db.Uuid
-  school      School           @relation(fields: [schoolId], references: [id])
-  senderId    String           @db.Uuid
-  sender      User             @relation("Sender", fields: [senderId], references: [id])
-  receiverId  String           @db.Uuid
-  receiver    User             @relation("Receiver", fields: [receiverId], references: [id])
-  status      InvitationStatus @default(PENDING)
-  createdAt   DateTime         @default(now()) @db.Timestamptz(3)
-  updatedAt   DateTime         @updatedAt @db.Timestamptz(3)
+  id         String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schoolId   String           @db.Uuid
+  senderId   String           @db.Uuid
+  receiverId String           @db.Uuid
+  status     InvitationStatus @default(PENDING)
+  createdAt  DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime         @updatedAt @db.Timestamptz(3)
+  receiver   User             @relation("Receiver", fields: [receiverId], references: [id])
+  school     School           @relation(fields: [schoolId], references: [id])
+  sender     User             @relation("Sender", fields: [senderId], references: [id])
 
   @@unique([senderId, receiverId])
   @@index([schoolId])
   @@map("guardian_invitations")
 }
 
-enum InvitationStatus {
-  PENDING
-  ACCEPTED
-  REJECTED
-  REVOKED
-}
-
-enum UserRole {
-  SUPER_ADMIN
-  SCHOOL_ADMIN
-  MERCHANT_ADMIN   // [v5.0] MEI/Dono da Cantina
-  OPERATOR_SALES   // [v5.0] Caixa
-  OPERATOR_MEAL    // [v5.0] Merendeira
-  GOV_ADMIN        
-  GUARDIAN
-  STUDENT
-  CONSUMER         // [v5.0] Genérico
-}
-
-enum ProductType {
-  SALE
-  CONSUMPTION
-}
-
-enum WalletType {
-  STUDENT
-  MERCHANT
-  AMBRA
-  SCHOOL
-}
-
 model DiscountRule {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  schoolId    String   @db.Uuid
-  school      School   @relation(fields: [schoolId], references: [id])
-  
-  name        String
-  target      String   // "CATEGORY:BEBIDAS" ou "PRODUCT:UUID"
-  type        String   // "PERCENTAGE" ou "FIXED"
-  value       Decimal  @db.Decimal(12, 2)
-  conditions  Json?    // { "minItems": 2, "daysOfWeek": [1, 5] }
-  
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schoolId   String   @db.Uuid
+  name       String
+  target     String
+  type       String
+  value      Decimal  @db.Decimal(12, 2)
+  conditions Json?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+  school     School   @relation(fields: [schoolId], references: [id])
 
   @@index([schoolId])
   @@map("discount_rules")
 }
 
-// ==========================================
-// 4. FINTECH & FISCAL (Com Split e NF)
-// ==========================================
-
 model Wallet {
   id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId           String        @unique @db.Uuid
-  user             User          @relation(fields: [userId], references: [id], onDelete: Restrict)
-  
   balance          Decimal       @default(0.00) @db.Decimal(12, 2)
-  creditLimit      Decimal       @default(0.00) @db.Decimal(12, 2) // [v4.2] Risk Engine Limit
-  negativeSince    DateTime?     @db.Timestamptz(3)                // [v4.2] 30-Day Trigger
-  isDebtBlocked    Boolean       @default(false) @map("is_debt_blocked") // [v4.2] Safety Lock
-  version          Int           @default(0) 
-  
+  version          Int           @default(0)
   dailySpendLimit  Decimal       @default(0.00) @db.Decimal(12, 2)
   canPurchaseAlone Boolean       @default(true)
   canRechargeAlone Boolean       @default(true)
-  allowedDays      Int[]         @default([1,2,3,4,5]) 
-  
-  transactions     Transaction[]
-  dailySpending    DailySpend[]
-
+  allowedDays      Int[]         @default([1, 2, 3, 4, 5])
   updatedAt        DateTime      @updatedAt @db.Timestamptz(3)
-  
+  creditLimit      Decimal       @default(0.00) @db.Decimal(12, 2)
+  overdraftLimit   Decimal       @default(0.00) @db.Decimal(10, 2)
+  isDebtBlocked    Boolean       @default(false) @map("is_debt_blocked")
+  negativeSince    DateTime?     @db.Timestamptz(3)
+  dailySpending    DailySpend[]
+  transactions     Transaction[]
+  user             User          @relation(fields: [userId], references: [id])
+
   @@map("wallets")
 }
 
 model Transaction {
-  id             String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  walletId       String            @db.Uuid
-  wallet         Wallet            @relation(fields: [walletId], references: [id], onDelete: Restrict)
-  userId         String?           @db.Uuid
-  user           User?             @relation(fields: [userId], references: [id])
-
-  operatorId     String?           @db.Uuid
-  operator       Operator?         @relation(fields: [operatorId], references: [id])
-
-  // Lógica de Split v3.9.6 (2+3=5)
-  amount         Decimal           @db.Decimal(12, 2) // Bruto (R$ 100,00)
-  platformFee    Decimal           @default(5.00) @db.Decimal(12, 2) 
-  netAmount      Decimal           @db.Decimal(12, 2) // Valor Líquido (Operador)
-  runningBalance Decimal           @db.Decimal(12, 2) 
-  
+  id             String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  walletId       String             @db.Uuid
+  userId         String?            @db.Uuid
+  operatorId     String?            @db.Uuid
+  amount         Decimal            @db.Decimal(12, 2)
+  grossAmount    Decimal?           @db.Decimal(10, 2)
+  platformFee    Decimal            @default(5.00) @db.Decimal(12, 2)
+  netAmount      Decimal            @db.Decimal(12, 2)
+  runningBalance Decimal            @db.Decimal(12, 2)
   type           TransactionType
-  status         TransactionStatus @default(PENDING)
+  status         TransactionStatus  @default(PENDING)
   description    String?
-  providerId     String?           
-  
-  orderId        String?           @db.Uuid
-  order          Order?            @relation(fields: [orderId], references: [id])
-  
-  auditHash      String?           // HMAC Chain Signature
-  
-  invoice        Invoice?          // [v3.9.4] Elo Fiscal
-  fiscalItem     FiscalPendingItem? // [v4.1] Batch Fiscal Item (R$ 5.00 Fee)
-
-  offlineId      String?           @unique // Suporte Sync Offline
-  syncedAt       DateTime?         @db.Timestamptz(3)
-  
-  createdAt      DateTime          @default(now()) @db.Timestamptz(3)
+  providerId     String?
+  metadata       Json?
+  orderId        String?            @db.Uuid
+  auditHash      String?
+  offlineId      String?            @unique
+  syncedAt       DateTime?          @db.Timestamptz(3)
+  createdAt      DateTime           @default(now()) @db.Timestamptz(3)
+  fiscalItem     FiscalPendingItem?
+  invoice        Invoice?
+  operator       Operator?          @relation(fields: [operatorId], references: [id])
+  order          Order?             @relation(fields: [orderId], references: [id])
+  user           User?              @relation(fields: [userId], references: [id])
+  wallet         Wallet             @relation(fields: [walletId], references: [id])
 
   @@index([walletId, createdAt(sort: Desc)])
   @@index([orderId])
@@ -496,153 +354,98 @@ model Transaction {
 }
 
 model Invoice {
-  // [v3.9.4 유지] Módulo de NFS-e / Nota Fiscal
-  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  transactionId  String?       @unique @db.Uuid // Optional for Batch Invoices
-  transaction    Transaction?  @relation(fields: [transactionId], references: [id])
-  
-  fiscalItems    FiscalPendingItem[] // [v4.1] Batch Items included in this invoice
-  
-  schoolId       String        @db.Uuid
-  school         School        @relation(fields: [schoolId], references: [id])
+  id            String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  transactionId String?             @unique @db.Uuid
+  schoolId      String              @db.Uuid
+  operatorId    String?             @db.Uuid
+  externalId    String?
+  status        InvoiceStatus       @default(PENDING)
+  amount        Decimal             @db.Decimal(12, 2)
+  taxBase       Decimal             @db.Decimal(12, 2)
+  pdfUrl        String?
+  issuedAt      DateTime?           @db.Timestamptz(3)
+  createdAt     DateTime            @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime            @updatedAt @db.Timestamptz(3)
+  fiscalItems   FiscalPendingItem[]
+  operator      Operator?           @relation(fields: [operatorId], references: [id])
+  school        School              @relation(fields: [schoolId], references: [id])
+  transaction   Transaction?        @relation(fields: [transactionId], references: [id])
 
-  operatorId     String?       @db.Uuid
-  operator       Operator?     @relation(fields: [operatorId], references: [id])
-
-  externalId     String?       // ID no Asaas / PlugNotas
-  status         InvoiceStatus @default(PENDING)
-  
-  amount         Decimal       @db.Decimal(12, 2) 
-  taxBase        Decimal       @db.Decimal(12, 2) 
-  
-  pdfUrl         String?
-  issuedAt       DateTime?     @db.Timestamptz(3)
-  createdAt      DateTime      @default(now()) @db.Timestamptz(3)
-  updatedAt      DateTime      @updatedAt @db.Timestamptz(3)
-
-  @@map("invoices")
   @@index([schoolId])
+  @@map("invoices")
 }
 
 model FiscalPendingItem {
-  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  operatorId    String   @db.Uuid
-  operator      Operator @relation(fields: [operatorId], references: [id])
-  
-  transactionId String   @unique @db.Uuid
+  id            String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  operatorId    String      @db.Uuid
+  transactionId String      @unique @db.Uuid
+  invoiceId     String?     @db.Uuid
+  amount        Decimal     @db.Decimal(12, 2)
+  status        String      @default("PENDING")
+  createdAt     DateTime    @default(now()) @db.Timestamptz(3)
+  processedAt   DateTime?   @db.Timestamptz(3)
+  invoice       Invoice?    @relation(fields: [invoiceId], references: [id])
+  operator      Operator    @relation(fields: [operatorId], references: [id])
   transaction   Transaction @relation(fields: [transactionId], references: [id])
-  
-  invoiceId     String?  @db.Uuid
-  invoice       Invoice? @relation(fields: [invoiceId], references: [id])
-  
-  amount        Decimal  @db.Decimal(12, 2)
-  status        String   @default("PENDING") // PENDING, INVOICED
-  
-  createdAt     DateTime @default(now()) @db.Timestamptz(3)
-  processedAt   DateTime? @db.Timestamptz(3)
 
-  @@map("fiscal_pending_items")
   @@index([operatorId, status])
+  @@map("fiscal_pending_items")
 }
-
-enum InvoiceStatus {
-  PENDING
-  PROCESSING
-  ISSUED
-  ERROR
-  CANCELLED
-}
-
-enum TransactionType {
-  RECHARGE
-  PURCHASE
-  REFUND
-  WITHDRAWAL
-  COMMISSION
-  CREDIT_EXPENSE // [v4.2] Nova modalidade de "Compra Crédito"
-  // Removed Duplicates
-}
-
-enum TransactionStatus {
-  PENDING
-  COMPLETED
-  FAILED
-  CANCELLED
-}
-
-// ==========================================
-// 5. INTELIGÊNCIA DE CARDÁPIO (Merenda IQ)
-// ==========================================
 
 model WeeklyMenu {
-  // [v4.0 NEW] Gestão informativa da Merenda e Cardápios
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  canteenId String   @db.Uuid
-  canteen   Canteen  @relation(fields: [canteenId], references: [id])
-  date      DateTime @db.Date
-  
-  // JSON format: { "almoço": "Arroz, Feijão, Frango", "fruta": "Maçã" }
-  items     Json     
-  nutritionalInfo Json? // { "kcal": 450, "gluten": true }
-  
-  ratings   MenuRating[]
-  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  canteenId       String       @db.Uuid
+  date            DateTime     @db.Date
+  items           Json
+  nutritionalInfo Json?
+  createdAt       DateTime     @default(now()) @db.Timestamptz(3)
+  ratings         MenuRating[]
+  canteen         Canteen      @relation(fields: [canteenId], references: [id])
 
   @@map("weekly_menus")
 }
 
 model MenuRating {
-  // [v4.0 NEW] Feedback governamental da qualidade da Merenda
-  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  menuId      String     @db.Uuid
-  menu        WeeklyMenu @relation(fields: [menuId], references: [id])
-  userId      String     @db.Uuid
-  user        User       @relation(fields: [userId], references: [id])
-  stars       Int        // 1 a 5
-  comment     String?
-  createdAt   DateTime   @default(now()) @db.Timestamptz(3)
+  id        String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  menuId    String     @db.Uuid
+  userId    String     @db.Uuid
+  stars     Int
+  comment   String?
+  createdAt DateTime   @default(now()) @db.Timestamptz(3)
+  menu      WeeklyMenu @relation(fields: [menuId], references: [id])
+  user      User       @relation(fields: [userId], references: [id])
 
   @@map("menu_ratings")
 }
-
-// ==========================================
-// 6. INVENTÁRIO, VENDAS & AUDITORIA
-// ==========================================
 
 model Product {
   id            String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name          String
   price         Decimal              @db.Decimal(12, 2)
-  type          ProductType          @default(SALE)
-  cost          Decimal?             @db.Decimal(12, 2) // [v5.0] Custo para Relatórios
   salePrice     Decimal?             @db.Decimal(12, 2)
   stock         Int                  @default(0)
-  version       Int                  @default(0) 
+  version       Int                  @default(0)
   category      String
   imageUrl      String?
   isKit         Boolean              @default(false)
   isAvailable   Boolean              @default(true)
-  
-  // [v4.5] Stock Alerting
-  minStockAlert Int                  @default(5)
-  
   canteenId     String               @db.Uuid
-  canteen       Canteen              @relation(fields: [canteenId], references: [id])
   schoolId      String               @db.Uuid
-  school        School               @relation(fields: [schoolId], references: [id])
-  
-  kitComponents KitItem[]            @relation("KitToComponent")
-  partOfKits    KitItem[]            @relation("ComponentToKit")
-  
-  reservations  StockReservation[]
-  inventoryLogs InventoryLog[]
-  orderItems    OrderItem[]
-  restrictions  ProductRestriction[]
-  favorites     Favorite[]
-
   createdAt     DateTime             @default(now()) @db.Timestamptz(3)
   updatedAt     DateTime             @updatedAt @db.Timestamptz(3)
   deletedAt     DateTime?            @db.Timestamptz(3)
+  minStockAlert Int                  @default(5)
+  cost          Decimal?             @db.Decimal(12, 2)
+  type          ProductType          @default(SALE)
+  favorites     Favorite[]
+  inventoryLogs InventoryLog[]
+  partOfKits    KitItem[]            @relation("ComponentToKit")
+  kitComponents KitItem[]            @relation("KitToComponent")
+  orderItems    OrderItem[]
+  restrictions  ProductRestriction[]
+  canteen       Canteen              @relation(fields: [canteenId], references: [id])
+  school        School               @relation(fields: [schoolId], references: [id])
+  reservations  StockReservation[]
 
   @@index([canteenId])
   @@index([schoolId])
@@ -654,45 +457,34 @@ model KitItem {
   kitId       String  @db.Uuid
   componentId String  @db.Uuid
   quantity    Int     @default(1)
-  kit         Product @relation("KitToComponent", fields: [kitId], references: [id])
   component   Product @relation("ComponentToKit", fields: [componentId], references: [id])
+  kit         Product @relation("KitToComponent", fields: [kitId], references: [id])
 
   @@index([kitId])
   @@map("kit_items")
 }
 
 model Order {
-  id          String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  orderHash   String      @unique
-  totalAmount Decimal     @db.Decimal(12, 2)
-  status      OrderStatus @default(PENDING)
-  
-  buyerId     String      @db.Uuid
-  buyer       User        @relation("BuyerOrders", fields: [buyerId], references: [id])
-  studentId   String      @db.Uuid
-  student     User        @relation("StudentOrders", fields: [studentId], references: [id])
-  
-  schoolId    String      @db.Uuid
-  school      School      @relation(fields: [schoolId], references: [id])
-  
-  transactions Transaction[]
+  id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderHash    String        @unique
+  totalAmount  Decimal       @db.Decimal(12, 2)
+  status       OrderStatus   @default(PENDING)
+  buyerId      String        @db.Uuid
+  studentId    String        @db.Uuid
+  schoolId     String        @db.Uuid
+  deliveredAt  DateTime?     @db.Timestamptz(3)
+  createdAt    DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime      @updatedAt @db.Timestamptz(3)
+  scheduledFor DateTime?     @db.Timestamptz(3)
   items        OrderItem[]
-  
-  scheduledFor DateTime?   @db.Timestamptz(3) // [v4.1] Ambra Flow Pre-order
-  deliveredAt DateTime?   @db.Timestamptz(3)
-  createdAt   DateTime    @default(now()) @db.Timestamptz(3)
-  updatedAt   DateTime    @updatedAt @db.Timestamptz(3)
+  buyer        User          @relation("BuyerOrders", fields: [buyerId], references: [id])
+  school       School        @relation(fields: [schoolId], references: [id])
+  student      User          @relation("StudentOrders", fields: [studentId], references: [id])
+  transactions Transaction[]
 
   @@index([schoolId, createdAt(sort: Desc)])
   @@index([studentId])
   @@map("orders")
-}
-
-enum OrderStatus {
-  PENDING
-  PAID
-  DELIVERED
-  CANCELLED
 }
 
 model OrderItem {
@@ -700,24 +492,24 @@ model OrderItem {
   orderId   String  @db.Uuid
   productId String  @db.Uuid
   quantity  Int
-  unitPrice Decimal @db.Decimal(12, 2) 
+  unitPrice Decimal @db.Decimal(12, 2)
   order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  product   Product @relation(fields: [productId], references: [id])
 
   @@index([orderId])
   @@map("order_items")
 }
 
 model NutritionalProfile {
-  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId            String   @unique @db.Uuid
-  user              User     @relation(fields: [userId], references: [id])
-  allergies         String[] 
-  dailyCalorieGoal  Int?
-  preferences       String[] 
-  goals             Json?    // [v4.1] Ambra Food Health Goals
-  aiInsights        Json?    
-  updatedAt         DateTime @updatedAt @db.Timestamptz(3)
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId           String   @unique @db.Uuid
+  allergies        String[]
+  dailyCalorieGoal Int?
+  preferences      String[]
+  aiInsights       Json?
+  updatedAt        DateTime @updatedAt @db.Timestamptz(3)
+  goals            Json?
+  user             User     @relation(fields: [userId], references: [id])
 
   @@map("nutritional_profiles")
 }
@@ -725,50 +517,48 @@ model NutritionalProfile {
 model AuditLog {
   id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   schoolId     String   @db.Uuid
-  school       School   @relation(fields: [schoolId], references: [id])
   userId       String?  @db.Uuid
-  user         User?    @relation(fields: [userId], references: [id])
   action       String
   entity       String
   entityId     String?
   meta         Json?
   ip           String?
-  logHash      String?  
-  previousHash String?  
+  logHash      String?
+  previousHash String?
   createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  school       School   @relation(fields: [schoolId], references: [id])
+  user         User?    @relation(fields: [userId], references: [id])
 
   @@index([schoolId, createdAt(sort: Desc)])
   @@index([previousHash])
   @@map("audit_logs")
 }
 
-// ... Restante das tabelas de apoio (DailySpend, Restrictions, Favorites, StockReservation, InventoryLog)
-
 model StockReservation {
-  id         String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  productId  String            @db.Uuid
-  product    Product           @relation(fields: [productId], references: [id])
-  canteenId  String            @db.Uuid
-  canteen    Canteen           @relation(fields: [canteenId], references: [id])
-  quantity   Int
-  reason     String            @default("CHECKOUT")
-  status     String            @default("ACTIVE")
-  expiresAt  DateTime          @db.Timestamptz(3)
-  createdAt  DateTime          @default(now()) @db.Timestamptz(3)
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId String   @db.Uuid
+  canteenId String   @db.Uuid
+  quantity  Int
+  reason    String   @default("CHECKOUT")
+  status    String   @default("ACTIVE")
+  expiresAt DateTime @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  canteen   Canteen  @relation(fields: [canteenId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id])
 
   @@index([expiresAt])
   @@map("stock_reservations")
 }
 
 model InventoryLog {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  productId  String   @db.Uuid
-  product    Product  @relation(fields: [productId], references: [id])
-  canteenId  String   @db.Uuid
-  canteen    Canteen  @relation(fields: [canteenId], references: [id])
-  change     Int      
-  reason     String   
-  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId String   @db.Uuid
+  canteenId String   @db.Uuid
+  change    Int
+  reason    String
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  canteen   Canteen  @relation(fields: [canteenId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id])
 
   @@map("inventory_logs")
 }
@@ -776,9 +566,9 @@ model InventoryLog {
 model DailySpend {
   id       String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   walletId String   @db.Uuid
-  wallet   Wallet   @relation(fields: [walletId], references: [id])
   date     DateTime @db.Date
   amount   Decimal  @db.Decimal(12, 2)
+  wallet   Wallet   @relation(fields: [walletId], references: [id])
 
   @@unique([walletId, date])
   @@map("daily_spending")
@@ -788,8 +578,8 @@ model ProductRestriction {
   id        String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId    String  @db.Uuid
   productId String  @db.Uuid
-  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, productId])
   @@map("product_restrictions")
@@ -808,8 +598,8 @@ model CategoryRestriction {
 model Favorite {
   userId    String  @db.Uuid
   productId String  @db.Uuid
-  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([userId, productId])
   @@map("favorites")
@@ -818,17 +608,150 @@ model Favorite {
 model SysConfig {
   id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   platformSystemId String         @unique @db.Uuid
-  platformSystem   PlatformSystem @relation(fields: [platformSystemId], references: [id])
-  fiscalConfig     Json?          // { "provider": "plugnotas", "apiKey": "..." }
+  fiscalConfig     Json?
   updatedAt        DateTime       @updatedAt @db.Timestamptz(3)
-
+  platformSystem   PlatformSystem @relation(fields: [platformSystemId], references: [id])
 
   @@map("sys_configs")
 }
 
-// ==========================================
-// 7. COMUNICAÇÃO & AVISOS
-// ==========================================
+model Announcement {
+  id         String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schoolId   String?           @db.Uuid
+  title      String
+  message    String
+  targetRole UserRole
+  authorId   String            @db.Uuid
+  status     String            @default("SENT")
+  createdAt  DateTime          @default(now()) @db.Timestamptz(3)
+  scope      AnnouncementScope @default(GLOBAL)
+  targetIds  String[]
+  author     User              @relation(fields: [authorId], references: [id])
+  school     School?           @relation(fields: [schoolId], references: [id])
+
+  @@index([schoolId])
+  @@map("announcements")
+}
+
+model Coupon {
+  id         String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code       String         @unique
+  type       CouponType
+  value      Float
+  audience   CouponAudience
+  planId     String?        @db.Uuid
+  validUntil DateTime       @db.Timestamptz(3)
+  maxUses    Int?
+  usedCount  Int            @default(0)
+  status     CouponStatus   @default(ACTIVE)
+  createdAt  DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime       @updatedAt @db.Timestamptz(3)
+  plan       Plan?          @relation(fields: [planId], references: [id])
+
+  @@index([code, status])
+  @@map("coupons")
+}
+
+model CashInFee {
+  id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  boletoGatewayCost     Float    @default(3.49)
+  boletoChargeCustomer  Boolean  @default(true)
+  boletoCustomerFixed   Float    @default(4.00)
+  boletoCustomerPercent Float    @default(0)
+  boletoChargeMerchant  Boolean  @default(false)
+  boletoMerchantFixed   Float    @default(0)
+  boletoMerchantPercent Float    @default(2.5)
+  pixGatewayCost        Float    @default(0.99)
+  pixChargeCustomer     Boolean  @default(true)
+  pixCustomerFixed      Float    @default(2.00)
+  pixCustomerPercent    Float    @default(0)
+  pixChargeMerchant     Boolean  @default(true)
+  pixMerchantFixed      Float    @default(0)
+  pixMerchantPercent    Float    @default(1.5)
+  createdAt             DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime @updatedAt @db.Timestamptz(3)
+
+  @@map("cash_in_fees")
+}
+
+enum PlanStatus {
+  ACTIVE
+  RETIRED
+}
+
+enum SchoolStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  CANCELED
+}
+
+enum CanteenType {
+  COMMERCIAL
+  GOVERNMENTAL
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  REVOKED
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  SCHOOL_ADMIN
+  MERCHANT_ADMIN
+  OPERATOR_SALES
+  OPERATOR_MEAL
+  GOV_ADMIN
+  GUARDIAN
+  STUDENT
+  CONSUMER
+}
+
+enum ProductType {
+  SALE
+  CONSUMPTION
+}
+
+enum WalletType {
+  STUDENT
+  MERCHANT
+  AMBRA
+  SCHOOL
+}
+
+enum InvoiceStatus {
+  PENDING
+  PROCESSING
+  ISSUED
+  ERROR
+  CANCELLED
+}
+
+enum TransactionType {
+  RECHARGE
+  PURCHASE
+  REFUND
+  WITHDRAWAL
+  COMMISSION
+  CREDIT_EXPENSE
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  DELIVERED
+  CANCELLED
+}
 
 enum AnnouncementScope {
   GLOBAL
@@ -838,35 +761,9 @@ enum AnnouncementScope {
   INDIVIDUAL
 }
 
-model Announcement {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  schoolId    String?  @db.Uuid
-  school      School?  @relation(fields: [schoolId], references: [id])
-  
-  title       String
-  message     String
-  
-  targetRole  UserRole // Optional filter (e.g. "Only Guardians" within the Scope)
-  scope       AnnouncementScope @default(GLOBAL)
-  targetIds   String[] // IDs of specific Users, Schools, Govs, or Systems
-  
-  authorId    String   @db.Uuid
-  author      User     @relation(fields: [authorId], references: [id])
-  
-  status      String   @default("SENT") // SENT, SCHEDULED
-  createdAt   DateTime @default(now()) @db.Timestamptz(3)
-
-  @@index([schoolId])
-  @@map("announcements")
-}
-
-// ==========================================
-// 8. FEES & PLANS ARCHITECTURE (v4.7)
-// ==========================================
-
 enum PlanTarget {
-  SCHOOL_SAAS       // Planos para Gestores (B2B)
-  GUARDIAN_PREMIUM  // Planos para Pais (B2C) - Ambra Food Premium
+  SCHOOL_SAAS
+  GUARDIAN_PREMIUM
 }
 
 enum CouponType {
@@ -875,61 +772,12 @@ enum CouponType {
 }
 
 enum CouponAudience {
-  B2B // Escolas/Gestores
-  B2C // Pais/Alunos
+  B2B
+  B2C
 }
 
 enum CouponStatus {
   ACTIVE
   EXPIRED
   DISABLED
-}
-
-model Coupon {
-  id          String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  code        String         @unique
-  type        CouponType
-  value       Float          // Valor do desconto (% ou R$)
-  audience    CouponAudience
-  
-  planId      String?        @db.Uuid
-  plan        Plan?          @relation(fields: [planId], references: [id])
-  
-  validUntil  DateTime       @db.Timestamptz(3)
-  maxUses     Int?           // Null = ilimitado
-  usedCount   Int            @default(0)
-  status      CouponStatus   @default(ACTIVE)
-  
-  createdAt   DateTime       @default(now()) @db.Timestamptz(3)
-  updatedAt   DateTime       @updatedAt @db.Timestamptz(3)
-
-  @@index([code, status])
-  @@map("coupons")
-}
-
-model CashInFee {
-  id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  
-  // Boleto
-  boletoGatewayCost     Float    @default(3.49)
-  boletoChargeCustomer  Boolean  @default(true)
-  boletoCustomerFixed   Float    @default(4.00)
-  boletoCustomerPercent Float    @default(0)
-  boletoChargeMerchant  Boolean  @default(false)
-  boletoMerchantFixed   Float    @default(0)
-  boletoMerchantPercent Float    @default(2.5)
-  
-  // PIX
-  pixGatewayCost        Float    @default(0.99)
-  pixChargeCustomer     Boolean  @default(true)
-  pixCustomerFixed      Float    @default(2.00)
-  pixCustomerPercent    Float    @default(0)
-  pixChargeMerchant     Boolean  @default(true)
-  pixMerchantFixed      Float    @default(0)
-  pixMerchantPercent    Float    @default(1.5)
-  
-  createdAt             DateTime @default(now()) @db.Timestamptz(3)
-  updatedAt             DateTime @updatedAt @db.Timestamptz(3)
-
-  @@map("cash_in_fees")
 }

@@ -1,7 +1,19 @@
 import axios from 'axios';
 
 // API Base URL - usar variável de ambiente ou fallback para localhost
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
+const rawBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
+
+const normalizeBaseUrl = (value: string) => {
+  const trimmed = value.replace(/\/+$/, '');
+  if (trimmed.toLowerCase().endsWith('/api')) {
+    return trimmed.slice(0, -4);
+  }
+  return trimmed;
+};
+
+const API_BASE_URL = normalizeBaseUrl(rawBaseUrl);
+
+export { API_BASE_URL };
 
 // Axios instance com configuração base
 export const api = axios.create({
@@ -18,6 +30,20 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // Multi-tenancy: backend exige x-tenant-slug
+    const tenantSlug =
+      typeof window !== 'undefined'
+        ? localStorage.getItem('tenantSlug') || 'colegio-elite'
+        : 'colegio-elite';
+    (config.headers as any)['x-tenant-slug'] = tenantSlug;
+
+    if (process.env.NODE_ENV === 'development') {
+      const baseURL = config.baseURL || '';
+      const url = config.url || '';
+      console.debug('[API]', config.method?.toUpperCase(), `${baseURL}${url}`);
+    }
+
     return config;
   },
   (error) => Promise.reject(error)
@@ -77,7 +103,7 @@ export interface Transaction {
 
 export interface RechargeDto {
   amount: number;
-  paymentMethod: 'pix' | 'boleto';
+  dependentId: string;
 }
 
 export interface PixRechargeResponse {
@@ -87,6 +113,9 @@ export interface PixRechargeResponse {
   expiresAt: string;
   totalAmount: number;
   fees: number;
+  pixCopyPaste?: string;
+  grossAmount?: number;
+  netAmount?: number;
 }
 
 export interface CashInFees {
@@ -99,6 +128,20 @@ export interface PaymentMethodFee {
   customerFeePercent: number;
 }
 
+export interface StoreFavoriteToggleResponse {
+  isFavorited: boolean;
+}
+
+export interface ApiProduct {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  category: 'SNACK' | 'DRINK' | 'MEAL' | 'DESSERT';
+  imageUrl?: string;
+  isAvailable: boolean;
+}
+
 // API Methods
 export const authAPI = {
   login: (data: LoginDto) => api.post<AuthResponse>('/auth/login', data),
@@ -107,11 +150,21 @@ export const authAPI = {
 };
 
 export const walletAPI = {
-  getWallet: () => api.get<Wallet>('/wallet'),
+  getWallet: () => api.get<Wallet>('/wallet/me'),
   getTransactions: (limit = 10) => api.get<Transaction[]>(`/wallet/transactions?limit=${limit}`),
 };
 
+export const productsAPI = {
+  getProducts: () => api.get<ApiProduct[]>('/products'),
+};
+
 export const paymentAPI = {
-  createPixRecharge: (data: RechargeDto) => api.post<PixRechargeResponse>('/payment/pix-recharge', data),
+  createPixRecharge: (data: RechargeDto) => api.post<PixRechargeResponse>('/payment/recharge-request', data),
   getFees: () => api.get<CashInFees>('/global-admin/cash-in-fees'),
+};
+
+export const storeAPI = {
+  getFavorites: () => api.get<string[]>('/store/favorites'),
+  toggleFavorite: (productId: string) =>
+    api.post<StoreFavoriteToggleResponse>(`/store/favorites/${productId}/toggle`),
 };

@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RechargeDto } from './dto/recharge.dto';
+import { UpdateWalletLimitsDto } from './dto/update-wallet-limits.dto';
 import { AuditService } from '../audit/audit.service';
 import { AuthenticatedUserPayload } from '../auth/dto/user-payload.dto';
 import { UserRole, Prisma } from '@prisma/client';
@@ -22,6 +23,115 @@ export class WalletService {
     private readonly auditService: AuditService,
     private readonly transactionService: TransactionService, // Injeção do Service
   ) {}
+
+  async updateLimits(
+    user: AuthenticatedUserPayload,
+    walletId: string,
+    dto: UpdateWalletLimitsDto,
+  ) {
+    const hasAnyField =
+      dto.overdraftLimit !== undefined || dto.dailySpendLimit !== undefined;
+
+    if (!hasAnyField) {
+      return { message: 'Nenhuma alteração aplicada.' };
+    }
+
+    return this.prisma.$transaction(
+      async (tx: Prisma.TransactionClient) => {
+        const wallet = await tx.wallet.findUnique({
+          where: { id: walletId },
+          select: {
+            id: true,
+            userId: true,
+            balance: true,
+            dailySpendLimit: true,
+            overdraftLimit: true,
+            isDebtBlocked: true,
+            user: { select: { schoolId: true } },
+          },
+        });
+
+        if (!wallet) {
+          throw new NotFoundException('Carteira não encontrada.');
+        }
+
+        const isSuperAdmin = user.role === UserRole.SUPER_ADMIN;
+        if (!isSuperAdmin) {
+          if (!user.schoolId || wallet.user.schoolId !== user.schoolId) {
+            throw new ForbiddenException('Acesso negado.');
+          }
+        }
+
+        const before = {
+          overdraftLimit: Number(wallet.overdraftLimit),
+          dailySpendLimit: Number(wallet.dailySpendLimit),
+          isDebtBlocked: wallet.isDebtBlocked,
+        };
+
+        const newOverdraftLimit =
+          dto.overdraftLimit !== undefined
+            ? Number(dto.overdraftLimit)
+            : Number(wallet.overdraftLimit);
+
+        const balance = Number(wallet.balance);
+
+        // Reavalia bloqueio de dívida com base no novo limite.
+        // Regra: se saldo estiver dentro do limite negativo permitido, desbloqueia.
+        // Se ficar fora, bloqueia.
+        const isWithinOverdraft = balance >= -newOverdraftLimit;
+        const nextIsDebtBlocked = newOverdraftLimit > 0 ? !isWithinOverdraft : balance < 0;
+
+        const updated = await tx.wallet.update({
+          where: { id: walletId },
+          data: {
+            ...(dto.overdraftLimit !== undefined
+              ? { overdraftLimit: new Prisma.Decimal(dto.overdraftLimit) }
+              : {}),
+            ...(dto.dailySpendLimit !== undefined
+              ? { dailySpendLimit: new Prisma.Decimal(dto.dailySpendLimit) }
+              : {}),
+            isDebtBlocked: nextIsDebtBlocked,
+          },
+          select: {
+            id: true,
+            overdraftLimit: true,
+            dailySpendLimit: true,
+            isDebtBlocked: true,
+            balance: true,
+          },
+        });
+
+        const after = {
+          overdraftLimit: Number(updated.overdraftLimit),
+          dailySpendLimit: Number(updated.dailySpendLimit),
+          isDebtBlocked: updated.isDebtBlocked,
+          balance: Number(updated.balance),
+        };
+
+        await this.auditService.logAction(tx, {
+          userId: user.id,
+          action: 'WALLET_LIMITS_UPDATED',
+          entity: 'Wallet',
+          entityId: walletId,
+          meta: {
+            before,
+            after,
+            walletId,
+          },
+          schoolId: wallet.user.schoolId || undefined,
+        });
+
+        return {
+          message: 'Limites atualizados com sucesso.',
+          walletId: updated.id,
+          overdraftLimit: Number(updated.overdraftLimit),
+          dailySpendLimit: Number(updated.dailySpendLimit),
+          isDebtBlocked: updated.isDebtBlocked,
+        };
+      },
+      { isolationLevel: 'Serializable' },
+    );
+  }
 
   /**
    * Realiza uma recarga na carteira de um dependente.
@@ -187,6 +297,19 @@ export class WalletService {
       throw new NotFoundException('Carteira não encontrada.');
     }
 
-    return wallet;
+    const balance = Number(wallet.balance);
+    const dailyLimit = Number(wallet.dailySpendLimit);
+    const creditLimit = Number(wallet.creditLimit);
+
+    const status = wallet.canPurchaseAlone === false ? 'BLOCKED' : 'ACTIVE';
+
+    return {
+      id: wallet.id,
+      balance,
+      dailyLimit,
+      creditLimit,
+      allowedDays: wallet.allowedDays,
+      status,
+    };
   }
 }

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 
 interface CacheEntry {
   value: any;
@@ -14,7 +14,7 @@ interface CacheEntry {
  * consultas frequentes e de dados semi-estáticos, como informações de tenant.
  */
 @Injectable()
-export class CacheService {
+export class CacheService implements OnModuleDestroy {
   private readonly cache: Map<string, CacheEntry> = new Map();
   private readonly logger = new Logger(CacheService.name);
 
@@ -45,6 +45,10 @@ export class CacheService {
       this.logger.log(`Cache key expired and removed: ${key}`);
     }, ttlMilliseconds);
 
+    // Não manter o event loop vivo apenas por timers de cache (especialmente em testes).
+    // Em produção isso não afeta o comportamento; em testes evita "Jest did not exit".
+    (timeoutId as any)?.unref?.();
+
     this.cache.set(key, { value, timeoutId });
   }
 
@@ -58,6 +62,13 @@ export class CacheService {
       clearTimeout(item.timeoutId);
       this.cache.delete(key);
       this.logger.log(`Cache key manually removed: ${key}`);
+    }
+  }
+
+  onModuleDestroy() {
+    for (const [key, entry] of this.cache.entries()) {
+      clearTimeout(entry.timeoutId);
+      this.cache.delete(key);
     }
   }
 }

@@ -30,12 +30,19 @@ export class FeeCalculatorService {
 
   // Default ROI Fallback (Hardcoded Safety Net)
   private readonly DEFAULTS: FeesConfig = {
-    rechargeFixed: 0.00, // [DISABLED]
-    rechargePercent: 0.0, // [DISABLED]
-    creditRiskFixed: 0.00, // [DISABLED]
-    creditRiskPercent: 0.0, // [DISABLED]
-    convenienceFee: 0.00 // [DISABLED]
+    rechargeFixed: 0.0,
+    rechargePercent: 0.0,
+    creditRiskFixed: 0.0,
+    creditRiskPercent: 0.0,
+    convenienceFee: 0.0,
   };
+
+  private isPremium(user?: Pick<User, 'subscriptionStatus' | 'subscriptionPlanId' | 'subscriptionExpiresAt'>): boolean {
+    if (!user?.subscriptionPlanId) return false;
+    if (user.subscriptionStatus !== 'ACTIVE') return false;
+    if (user.subscriptionExpiresAt && new Date(user.subscriptionExpiresAt).getTime() < Date.now()) return false;
+    return true;
+  }
 
   /**
    * Calculates the split for a Recharge Transaction
@@ -51,29 +58,23 @@ export class FeeCalculatorService {
     isRecovery = false
   ): SplitResult {
     const creditValue = new Prisma.Decimal(amount);
-    
-    // [DISABLED] All fees are zeroed out as per business requirement
-    const config = this.DEFAULTS; 
 
-    // 2. Calculate Convenience Fee (Parent)
-    const convenienceFee = new Prisma.Decimal(0);
+    const config = this.resolveFeesConfig(school);
 
-    // 3. Calculate Service Fees (School/Manager)
+    const premium = this.isPremium(user);
+    const rawConvenience = premium ? 0 : Number(config.convenienceFee ?? config.rechargeFixed ?? 0);
+    const convenienceFee = new Prisma.Decimal(rawConvenience);
+
+    // Para o piloto v2.1: a captura de valor é na entrada do recurso (convenienceFee).
+    // O crédito que vai para a carteira é exatamente o valor solicitado (creditValue).
     const serviceFixed = new Prisma.Decimal(0);
     const servicePercent = new Prisma.Decimal(0);
 
-    // 4. Calculate Risk Fee (If Recovery Mode)
-    // [DISABLED] Risk Engine is off
-    const riskFee = new Prisma.Decimal(0);
+    // Risk fee permanece desativado no piloto, mas mantemos o gancho.
+    const riskFee = isRecovery ? new Prisma.Decimal(0) : new Prisma.Decimal(0);
 
-    // 5. Aggregation
-    // Total Parent Pays = Credit (No Fees)
-    const totalPaid = creditValue;
-
-    // Total Platform Keeps = 0
-    const platformFee = new Prisma.Decimal(0);
-
-    // Net for Operator = Credit (Full Amount)
+    const totalPaid = creditValue.plus(convenienceFee);
+    const platformFee = convenienceFee;
     const netAmount = creditValue;
 
     return {

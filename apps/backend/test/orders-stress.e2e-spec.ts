@@ -3,6 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import { AppModule } from '../src/app.module';
 import { OrdersService } from '../src/modules/orders/orders.service';
 import { PrismaService } from '../src/prisma/prisma.service';
+import { RequestContext } from '../src/common/context/request-context';
 
 import { User } from '@prisma/client';
 
@@ -24,7 +25,9 @@ describe('Commerce Stress Test (E2E)', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    if (app) {
+      await app.close();
+    }
   });
 
   it('RACE CONDITION: Should only allow 1 purchase for the last item in stock', async () => {
@@ -44,6 +47,7 @@ describe('Commerce Stress Test (E2E)', () => {
         name: 'Stress Bar',
         price: 1.0,
         stock: 1, // CRITICAL: Only 1
+        isAvailable: true,
         category: 'TEST',
         canteenId: canteen.id,
         schoolId: school.id,
@@ -63,10 +67,23 @@ describe('Commerce Stress Test (E2E)', () => {
         },
       });
       await prisma.wallet.create({
-        data: { userId: user.id, balance: 1000, version: 0 },
+        data: {
+          userId: user.id,
+          balance: 1000,
+          version: 0,
+          canPurchaseAlone: true,
+          allowedDays: [0, 1, 2, 3, 4, 5, 6],
+        },
       });
       students.push(user);
     }
+
+    // Garantir que a cantina não bloqueie por horário operacional.
+    // (OrdersService valida openingTime/closingTime para COMMERCIAL)
+    await prisma.canteen.update({
+      where: { id: canteen.id },
+      data: { openingTime: '00:00', closingTime: '23:59' },
+    });
 
     // 2. Attack
     const attackPromises = students.map((student) =>
@@ -79,11 +96,12 @@ describe('Commerce Stress Test (E2E)', () => {
         .catch((e) => 'FAILED'),
     );
 
-    const results = await Promise.all(attackPromises);
-    const successCount = results.filter((r) => r === 'SUCCESS').length;
-    const failCount = results.filter((r) => r === 'FAILED').length;
-
-    console.log('--- RACE RESULTS ---', results);
+    const results = await RequestContext.run(
+      { schoolId: school.id, userId: null },
+      async () => Promise.all(attackPromises),
+    ) as Array<'SUCCESS' | 'FAILED'>;
+    const successCount = results.filter((r: 'SUCCESS' | 'FAILED') => r === 'SUCCESS').length;
+    const failCount = results.filter((r: 'SUCCESS' | 'FAILED') => r === 'FAILED').length;
 
     // 3. Assert
     expect(successCount).toBe(1);

@@ -1,76 +1,101 @@
+/* Reset e Variáveis Globais */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Mobile-First App-Like Styles */
 @layer base {
   * {
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  html {
-    /* Previne zoom em inputs no iOS */
-    -webkit-text-size-adjust: 100%;
-    font-size: 16px;
+    @apply border-border;
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
-    /* Remover bounce scroll no iOS */
-    overscroll-behavior-y: none;
-    /* Font system nativa */
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    @apply bg-surface-light dark:bg-surface-dark text-text-primary dark:text-text-primary-dark;
+    @apply font-sans antialiased;
+    @apply min-h-screen;
+    /* iOS Constraints */
+    -webkit-tap-highlight-color: transparent;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Inputs grandes para mobile (previne zoom iOS) */
-  input, select, textarea {
-    font-size: 16px !important;
-  }
-}
-
-@layer components {
-  /* Botão Touch-Friendly (min 44px) */
-  .btn-touch {
-    @apply min-h-[44px] px-6 py-3 rounded-xl font-semibold transition-all active:scale-95;
-  }
-
-  .btn-primary {
-    @apply btn-touch bg-primary text-white shadow-sm hover:bg-primary-dark;
-  }
-
-  .btn-secondary {
-    @apply btn-touch bg-muted text-foreground hover:bg-gray-200;
-  }
-
-  /* Container App-Like (max width em desktop) */
-  .app-container {
-    @apply mx-auto max-w-md min-h-screen bg-background;
-  }
-
-  /* Safe Area para iOS */
-  .safe-top {
-    padding-top: env(safe-area-inset-top);
-  }
-
-  .safe-bottom {
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-
-  /* Card mobile-friendly */
-  .card-mobile {
-    @apply bg-white rounded-2xl p-4 shadow-sm border border-border;
+  /* Garantir font-size mínimo de 16px em inputs (evita zoom iOS) */
+  input,
+  textarea,
+  select {
+    @apply text-base; /* 16px */
   }
 }
 
 @layer utilities {
-  /* Prevenir seleção de texto (app-like) */
-  .no-select {
-    -webkit-user-select: none;
-    user-select: none;
+  /* Gradiente do Card de Saldo */
+  .gradient-card {
+    background: linear-gradient(135deg, #FC5407 0%, #e04804 100%);
   }
 
-  /* Scroll suave */
-  .scroll-smooth-mobile {
-    -webkit-overflow-scrolling: touch;
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* iOS Blur Effect */
+  .ios-blur {
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  /* Safe Areas (iOS) */
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .safe-area-inset {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Touch Target Mínimo (44px) */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  /* Animação de Tap (iOS-like) */
+  .tap-scale {
+    @apply active:scale-95 transition-transform duration-150;
+  }
+
+  /* Scrollbar Customizado */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 dark:bg-gray-700 rounded-full;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400 dark:bg-gray-600;
+  }
+}
+
+/* Material Symbols Configuration */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+.material-symbols-outlined.filled {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }

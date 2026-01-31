@@ -4,44 +4,139 @@ import {
   NotFoundException,
   InternalServerErrorException,
   Logger,
+  HttpException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateRechargeDto } from './dto/create-recharge.dto';
 import { Prisma } from '@prisma/client';
-import * as qrcode from 'qrcode';
+import { TransactionService } from '../transactions/transactions.service';
 
 @Injectable()
 export class PaymentService {
   private readonly logger = new Logger(PaymentService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly transactionsService: TransactionService,
+  ) { }
+
+  /**
+   * Valida se o usuário tem permissão para criar uma recarga.
+   * 
+   * REGRA DE NEGÓCIO (Compliance 2026):
+   * 1. GUARDIAN: Sempre permitido.
+   * 2. STUDENT:
+   *    - Cenário A (Autonomia): Sem responsável vinculado E 16+ anos → PERMITE
+   *    - Cenário B (Permissão): Com responsável E flag canRechargeAlone=true → PERMITE
+   *    - Caso contrário: BLOQUEIA
+   * 
+   * @param userId ID do usuário solicitante
+   * @param dependentId ID do dependente (pode ser o próprio usuário)
+   * @throws {ForbiddenException} Se o aluno não tiver permissão
+   */
+  private async validateRechargeEligibility(
+    tx: Prisma.TransactionClient,
+    userId: string,
+    dependentId: string,
+  ) {
+    // Buscar usuário com role e dados necessários
+    const user = await tx.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        roles: true,
+        birthDate: true,
+        wallet: {
+          select: { canRechargeAlone: true },
+        },
+        guardianRelations: {
+          select: { guardianId: true },
+        },
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Usuário não encontrado.');
+    }
+
+    // 1. Se for GUARDIAN: Permite sempre
+    if (user.roles.includes('GUARDIAN')) {
+      return; // ✅ GUARDIAN sempre pode
+    }
+
+    // 2. Se for STUDENT: Validar regras
+    if (user.roles.includes('STUDENT')) {
+      const hasGuardian = user.guardianRelations && user.guardianRelations.length > 0;
+
+      // Cenário A: Autonomia (Sem responsável E 16+ anos)
+      if (!hasGuardian && user.birthDate) {
+        const age = this.calculateAge(user.birthDate);
+        if (age >= 16) {
+          return; // ✅ Aluno autônomo 16+ anos
+        }
+      }
+
+      // Cenário B: Permissão (Com responsável E flag ativada)
+      if (hasGuardian && user.wallet?.canRechargeAlone === true) {
+        return; // ✅ Aluno com permissão do responsável
+      }
+
+      // ❌ Nenhum cenário atendido: BLOQUEIA
+      throw new ForbiddenException(
+        'Aluno não autorizado a realizar recargas. Solicite permissão ao responsável ou aguarde completar 16 anos.',
+      );
+    }
+
+    // 3. Outras roles (SCHOOL_ADMIN, etc): Permite
+    return;
+  }
+
+  /**
+   * Calcula a idade em anos a partir da data de nascimento
+   */
+  private calculateAge(birthDate: Date): number {
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+
+    return age;
+  }
 
   /**
    * Gera uma solicitação de recarga PIX, criando uma transação pendente e um QR Code.
-   * O 'porquê': A criação de uma transação com status 'PENDING' é crucial para a reconciliação.
-   * Quando o webhook do gateway de pagamento notificar a confirmação, teremos um registro
-   * pré-existente para atualizar, garantindo que nenhuma recarga seja perdida ou processada
-   * incorretamente. A geração do QR Code é simulada, mas em produção, se integraria
-   * a um provedor de pagamentos.
-   * @param guardianId O ID do responsável solicitando a recarga.
+   * 
+   * ATUALIZAÇÃO v4.0: Agora valida se STUDENT pode criar recargas (16+ anos OU permissão).
+   * 
+   * @param userId O ID do usuário solicitante (GUARDIAN ou STUDENT).
    * @param createRechargeDto Os dados da recarga (dependente e valor).
    * @returns Um objeto com o ID da transação, um QR Code em Base64 e um texto "Copia e Cola".
-   * @throws {ForbiddenException} Se o aluno não for dependente do responsável.
+   * @throws {ForbiddenException} Se o aluno não tiver permissão ou não for dependente do responsável.
    * @throws {NotFoundException} Se a carteira do dependente não for encontrada.
    * @throws {InternalServerErrorException} Se houver falha na geração do QR Code.
    */
   async generatePixRecharge(
-    guardianId: string,
+    userId: string,
     createRechargeDto: CreateRechargeDto,
   ) {
     const { dependentId, amount } = createRechargeDto;
 
-    return this.prisma.$transaction(async (tx) => {
-      // 1. Valida o vínculo entre responsável e dependente.
+    const pendingTransactionId = await this.prisma.$transaction(async (tx) => {
+      // 1. ✅ Valida se o usuário tem permissão para criar recargas
+      await this.validateRechargeEligibility(tx, userId, dependentId);
+
+      // 2. Valida o vínculo entre responsável e dependente (se aplicável)
       const dependent = await tx.user.findFirst({
         where: {
           id: dependentId,
-          guardianRelations: { some: { guardianId: guardianId } },
+          OR: [
+            { guardianRelations: { some: { guardianId: userId } } },
+            { id: userId },
+          ],
         },
         select: { wallet: { select: { id: true } } },
       });
@@ -57,43 +152,57 @@ export class PaymentService {
         );
       }
 
-      // 2. Cria uma transação PENDENTE para rastrear a recarga.
-      // 2. Cria uma transação PENDENTE para rastrear a recarga.
+      // 3. Ledger PENDING (fonte da verdade para o webhook)
       const amountDecimal = new Prisma.Decimal(amount);
-      const fee = new Prisma.Decimal(0);
-      const net = amountDecimal;
 
       const pendingTransaction = await tx.transaction.create({
         data: {
           walletId: dependent.wallet.id,
           amount: amountDecimal,
-          platformFee: fee, // Explicitly set to match recharge logic
-          netAmount: net,
-          runningBalance: 0, // Saldo só será atualizado na confirmação
+          platformFee: new Prisma.Decimal(0),
+          grossAmount: amount,
+          metadata: {
+            splitRule: { payer: 'CUSTOMER', fee: 0 },
+          },
+          netAmount: amountDecimal,
+          runningBalance: 0,
           type: 'RECHARGE',
           status: 'PENDING',
           description: `Solicitação de recarga PIX de R$${amount.toFixed(2)}`,
         },
+        select: { id: true },
       });
 
-      // 3. Simula a geração de um payload PIX (em um cenário real, viria do gateway).
-      const pixPayload = `00020126580014br.gov.bcb.pix0136${pendingTransaction.id}520400005303986540${amount.toFixed(2)}5802BR5913CantApp Inc.6009SAO PAULO62070503***6304E2E1`;
-
-      try {
-        // 4. Gera o QR Code em Base64.
-        const qrCodeBase64 = await qrcode.toDataURL(pixPayload);
-
-        return {
-          transactionId: pendingTransaction.id,
-          qrCode: qrCodeBase64,
-          pixCopyPaste: pixPayload,
-        };
-      } catch (error) {
-        this.logger.error('Falha ao gerar QR Code', error.stack);
-        throw new InternalServerErrorException(
-          'Não foi possível gerar o QR Code para o pagamento.',
-        );
-      }
+      return pendingTransaction.id;
     });
+
+    try {
+      const pix = await this.transactionsService.prepareRechargeFromPending(
+        pendingTransactionId,
+        userId,
+      );
+
+      return {
+        transactionId: pendingTransactionId,
+        qrCode: pix.encodedImage,
+        pixCode: pix.brCode,
+        pixCopyPaste: pix.brCode,
+        totalAmount: pix.totalToPay,
+        fees: Number((pix.totalToPay - amount).toFixed(2)),
+        expiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+      };
+    } catch (error: any) {
+      this.logger.error('Falha ao gerar cobrança PIX (Asaas)', error?.stack);
+
+      // Preserve original HTTP status codes for business rule failures.
+      // Ex: BadRequestException("Cantina sem operador financeiro") should reach the client as 400.
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      throw new InternalServerErrorException(
+        'Não foi possível gerar a cobrança PIX para o pagamento.',
+      );
+    }
   }
 }

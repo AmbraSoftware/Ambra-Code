@@ -138,6 +138,8 @@ export class UsersService {
     role?: UserRole | UserRole[],
     withDeleted: boolean = false,
     filter?: 'negative_balance' | 'inactive_30d',
+    search?: string,
+    take?: string,
   ) {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -162,6 +164,38 @@ export class UsersService {
           createdAt: { gte: thirtyDaysAgo },
         },
       };
+    }
+
+    const normalizedSearch = (search || '').trim();
+    const takeNumber = Math.min(Math.max(Number(take || 5) || 5, 1), 100);
+
+    // POS mode: when searching, return a lighter payload
+    if (normalizedSearch.length >= 3) {
+      where.OR = [
+        { name: { contains: normalizedSearch, mode: 'insensitive' } },
+        { class: { contains: normalizedSearch, mode: 'insensitive' } },
+        { nfcId: { equals: normalizedSearch.toUpperCase() } },
+      ];
+
+      return this.prisma.user.findMany({
+        where,
+        select: {
+          id: true,
+          name: true,
+          avatarUrl: true,
+          class: true,
+          nfcId: true,
+          role: true,
+          wallet: {
+            select: {
+              balance: true,
+              isDebtBlocked: true,
+            },
+          },
+        },
+        orderBy: { name: 'asc' },
+        take: Math.min(takeNumber, 20),
+      });
     }
 
     return this.prisma.user.findMany({
@@ -189,6 +223,77 @@ export class UsersService {
       },
       orderBy: { name: 'asc' },
     });
+  }
+
+  async bindNfcId(
+    userId: string,
+    nfcId: string,
+    schoolId?: string,
+    actorUserId?: string,
+  ) {
+    const normalizedNfcId = nfcId.trim().toUpperCase();
+    if (!normalizedNfcId) {
+      throw new BadRequestException('NFC inválido.');
+    }
+
+    return this.prisma.$transaction(
+      async (tx) => {
+        const user = await tx.user.findFirst({
+          where: {
+            id: userId,
+            ...(schoolId ? { schoolId } : {}),
+            deletedAt: null,
+          },
+          select: { id: true, schoolId: true, nfcId: true },
+        });
+
+        if (!user) {
+          throw new NotFoundException('Usuário não encontrado ou acesso negado.');
+        }
+
+        const existing = await tx.user.findFirst({
+          where: {
+            nfcId: normalizedNfcId,
+            deletedAt: null,
+            NOT: { id: userId },
+          },
+          select: { id: true },
+        });
+
+        if (existing) {
+          throw new ConflictException('Este NFC já está vinculado a outro usuário.');
+        }
+
+        const updated = await tx.user.update({
+          where: { id: userId },
+          data: { nfcId: normalizedNfcId } as any,
+          select: {
+            id: true,
+            name: true,
+            nfcId: true,
+          },
+        });
+
+        // Best-effort audit (does not block)
+        try {
+          await tx.auditLog.create({
+            data: {
+              schoolId: user.schoolId!,
+              userId: actorUserId || null,
+              action: 'BIND_NFC',
+              entity: 'User',
+              entityId: userId,
+              meta: { nfcId: normalizedNfcId },
+            },
+          });
+        } catch {
+          // ignore
+        }
+
+        return updated;
+      },
+      { isolationLevel: 'Serializable' },
+    );
   }
 
   /**

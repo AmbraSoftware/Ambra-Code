@@ -54,9 +54,9 @@ async function main() {
 
   // 2. PLANOS (Atualizado com Taxas do ROI v4.7)
   const plans = [
-    { 
-      id: '9657c91e-3558-45b0-9f5b-b9d5690b9687', 
-      name: 'Plano Essencial (B2B)', 
+    {
+      id: '9657c91e-3558-45b0-9f5b-b9d5690b9687',
+      name: 'Plano Essencial (B2B)',
       price: 150.0,
       target: 'SCHOOL_SAAS',
       feesConfig: {
@@ -67,9 +67,9 @@ async function main() {
         transactionPercent: 4.0 // 4%
       }
     },
-    { 
-      id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 
-      name: 'Ambra Food Premium (B2C)', 
+    {
+      id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+      name: 'Ambra Food Premium (B2C)',
       price: 15.99,
       target: 'GUARDIAN_PREMIUM',
       feesConfig: {
@@ -85,12 +85,12 @@ async function main() {
   for (const plan of plans) {
     await prisma.plan.upsert({
       where: { id: plan.id },
-      update: { 
-          price: plan.price, 
-          // @ts-ignore - Prisma types update async
-          feesConfig: plan.feesConfig,
-          // @ts-ignore
-          target: plan.target
+      update: {
+        price: plan.price,
+        // @ts-ignore - Prisma types update async
+        feesConfig: plan.feesConfig,
+        // @ts-ignore
+        target: plan.target
       },
       create: {
         id: plan.id,
@@ -154,7 +154,7 @@ async function main() {
       taxId: '46.000.000/0001-00',
       slug: 'pref-sp-v4',
       systemId: ambraSystem.id,
-      planId: plans[0].id, 
+      planId: plans[0].id,
     },
   });
 
@@ -207,7 +207,7 @@ async function main() {
   // Cenário C: Escola Municipal
   // Fetch existing gov ID first
   const existingGov = await prisma.government.findUnique({ where: { slug: 'pref-sp-v4' } });
-  
+
   const schoolMuni = await prisma.school.upsert({
     where: { taxId: '66.666.666/0001-66' },
     update: {},
@@ -286,10 +286,16 @@ async function main() {
     },
   });
 
-  // Student (Colégio Elite)
+  // Student (Colégio Elite) - ✅ 16+ anos para autonomia de recargas
   const studentElite = await prisma.user.upsert({
     where: { email: 'aluno@elite.com' },
-    update: { passwordHash: password123, role: UserRole.STUDENT, roles: [UserRole.STUDENT], schoolId: schoolElite.id },
+    update: {
+      passwordHash: password123,
+      role: UserRole.STUDENT,
+      roles: [UserRole.STUDENT],
+      schoolId: schoolElite.id,
+      birthDate: new Date('2000-01-01'),  // ✅ 26 anos (atende Cenário A: Autonomia 16+)
+    },
     create: {
       name: 'Aluno Teste',
       email: 'aluno@elite.com',
@@ -297,6 +303,7 @@ async function main() {
       role: UserRole.STUDENT,
       roles: [UserRole.STUDENT],
       schoolId: schoolElite.id,
+      birthDate: new Date('2000-01-01'),  // ✅ 26 anos (atende Cenário A: Autonomia 16+)
       termsAccepted: true,
       termsVersion: 'v1',
     },
@@ -305,10 +312,14 @@ async function main() {
   // Wallet for Student
   await prisma.wallet.upsert({
     where: { userId: studentElite.id },
-    update: { balance: 150.00 },
+    update: {
+      balance: 150.00,
+      dailySpendLimit: 50.00,
+    },
     create: {
       userId: studentElite.id,
       balance: 150.00,
+      dailySpendLimit: 50.00,
     }
   });
 
@@ -327,12 +338,12 @@ main()
   .finally(async () => {
     // Force close connections to prevent hanging
     try {
-        await prisma.$disconnect();
-        await pool.end();
-        console.log('🔌 Conexões encerradas com sucesso.');
+      await prisma.$disconnect();
+      await pool.end();
+      console.log('🔌 Conexões encerradas com sucesso.');
     } catch (err) {
-        console.error('Erro ao encerrar conexões:', err);
-        process.exit(1);
+      console.error('Erro ao encerrar conexões:', err);
+      process.exit(1);
     }
     process.exit(0);
   });

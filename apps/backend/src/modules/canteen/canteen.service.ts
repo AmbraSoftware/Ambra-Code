@@ -18,6 +18,104 @@ export class CanteenService {
     private readonly stockService: StockService,
   ) { }
 
+  async getStudentByNfcId(
+    nfcId: string,
+    schoolId: string | null,
+    canteenId: string | null,
+  ) {
+    if (!schoolId) {
+      throw new ForbiddenException('Acesso negado. Usuário não está associado a uma escola.');
+    }
+
+    if (!canteenId) {
+      throw new ForbiddenException(
+        'Acesso negado. Operador não está associado a uma cantina.',
+      );
+    }
+
+    const normalizedNfcId = nfcId.trim().toUpperCase();
+    if (!normalizedNfcId) {
+      throw new BadRequestException('NFC inválido.');
+    }
+
+    const student = await this.prisma.user.findFirst({
+      where: {
+        deletedAt: null,
+        role: 'STUDENT',
+        schoolId,
+        nfcId: normalizedNfcId,
+      },
+      select: {
+        id: true,
+        name: true,
+        avatarUrl: true,
+        class: true,
+        wallet: {
+          select: {
+            balance: true,
+            isDebtBlocked: true,
+          },
+        },
+      },
+    });
+
+    if (!student) {
+      throw new NotFoundException('Aluno não encontrado.');
+    }
+
+    return student;
+  }
+
+  async searchStudentsForPos(
+    schoolId: string | null,
+    canteenId: string | null,
+    search?: string,
+    take?: string,
+  ) {
+    if (!schoolId) {
+      throw new ForbiddenException('Acesso negado. Usuário não está associado a uma escola.');
+    }
+
+    if (!canteenId) {
+      throw new ForbiddenException(
+        'Acesso negado. Operador não está associado a uma cantina.',
+      );
+    }
+
+    const normalizedSearch = (search || '').trim();
+    if (normalizedSearch.length < 3) {
+      return [];
+    }
+
+    const takeNumber = Math.min(Math.max(Number(take || 5) || 5, 1), 20);
+
+    return this.prisma.user.findMany({
+      where: {
+        deletedAt: null,
+        role: 'STUDENT',
+        schoolId,
+        OR: [
+          { name: { contains: normalizedSearch, mode: 'insensitive' } },
+          { class: { contains: normalizedSearch, mode: 'insensitive' } },
+        ],
+      },
+      select: {
+        id: true,
+        name: true,
+        avatarUrl: true,
+        class: true,
+        wallet: {
+          select: {
+            balance: true,
+            isDebtBlocked: true,
+          },
+        },
+      },
+      orderBy: { name: 'asc' },
+      take: takeNumber,
+    });
+  }
+
   async getOrderByHashForScan(orderHash: string, canteenId: string | null) {
     if (!canteenId) {
       throw new ForbiddenException(

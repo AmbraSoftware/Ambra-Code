@@ -11,6 +11,8 @@ describe('AuthModule (e2e)', () => {
   let accessToken: string;
   let prisma: PrismaService;
 
+  const TENANT_SLUG = 'colegio-elite';
+
   const adminPassword = 'Diel@0002323';
   const adminEmail = 'admin@cantapp.com';
 
@@ -34,26 +36,34 @@ describe('AuthModule (e2e)', () => {
 
     await prisma.user.upsert({
       where: { email: adminEmail },
-      update: { passwordHash: hashedPassword },
+      update: {
+        passwordHash: hashedPassword,
+        role: UserRole.SUPER_ADMIN,
+        roles: [UserRole.SUPER_ADMIN],
+      },
       create: {
         email: adminEmail,
         name: 'Test Admin',
         passwordHash: hashedPassword,
-        role: UserRole.GLOBAL_ADMIN,
+        role: UserRole.SUPER_ADMIN,
+        roles: [UserRole.SUPER_ADMIN],
       },
     });
 
     await app.init();
-  });
+  }, 30000);
 
   afterAll(async () => {
-    await app.close();
+    if (app) {
+      await app.close();
+    }
   });
 
   describe('POST /auth/login', () => {
     it('should login successfully with valid credentials', async () => {
       const response = await request(app.getHttpServer())
         .post('/auth/login')
+        .set('x-tenant-slug', TENANT_SLUG)
         .send({
           email: adminEmail,
           password: adminPassword,
@@ -67,6 +77,7 @@ describe('AuthModule (e2e)', () => {
     it('should fail with invalid credentials', () => {
       return request(app.getHttpServer())
         .post('/auth/login')
+        .set('x-tenant-slug', TENANT_SLUG)
         .send({
           email: adminEmail,
           password: 'wrongpassword',
@@ -77,6 +88,7 @@ describe('AuthModule (e2e)', () => {
     it('should fail with invalid email format', () => {
       return request(app.getHttpServer())
         .post('/auth/login')
+        .set('x-tenant-slug', TENANT_SLUG)
         .send({
           email: 'not-an-email',
           password: 'any',
@@ -90,6 +102,7 @@ describe('AuthModule (e2e)', () => {
       return request(app.getHttpServer())
         .get('/auth/profile')
         .set('Authorization', `Bearer ${accessToken}`)
+        .set('x-tenant-slug', TENANT_SLUG)
         .expect(200)
         .expect((res) => {
           expect(res.body).toHaveProperty('id');
@@ -98,7 +111,10 @@ describe('AuthModule (e2e)', () => {
     });
 
     it('should fail without token', () => {
-      return request(app.getHttpServer()).get('/auth/profile').expect(401);
+      return request(app.getHttpServer())
+        .get('/auth/profile')
+        .set('x-tenant-slug', TENANT_SLUG)
+        .expect(401);
     });
   });
 });

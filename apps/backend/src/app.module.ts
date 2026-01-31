@@ -40,6 +40,7 @@ import { CanteenModule } from './modules/canteen/canteen.module';
 import { ProductsModule } from './modules/products/products.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { StockModule } from './modules/stock/stock.module';
+import { StoreModule } from './modules/store/store.module';
 
 // Features & Integrations
 import { AiModule } from './modules/ai/ai.module';
@@ -109,6 +110,7 @@ import { TenantThrottlerGuard } from './common/guards/tenant-throttler.guard';
     ProductsModule,
     OrdersModule,
     StockModule,
+    StoreModule,
     AiModule,
     ImportModule,
     InvitationsModule,

@@ -53,7 +53,7 @@ export class PrismaService
     // Chamada do super() para inicializar o motor original do Prisma com o adaptador PG
     super({
       adapter: new PrismaPg(poolInstance),
-      log: ['warn', 'error'],
+      log: process.env.NODE_ENV === 'test' ? [] : ['warn', 'error'],
     });
 
     this.pool = poolInstance;

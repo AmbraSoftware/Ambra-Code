@@ -2,9 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { MobileLayout } from '@/components/MobileLayout';
-import { walletAPI, type Wallet, type Transaction } from '@/lib/api';
-import { Wallet as WalletIcon, ArrowUpCircle, ArrowDownCircle, RefreshCw } from 'lucide-react';
+import { API_BASE_URL, walletAPI, type Wallet, type Transaction as APITransaction } from '@/lib/api';
+import { Transaction } from '@/types';
+import { BalanceCard } from '@/components/ui/organisms/BalanceCard';
+import { TransactionList } from '@/components/ui/organisms/TransactionList';
+import { BottomNav } from '@/components/ui/organisms/BottomNav';
+import { Button } from '@/components/ui/atoms/Button';
+import { Bell, RefreshCw } from 'lucide-react';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -13,6 +17,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [userName, setUserName] = useState('');
+  const [apiError, setApiError] = useState<string | null>(null);
 
   useEffect(() => {
     // Verificar se está autenticado
@@ -32,15 +37,31 @@ export default function DashboardPage() {
 
   const loadWalletData = async () => {
     try {
+      setApiError(null);
       const [walletRes, transactionsRes] = await Promise.all([
         walletAPI.getWallet(),
         walletAPI.getTransactions(5),
       ]);
 
       setWallet(walletRes.data);
-      setTransactions(transactionsRes.data);
+
+      // Converter transações da API para o tipo do Design System
+      const mappedTransactions: Transaction[] = transactionsRes.data.map((t: APITransaction) => ({
+        id: t.id,
+        walletId: walletRes.data.id,
+        type: t.type,
+        amount: t.amount,
+        description: t.description,
+        createdAt: new Date(t.createdAt),
+        status: t.status,
+      }));
+
+      setTransactions(mappedTransactions);
     } catch (error) {
       console.error('Erro ao carregar carteira:', error);
+      setApiError(
+        `Não foi possível conectar na API (${API_BASE_URL}). Verifique se o backend está rodando.`
+      );
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -52,176 +73,102 @@ export default function DashboardPage() {
     loadWalletData();
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(value);
-  };
-
   if (loading) {
     return (
-      <MobileLayout>
-        <div className="flex items-center justify-center min-h-screen">
-          <RefreshCw className="w-8 h-8 text-primary animate-spin" />
-        </div>
-      </MobileLayout>
+      <div className="flex items-center justify-center min-h-screen bg-surface-light dark:bg-surface-dark">
+        <RefreshCw className="w-8 h-8 text-brand-primary animate-spin" />
+      </div>
     );
   }
 
   return (
-    <MobileLayout>
-      <div className="p-6 space-y-6 safe-top">
-        {/* Header */}
-        <div>
-          <p className="text-gray-500 text-sm">Olá,</p>
-          <h1 className="text-2xl font-bold text-gray-900">{userName}</h1>
+    <div className="min-h-screen bg-surface-light dark:bg-surface-dark flex flex-col">
+      {/* TopAppBar */}
+      <header className="flex items-center bg-surface-light dark:bg-surface-dark p-4 pb-2 justify-between pt-8 safe-area-top">
+        <div className="flex flex-col flex-1">
+          <h2 className="text-text-primary dark:text-text-primary-dark text-xl font-bold leading-tight tracking-[-0.015em]">
+            Olá, {userName}
+          </h2>
+          <p className="text-text-secondary dark:text-text-secondary-dark text-sm">
+            {new Date().toLocaleDateString('pt-BR', {
+              weekday: 'long',
+              day: 'numeric',
+              month: 'long'
+            })}
+          </p>
         </div>
+        <div className="flex w-12 items-center justify-end">
+          <button className="flex size-10 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-white dark:bg-surface-card-dark shadow-sm text-text-primary dark:text-white">
+            <Bell className="h-6 w-6" />
+          </button>
+        </div>
+      </header>
 
-        {/* Saldo Card */}
-        <div className="bg-gradient-to-br from-primary to-primary-dark rounded-3xl p-6 text-white shadow-xl">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <WalletIcon className="w-5 h-5" />
-              <span className="text-sm opacity-90">Saldo Disponível</span>
+      <main className="flex-1 px-4 py-4 overflow-y-auto pb-32">
+        {/* Balance Card */}
+        <BalanceCard
+          balance={wallet?.balance || 0}
+          dailyLimit={wallet?.dailyLimit || 0}
+          credit={wallet?.creditLimit || 0}
+          onRefresh={handleRefresh}
+          loading={refreshing}
+        />
+
+        {apiError && (
+          <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl px-4 py-3">
+            <p className="text-red-700 dark:text-red-400 text-sm font-medium">
+              {apiError}
+            </p>
+            <div className="mt-3">
+              <Button variant="secondary" onClick={handleRefresh}>
+                Tentar novamente
+              </Button>
             </div>
-            <button
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="p-2 hover:bg-white/10 rounded-full transition-colors"
-            >
-              <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
-            </button>
           </div>
+        )}
 
-          <div className="mb-4">
-            <p className="text-5xl font-bold tracking-tight">
-              {formatCurrency(wallet?.balance || 0)}
+        {/* Alertas */}
+        {wallet?.status === 'BLOCKED' && (
+          <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl px-4 py-3">
+            <p className="text-red-700 dark:text-red-400 text-sm font-medium">
+              ⚠️ Carteira bloqueada. Entre em contato com a escola.
             </p>
           </div>
+        )}
 
-          {/* Status e Limites */}
-          <div className="flex gap-4 text-sm opacity-90">
-            <div>
-              <p className="opacity-75">Limite Diário</p>
-              <p className="font-semibold">{formatCurrency(wallet?.dailyLimit || 0)}</p>
-            </div>
-            <div>
-              <p className="opacity-75">Crédito Disponível</p>
-              <p className="font-semibold">{formatCurrency(wallet?.creditLimit || 0)}</p>
-            </div>
+        {wallet && wallet.balance < 0 && (
+          <div className="mb-6 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl px-4 py-3">
+            <p className="text-yellow-700 dark:text-yellow-400 text-sm font-medium">
+              ⚠️ Saldo negativo. Realize uma recarga.
+            </p>
           </div>
+        )}
 
-          {/* Alertas */}
-          {wallet?.status === 'BLOCKED' && (
-            <div className="mt-4 bg-red-500/20 backdrop-blur-sm border border-red-300 rounded-xl px-3 py-2">
-              <p className="text-sm font-medium">⚠️ Carteira bloqueada. Entre em contato com a escola.</p>
-            </div>
-          )}
-
-          {wallet && wallet.balance < 0 && (
-            <div className="mt-4 bg-yellow-500/20 backdrop-blur-sm border border-yellow-300 rounded-xl px-3 py-2">
-              <p className="text-sm font-medium">⚠️ Saldo negativo. Realize uma recarga.</p>
-            </div>
-          )}
+        {/* Action Button */}
+        <div className="flex mb-8">
+          <Button
+            className="w-full"
+            onClick={() => router.push('/recharge')}
+          >
+            💳 Recarregar Carteira
+          </Button>
         </div>
 
-        {/* Ação Rápida */}
-        <button
-          onClick={() => router.push('/recharge')}
-          className="btn-primary w-full text-lg"
-        >
-          💳 Recarregar Carteira
-        </button>
+        {/* Transaction List */}
+        {transactions.length === 0 ? (
+          <div className="bg-white dark:bg-surface-card-dark rounded-xl p-8 text-center">
+            <p className="text-gray-500 dark:text-gray-400">Nenhuma transação ainda</p>
+          </div>
+        ) : (
+          <TransactionList
+            transactions={transactions}
+            onViewAll={() => router.push('/transactions')}
+          />
+        )}
+      </main>
 
-        {/* Últimas Transações */}
-        <div>
-          <h2 className="text-lg font-bold text-gray-900 mb-4">Últimas Transações</h2>
-
-          {transactions.length === 0 ? (
-            <div className="card-mobile text-center py-8">
-              <p className="text-gray-500">Nenhuma transação ainda</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {transactions.map((transaction) => (
-                <div key={transaction.id} className="card-mobile">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                          transaction.type === 'CASH_IN'
-                            ? 'bg-green-100'
-                            : transaction.type === 'PURCHASE'
-                            ? 'bg-red-100'
-                            : 'bg-blue-100'
-                        }`}
-                      >
-                        {transaction.type === 'CASH_IN' ? (
-                          <ArrowDownCircle className="w-5 h-5 text-green-600" />
-                        ) : transaction.type === 'PURCHASE' ? (
-                          <ArrowUpCircle className="w-5 h-5 text-red-600" />
-                        ) : (
-                          <RefreshCw className="w-5 h-5 text-blue-600" />
-                        )}
-                      </div>
-
-                      <div>
-                        <p className="font-medium text-gray-900">{transaction.description}</p>
-                        <p className="text-xs text-gray-500">
-                          {new Date(transaction.createdAt).toLocaleDateString('pt-BR', {
-                            day: '2-digit',
-                            month: 'short',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="text-right">
-                      <p
-                        className={`font-bold ${
-                          transaction.type === 'CASH_IN'
-                            ? 'text-green-600'
-                            : transaction.type === 'PURCHASE'
-                            ? 'text-red-600'
-                            : 'text-blue-600'
-                        }`}
-                      >
-                        {transaction.type === 'PURCHASE' ? '-' : '+'}
-                        {formatCurrency(transaction.amount)}
-                      </p>
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full ${
-                          transaction.status === 'COMPLETED'
-                            ? 'bg-green-100 text-green-700'
-                            : transaction.status === 'PENDING'
-                            ? 'bg-yellow-100 text-yellow-700'
-                            : 'bg-red-100 text-red-700'
-                        }`}
-                      >
-                        {transaction.status === 'COMPLETED'
-                          ? 'Concluída'
-                          : transaction.status === 'PENDING'
-                          ? 'Pendente'
-                          : 'Falhou'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </MobileLayout>
+      {/* Bottom Navigation */}
+      <BottomNav />
+    </div>
   );
-}
-
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(value);
 }

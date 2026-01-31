@@ -71,6 +71,8 @@ export class AuthService {
         user: {
           id: user.id,
           name: user.name,
+          email: user.email,
+          role: user.role,
           roles: user.roles as unknown as UserRole[],
           schoolId: user.schoolId,
           mustChangePassword: user.mustChangePassword,
@@ -376,6 +378,7 @@ export class AuthService {
         name: true,
         email: true,
         role: true,
+        roles: true,  // ✅ Adicionar array de roles
         schoolId: true,
         mustChangePassword: true,
       },
@@ -385,7 +388,8 @@ export class AuthService {
     const payload = {
       sub: user.id,
       email: user.email,
-      role: user.role,
+      role: user.role,  // Manter para compatibilidade
+      roles: user.roles as unknown as UserRole[],  // ✅ Adicionar array de roles
       schoolId: user.schoolId,
       mustChangePassword: user.mustChangePassword, // Now false
     };
@@ -396,6 +400,7 @@ export class AuthService {
         id: user.id,
         name: user.name,
         role: user.role,
+        roles: user.roles as unknown as UserRole[],  // ✅ Adicionar array de roles
         schoolId: user.schoolId,
         mustChangePassword: user.mustChangePassword,
       },

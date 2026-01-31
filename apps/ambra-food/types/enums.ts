@@ -16,6 +16,7 @@ export enum UserRole {
 
 export enum TransactionType {
   CASH_IN = 'CASH_IN',
+  RECHARGE = 'RECHARGE',
   PURCHASE = 'PURCHASE',
   REFUND = 'REFUND',
   ADJUSTMENT = 'ADJUSTMENT',

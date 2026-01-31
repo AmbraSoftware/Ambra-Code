@@ -17,6 +17,11 @@ export class RedisCacheService implements OnModuleInit, OnModuleDestroy {
   private isConnected = false;
 
   constructor() {
+    // Em testes E2E não precisamos de cache distribuído. Evita ruído no console e handles abertos.
+    if (process.env.NODE_ENV === 'test') {
+      return;
+    }
+
     const redisUrl = process.env.REDIS_URL;
 
     if (!redisUrl) {
@@ -58,6 +63,9 @@ export class RedisCacheService implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleInit() {
+    if (process.env.NODE_ENV === 'test') {
+      return;
+    }
     if (this.client) {
       try {
         await this.client.connect();

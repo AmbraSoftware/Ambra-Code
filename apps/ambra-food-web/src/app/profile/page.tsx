@@ -2,8 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { MobileLayout } from '@/components/MobileLayout';
-import { User, LogOut, Shield } from 'lucide-react';
+import { Button } from '@/components/ui/atoms/Button';
+import { Card } from '@/components/ui/molecules/Card';
+import { Avatar } from '@/components/ui/atoms/Avatar';
+import { BottomNav } from '@/components/ui/organisms/BottomNav';
+import { Shield, User as UserIcon, LogOut } from 'lucide-react';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -27,63 +30,86 @@ export default function ProfilePage() {
   if (!user) return null;
 
   return (
-    <MobileLayout>
-      <div className="p-6 space-y-6 safe-top">
-        {/* Header */}
-        <div className="text-center">
-          <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
-            <User className="w-10 h-10 text-white" />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900">{user.name}</h1>
-          <p className="text-gray-500 text-sm">{user.email}</p>
+    <div className="min-h-screen bg-surface-light dark:bg-surface-dark flex flex-col">
+      {/* TopAppBar */}
+      <header className="bg-surface-light dark:bg-surface-dark p-4 pt-8 safe-area-top">
+        <h2 className="text-text-primary dark:text-white text-xl font-bold leading-tight tracking-tight text-center">
+          Perfil
+        </h2>
+      </header>
+
+      <main className="flex-1 px-4 py-6 pb-24 overflow-y-auto">
+        {/* Avatar & Name */}
+        <div className="flex flex-col items-center mb-8">
+          <Avatar
+            name={user.name}
+            size="xl"
+            className="mb-4 shadow-lg"
+          />
+          <h1 className="text-text-primary dark:text-white text-2xl font-bold mb-1">
+            {user.name}
+          </h1>
+          <p className="text-text-secondary dark:text-text-secondary-dark text-sm">
+            {user.email}
+          </p>
         </div>
 
         {/* Info Cards */}
-        <div className="space-y-3">
-          <div className="card-mobile">
+        <div className="space-y-3 mb-8">
+          <Card variant="default" padding="md">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                <Shield className="w-5 h-5 text-blue-600" />
+              <div className="flex items-center justify-center size-10 rounded-full bg-blue-100 dark:bg-blue-900/30 shrink-0">
+                <Shield className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               </div>
-              <div>
-                <p className="text-sm text-gray-600">Tipo de Conta</p>
-                <p className="font-semibold text-gray-900">
+              <div className="flex-1">
+                <p className="text-text-secondary dark:text-text-secondary-dark text-sm">
+                  Tipo de Conta
+                </p>
+                <p className="text-text-primary dark:text-white font-semibold">
                   {user.role === 'GUARDIAN' ? 'Responsável' : 'Estudante'}
                 </p>
               </div>
             </div>
-          </div>
+          </Card>
 
-          <div className="card-mobile">
+          <Card variant="default" padding="md">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                <User className="w-5 h-5 text-green-600" />
+              <div className="flex items-center justify-center size-10 rounded-full bg-green-100 dark:bg-green-900/30 shrink-0">
+                <UserIcon className="h-5 w-5 text-green-600 dark:text-green-400" />
               </div>
-              <div>
-                <p className="text-sm text-gray-600">ID do Usuário</p>
-                <p className="font-mono text-xs text-gray-900">{user.id}</p>
+              <div className="flex-1">
+                <p className="text-text-secondary dark:text-text-secondary-dark text-sm">
+                  ID do Usuário
+                </p>
+                <p className="text-text-primary dark:text-white font-mono text-xs">
+                  {user.id}
+                </p>
               </div>
             </div>
-          </div>
+          </Card>
         </div>
 
-        {/* Ações */}
-        <div className="space-y-3 pt-6">
-          <button
+        {/* Actions */}
+        <div className="space-y-3">
+          <Button
+            variant="danger"
+            className="w-full"
             onClick={handleLogout}
-            className="btn-secondary w-full flex items-center justify-center gap-2 text-red-600 hover:bg-red-50"
+            icon={<LogOut className="h-5 w-5" />}
           >
-            <LogOut className="w-5 h-5" />
             Sair
-          </button>
+          </Button>
         </div>
 
         {/* Footer */}
-        <div className="text-center text-xs text-gray-500 pt-8">
+        <div className="text-center text-xs text-gray-500 dark:text-gray-400 pt-8">
           <p>Ambra Food Web v1.0.0</p>
           <p className="mt-1">PWA Mobile-First</p>
         </div>
-      </div>
-    </MobileLayout>
+      </main>
+
+      {/* Bottom Navigation */}
+      <BottomNav />
+    </div>
   );
 }

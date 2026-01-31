@@ -7,9 +7,10 @@ import { HttpModule } from '@nestjs/axios';
 import { PaymentWebhookController } from './webhook/payment-webhook.controller';
 import { PaymentWebhookService } from './webhook/payment-webhook.service';
 import { AuditModule } from '../audit/audit.module';
+import { TransactionsModule } from '../transactions/transactions.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, HttpModule, AuditModule],
+  imports: [PrismaModule, AuthModule, HttpModule, AuditModule, TransactionsModule],
   controllers: [PaymentController, PaymentWebhookController],
   providers: [PaymentService, PaymentWebhookService],
 })

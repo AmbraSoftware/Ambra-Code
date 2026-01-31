@@ -1,8 +1,8 @@
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Clipboard } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Clipboard, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, DollarSign, QrCode, Copy, CheckCircle } from 'lucide-react-native';
+import { ArrowLeft, DollarSign, QrCode, Copy, CheckCircle, Receipt, Info, Percent, Crown } from 'lucide-react-native';
 import { paymentAPI } from '../../services/api';
 import type { PixRechargeResponse, CashInFees } from '../../types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -16,6 +16,14 @@ export default function WalletRechargeScreen() {
   const [fees, setFees] = useState<CashInFees | null>(null);
   const [copied, setCopied] = useState(false);
   const [userId, setUserId] = useState('');
+
+  const normalizeFeeAmount = (rawFees: PixRechargeResponse['fees']): number | null => {
+    if (typeof rawFees === 'number') return rawFees;
+    if (rawFees && typeof rawFees === 'object' && typeof (rawFees as any).total === 'number') {
+      return (rawFees as any).total;
+    }
+    return null;
+  };
 
   useEffect(() => {
     loadInitialData();
@@ -69,6 +77,24 @@ export default function WalletRechargeScreen() {
     }
 
     return fee;
+  };
+
+  const getFinalTotals = () => {
+    const inputAmount = parseFloat(amount) || 0;
+    const backendGross = pixData?.grossAmount ?? pixData?.totalAmount;
+    const backendFee = normalizeFeeAmount(pixData?.fees);
+
+    const totalAmount = backendGross ?? calculateTotal();
+    const feeAmount = backendFee ?? calculateFee();
+    const creditAmount = inputAmount;
+    const netAmount = pixData?.netAmount ?? creditAmount;
+
+    return {
+      totalAmount,
+      feeAmount,
+      creditAmount,
+      netAmount,
+    };
   };
 
   const handleGeneratePix = async () => {
@@ -137,6 +163,7 @@ export default function WalletRechargeScreen() {
   }
 
   if (pixData) {
+    const finalTotals = getFinalTotals();
     // Tela de PIX Gerado
     return (
       <SafeAreaView className="flex-1 bg-white">
@@ -155,14 +182,52 @@ export default function WalletRechargeScreen() {
               <CheckCircle size={64} color="#4CAF50" />
             </View>
             <Text className="text-2xl font-bold text-gray-900 mb-2">
-              {formatCurrency(calculateTotal())}
+              {formatCurrency(finalTotals.totalAmount)}
             </Text>
             <Text className="text-gray-500">Valor total a pagar</Text>
           </View>
 
-          {/* QR Code Placeholder */}
+          <View className="bg-white border border-gray-200 rounded-2xl p-5 mt-6">
+            <View className="flex-row items-center mb-3">
+              <Receipt size={18} color="#111827" />
+              <Text className="ml-2 font-semibold text-gray-900">Resumo da operação</Text>
+            </View>
+
+            <View className="flex-row justify-between">
+              <Text className="text-gray-600">Você paga</Text>
+              <Text className="font-bold text-gray-900">{formatCurrency(finalTotals.totalAmount)}</Text>
+            </View>
+
+            <View className="flex-row justify-between mt-2">
+              <Text className="text-gray-600">Crédito liberado</Text>
+              <Text className="font-bold text-green-600">{formatCurrency(finalTotals.creditAmount)}</Text>
+            </View>
+
+            <View className="flex-row justify-between mt-2">
+              <Text className="text-gray-600">Taxa</Text>
+              <Text className="font-semibold text-gray-900">{formatCurrency(finalTotals.feeAmount)}</Text>
+            </View>
+
+            <View className="mt-3 bg-gray-50 rounded-xl p-3">
+              <View className="flex-row items-start">
+                <Info size={16} color="#6B7280" />
+                <Text className="ml-2 text-xs text-gray-600 leading-4 flex-1">
+                  A taxa é cobrada no pagamento e não vira saldo. Ela aparece aqui para facilitar auditoria e conferência.
+                </Text>
+              </View>
+            </View>
+          </View>
+
           <View className="bg-gray-100 rounded-2xl p-8 items-center mt-6">
-            <QrCode size={200} color="#212121" />
+            {pixData.qrCode ? (
+              <Image
+                source={{ uri: `data:image/png;base64,${pixData.qrCode}` }}
+                style={{ width: 220, height: 220 }}
+                resizeMode="contain"
+              />
+            ) : (
+              <QrCode size={200} color="#212121" />
+            )}
             <Text className="text-gray-500 text-sm mt-4 text-center">
               Escaneie o QR Code acima com o app do seu banco
             </Text>
@@ -243,6 +308,36 @@ export default function WalletRechargeScreen() {
           <Text className="text-gray-400 text-xs mt-2">Mínimo: R$ 0,50 • Máximo: R$ 1.000,00</Text>
         </View>
 
+        {/* Card de Simulação (Dinâmico) */}
+        {parseFloat(amount) > 0 && (
+          <View className="bg-white border border-gray-200 rounded-2xl p-5 mt-4">
+            <View className="flex-row items-center mb-3">
+              <Receipt size={18} color="#111827" />
+              <Text className="ml-2 font-semibold text-gray-900">Simulação</Text>
+            </View>
+
+            <View className="flex-row justify-between">
+              <Text className="text-gray-600">Valor do Crédito</Text>
+              <Text className="font-bold text-gray-900">{formatCurrency(parseFloat(amount) || 0)}</Text>
+            </View>
+
+            <View className="flex-row justify-between mt-2">
+              <Text className="text-gray-600">Taxa de Serviço</Text>
+              <Text className="font-semibold text-gray-900">
+                {formatCurrency(calculateFee() > 0 ? calculateFee() : 2.99)}
+              </Text>
+            </View>
+
+            <View className="mt-2">
+              <TouchableOpacity className="self-start" activeOpacity={0.8}>
+                <Text className="text-xs text-gray-600">
+                  Cansado de taxas? Seja Premium 👑 e isente-se.
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
         {/* Valores Rápidos - Incluindo valores de teste */}
         <View className="mt-6">
           <Text className="text-gray-700 text-sm font-semibold mb-3">Valores Rápidos:</Text>
@@ -259,60 +354,7 @@ export default function WalletRechargeScreen() {
           </View>
         </View>
 
-        {/* Recibo Detalhado - Clareza Total */}
-        {parseFloat(amount) > 0 && (
-          <View className="bg-blue-50 rounded-2xl p-5 mt-6 border-2 border-blue-200">
-            <Text className="font-bold text-blue-900 mb-4 text-center text-lg">
-              💰 Recibo de Pré-Pagamento
-            </Text>
-            
-            <View className="space-y-3">
-              {/* Crédito que vai para carteira */}
-              <View className="bg-white rounded-xl p-3">
-                <Text className="text-gray-500 text-xs mb-1">💳 Crédito na Carteira</Text>
-                <Text className="font-bold text-2xl text-green-600">
-                  {formatCurrency(parseFloat(amount) || 0)}
-                </Text>
-                <Text className="text-gray-400 text-xs mt-1">
-                  Valor que você poderá usar nas compras
-                </Text>
-              </View>
 
-              {/* Taxa de serviço (se houver) */}
-              {calculateFee() > 0 && (
-                <View className="bg-orange-50 rounded-xl p-3 border border-orange-200">
-                  <Text className="text-orange-700 text-xs mb-1">📝 Taxa de Serviço PIX</Text>
-                  <Text className="font-bold text-xl text-orange-600">
-                    + {formatCurrency(calculateFee())}
-                  </Text>
-                  <Text className="text-orange-600 text-xs mt-1">
-                    Custo da transação (não vai para carteira)
-                  </Text>
-                </View>
-              )}
-
-              {/* Linha separadora */}
-              <View className="border-t-2 border-dashed border-blue-300 my-2" />
-
-              {/* Total a pagar */}
-              <View className="bg-primary/10 rounded-xl p-3">
-                <Text className="text-gray-700 text-sm mb-1">🏦 Total a Pagar no PIX</Text>
-                <Text className="font-bold text-3xl text-primary">
-                  {formatCurrency(calculateTotal())}
-                </Text>
-              </View>
-            </View>
-
-            {/* Nota explicativa */}
-            <View className="bg-white rounded-xl p-3 mt-3">
-              <Text className="text-xs text-gray-600 text-center leading-5">
-                ✅ Você paga {formatCurrency(calculateTotal())} no PIX{'\n'}
-                💰 Recebe {formatCurrency(parseFloat(amount) || 0)} na carteira{'\n'}
-                {calculateFee() > 0 && `📝 Taxa: ${formatCurrency(calculateFee())}`}
-              </Text>
-            </View>
-          </View>
-        )}
 
         {/* Botão Gerar PIX */}
         <TouchableOpacity
@@ -334,7 +376,10 @@ export default function WalletRechargeScreen() {
 
         {/* Info sobre PIX */}
         <View className="bg-blue-50 rounded-xl p-4 mb-8">
-          <Text className="text-blue-900 font-semibold mb-1">🔒 Seguro e Rápido</Text>
+          <View className="flex-row items-center mb-1">
+            <Info size={16} color="#1E3A8A" />
+            <Text className="text-blue-900 font-semibold ml-2">Seguro e rápido</Text>
+          </View>
           <Text className="text-blue-800 text-sm">
             Pagamento via PIX é instantâneo e seguro. Seu saldo será atualizado automaticamente após a confirmação.
           </Text>

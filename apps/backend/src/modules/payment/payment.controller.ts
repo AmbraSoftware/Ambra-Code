@@ -26,19 +26,30 @@ import { CreateRechargeDto } from './dto/create-recharge.dto';
 @Controller('payment')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class PaymentController {
-  constructor(private readonly paymentService: PaymentService) {}
+  constructor(private readonly paymentService: PaymentService) { }
 
   @Post('recharge-request')
-  @Roles('GUARDIAN')
+  @Roles('GUARDIAN', 'STUDENT')  // ✅ Nova regra: Alunos 15+ também podem criar recargas
   @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 requests per minute
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary:
-      'Gera uma cobrança PIX para recarregar a carteira de um dependente.',
+      'Gera uma cobrança PIX para recarregar a carteira de um dependente ou própria (alunos 15+).',
   })
   @ApiResponse({ status: 200, description: 'Cobrança PIX gerada com sucesso.' })
   @ApiResponse({ status: 403, description: 'Acesso negado.' })
   async requestRecharge(
+    @CurrentUser() user: AuthenticatedUserPayload,
+    @Body() createRechargeDto: CreateRechargeDto,
+  ) {
+    return this.paymentService.generatePixRecharge(user.id, createRechargeDto);
+  }
+
+  @Post('pix-recharge')
+  @Roles('GUARDIAN', 'STUDENT')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @HttpCode(HttpStatus.OK)
+  async pixRechargeAlias(
     @CurrentUser() user: AuthenticatedUserPayload,
     @Body() createRechargeDto: CreateRechargeDto,
   ) {

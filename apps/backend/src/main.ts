@@ -28,6 +28,7 @@ async function bootstrap() {
     origin: [
       'http://localhost:3000', // Frontend Local 1
       'http://localhost:3001', // Frontend Local 2
+      'http://localhost:3002', // Ambra Food Web (PWA)
       'http://localhost:3008', // Ambra Flow Local
       'https://nodum-platform-nodum-console.vercel.app', // Vercel Console
       'https://trilingually-unmurmurous-maurita.ngrok-free.dev', // Tunnel Ngrok

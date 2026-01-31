@@ -49,6 +49,116 @@ export class TransactionService {
     private readonly feeCalculator: FeeCalculatorService,
   ) { }
 
+  async prepareRechargeFromPending(pendingTransactionId: string, payerUserId: string) {
+    const pending = await this.prisma.transaction.findFirst({
+      where: { id: pendingTransactionId, status: 'PENDING', type: 'RECHARGE' },
+      include: {
+        wallet: {
+          select: {
+            id: true,
+            userId: true,
+            user: {
+              select: {
+                id: true,
+                schoolId: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!pending?.wallet?.user?.schoolId) {
+      throw new BadRequestException('Transação pendente inválida para recarga.');
+    }
+
+    const payer = await this.prisma.user.findUnique({
+      where: { id: payerUserId },
+      select: {
+        id: true,
+        document: true,
+        subscriptionPlanId: true,
+        subscriptionStatus: true,
+        subscriptionExpiresAt: true,
+      },
+    });
+
+    if (!payer) {
+      throw new BadRequestException('Pagador não encontrado.');
+    }
+
+    const school = await this.prisma.school.findUnique({
+      where: { id: pending.wallet.user.schoolId },
+      include: {
+        plan: true,
+        canteens: {
+          where: { type: 'COMMERCIAL', status: 'ACTIVE' },
+          take: 1,
+        },
+      },
+    });
+
+    if (!school || school.canteens.length === 0) {
+      throw new BadRequestException('Escola sem operador comercial ativo.');
+    }
+
+    const operatorId = school.canteens[0].operatorId;
+    if (!operatorId) {
+      throw new BadRequestException('Cantina sem operador financeiro.');
+    }
+
+    const operator = await this.prisma.operator.findUnique({
+      where: { id: operatorId },
+    });
+
+    if (!operator?.asaasId) {
+      throw new BadRequestException(
+        `Operador ${operator?.name} não possui subconta Asaas configurada (asaasId).`,
+      );
+    }
+
+    const creditAmount = Number(pending.amount);
+
+    const split = this.feeCalculator.calculateRechargeSplit(
+      creditAmount,
+      school as School & { plan: Plan },
+      payer as unknown as User,
+    );
+
+    if (split.totalPaid.lessThanOrEqualTo(0)) {
+      throw new BadRequestException('Valor inválido para recarga.');
+    }
+
+    const pixData = await this.asaasService.createPixCharge({
+      customer: payer.document || '00000000000',
+      value: split.totalPaid.toNumber(),
+      walletId: operator.asaasWalletId || operator.asaasId,
+      description: `Recarga Ambra - ${school.name}`,
+      splitValue: split.netAmount.toNumber(),
+      externalReference: pendingTransactionId,
+    });
+
+    await this.prisma.transaction.update({
+      where: { id: pendingTransactionId },
+      data: {
+        platformFee: new Prisma.Decimal(split.platformFee.toNumber()),
+        netAmount: new Prisma.Decimal(split.netAmount.toNumber()),
+        grossAmount: new Prisma.Decimal(split.totalPaid.toNumber()),
+        metadata: {
+          asaasPaymentId: pixData.id,
+          splitRule: { payer: 'CUSTOMER', fee: split.platformFee.toNumber() },
+        },
+      },
+    });
+
+    return {
+      brCode: pixData.payload,
+      encodedImage: pixData.encodedImage,
+      netValue: pixData.netValue,
+      totalToPay: split.totalPaid.toNumber(),
+    };
+  }
+
   /**
    * [v4.3] DYNAMIC FEES HELPER
    * Fetches global financial rules from SysConfig with fallback.
@@ -350,7 +460,15 @@ export class TransactionService {
     }
 
     const currentBalance = Number(wallet.balance);
-    if (currentBalance <= 0 || currentBalance < totalAmount) {
+    const overdraftLimit = Number(wallet.overdraftLimit || 0);
+
+    // SOS Merenda: se já está em negativo, bloqueia novas compras até regularização
+    if (currentBalance < 0) {
+      throw new BadRequestException('Saldo negativo. Regularize com uma recarga.');
+    }
+
+    // Permite saldo ficar negativo até -overdraftLimit
+    if (currentBalance < totalAmount - overdraftLimit) {
       throw new BadRequestException('Saldo insuficiente.');
     }
 
@@ -369,7 +487,7 @@ export class TransactionService {
     }
 
     const newBalance = currentBalance - totalAmount;
-    if (newBalance < 0) {
+    if (newBalance < -overdraftLimit) {
       throw new BadRequestException('Saldo insuficiente.');
     }
 
@@ -385,11 +503,13 @@ export class TransactionService {
       where: {
         id: wallet.id,
         version: wallet.version,
-        balance: { gte: new Prisma.Decimal(totalAmount) },
+        balance: { gte: new Prisma.Decimal(totalAmount - overdraftLimit) },
       },
       data: {
         balance: newBalance,
         version: { increment: 1 },
+        isDebtBlocked: newBalance < 0 ? true : wallet.isDebtBlocked,
+        negativeSince: newBalance < 0 ? wallet.negativeSince || new Date() : wallet.negativeSince,
       },
     });
 

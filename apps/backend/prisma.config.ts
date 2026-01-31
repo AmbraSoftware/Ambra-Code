@@ -7,6 +7,8 @@
 import 'dotenv/config';
 import { defineConfig, env } from 'prisma/config';
 
+const usesDirectConnection = process.argv.includes('migrate') || process.argv.includes('db');
+
 export default defineConfig({
     // Schema location (relative to this config file)
     schema: './prisma/schema.prisma',
@@ -20,10 +22,6 @@ export default defineConfig({
     // Database connection
     datasource: {
         // Type-safe env() helper (dotenv/config loaded above)
-        url: env('DATABASE_URL'),
-        // Direct connection for migrations (bypasses pooler)
-        // Supabase Pooler (port 6543) doesn't support migrations
-        // Use direct connection (port 5432) instead
-        directUrl: env('DIRECT_URL'),
+        url: usesDirectConnection ? env('DIRECT_URL') : env('DATABASE_URL'),
     },
 });

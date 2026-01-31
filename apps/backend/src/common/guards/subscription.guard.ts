@@ -50,7 +50,9 @@ export class SubscriptionGuard extends JwtAuthGuard implements CanActivate {
     const schoolId = request.tenant?.id;
 
     // 3. Isenta administradores globais e rotas não-tenant
-    if (!schoolId || (user && user.role === 'SUPER_ADMIN')) {
+    // ✅ FIX: Usar roles array ao invés de role singular
+    const isSuperAdmin = user?.roles?.includes('SUPER_ADMIN') || user?.role === 'SUPER_ADMIN';
+    if (!schoolId || isSuperAdmin) {
       return true;
     }
 

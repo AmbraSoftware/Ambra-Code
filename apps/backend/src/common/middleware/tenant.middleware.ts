@@ -12,7 +12,7 @@ export class TenantMiddleware implements NestMiddleware {
   constructor(
     private readonly prisma: PrismaService,
     private readonly cacheService: CacheService,
-  ) {}
+  ) { }
 
   async use(req: Request, res: Response, next: NextFunction) {
     const hostname = req.hostname;

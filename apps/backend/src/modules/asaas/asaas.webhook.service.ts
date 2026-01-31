@@ -140,30 +140,71 @@ export class AsaasWebhookService {
       return;
     }
 
-    const userId = externalReference;
-    const amount = payment.value;
     const paymentId = payment.id;
 
     // Check internal idempotency
     const existingTx = await this.prisma.transaction.findFirst({
       where: { providerId: paymentId },
+      select: { id: true },
     });
 
     if (existingTx) {
       return;
     }
 
-    this.logger.log(`Crediting Wallet for User ${userId} with R$ ${amount}`);
+    const pendingId = String(externalReference);
 
-    // Call the master service logic
-    await this.transactionsService.processRecharge(userId, amount, paymentId);
+    await this.prisma.$transaction(
+      async (tx) => {
+        const pending = await tx.transaction.findFirst({
+          where: { id: pendingId, status: 'PENDING', type: 'RECHARGE' },
+          include: { wallet: true },
+        });
 
-    // Notify
-    try {
-      await this.notificationsService.notifyPaymentReceived(userId, amount);
-    } catch (e) {
-      this.logger.error(`Failed to notify user ${userId}`, e);
-    }
+        if (!pending) {
+          this.logger.warn(
+            `Payment ${paymentId} has externalReference=${pendingId} but no PENDING transaction was found.`,
+          );
+          return;
+        }
+
+        const updatedWallet = await tx.wallet.update({
+          where: { id: pending.walletId },
+          data: { balance: { increment: pending.amount } },
+        });
+
+        await tx.transaction.update({
+          where: { id: pending.id },
+          data: {
+            status: 'COMPLETED',
+            providerId: paymentId,
+            grossAmount: pending.grossAmount ?? pending.amount.plus(pending.platformFee),
+            metadata: {
+              asaasPaymentId: paymentId,
+              splitRule: {
+                payer: 'CUSTOMER',
+                fee: Number(pending.platformFee),
+              },
+            },
+            runningBalance: updatedWallet.balance,
+          },
+        });
+
+        // Notify
+        try {
+          await this.notificationsService.notifyPaymentReceived(
+            pending.wallet.userId,
+            Number(pending.amount),
+          );
+        } catch (e) {
+          this.logger.error(
+            `Failed to notify user ${pending.wallet.userId}`,
+            e,
+          );
+        }
+      },
+      { isolationLevel: 'Serializable' },
+    );
   }
 
   private async handleTransferConfirmed(transfer: any) {
