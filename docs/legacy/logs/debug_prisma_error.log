@@ -1,0 +1,17 @@
+{
+  "code": "P2007",
+  "meta": {
+    "modelName": "Plan",
+    "driverAdapterError": {
+      "name": "DriverAdapterError",
+      "cause": {
+        "originalCode": "22P02",
+        "originalMessage": "invalid input syntax for type uuid: \"standard\"",
+        "kind": "InvalidInputValue",
+        "message": "invalid input syntax for type uuid: \"standard\""
+      }
+    }
+  },
+  "message": "\nInvalid `prisma.plan.findUnique()` invocation:\n\n\nInvalid input value: invalid input syntax for type uuid: \"standard\"",
+  "stack": "PrismaClientKnownRequestError: \nInvalid `prisma.plan.findUnique()` invocation:\n\n\nInvalid input value: invalid input syntax for type uuid: \"standard\"\n    at qr.handleRequestError (C:\\Users\\Usuário\\Documents\\nodum\\node_modules\\@prisma\\client\\src\\runtime\\RequestHandler.ts:228:13)\n    at qr.handleAndLogRequestError (C:\\Users\\Usuário\\Documents\\nodum\\node_modules\\@prisma\\client\\src\\runtime\\RequestHandler.ts:174:12)\n    at qr.request (C:\\Users\\Usuário\\Documents\\nodum\\node_modules\\@prisma\\client\\src\\runtime\\RequestHandler.ts:143:12)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async a (C:\\Users\\Usuário\\Documents\\nodum\\node_modules\\@prisma\\client\\src\\runtime\\getPrismaClient.ts:805:24)\n    at async result.prisma.$transaction.maxWait (C:\\Users\\Usuário\\Documents\\nodum\\apps\\backend\\src\\modules\\auth\\auth.service.ts:168:28)\n    at async Proxy._transactionWithCallback (C:\\Users\\Usuário\\Documents\\nodum\\node_modules\\@prisma\\client\\src\\runtime\\getPrismaClient.ts:694:18)\n    at async AuthService.register (C:\\Users\\Usuário\\Documents\\nodum\\apps\\backend\\src\\modules\\auth\\auth.service.ts:149:22)\n    at async C:\\Users\\Usuário\\Documents\\nodum\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:46:28\n    at async C:\\Users\\Usuário\\Documents\\nodum\\node_modules\\@nestjs\\core\\router\\router-proxy.js:9:17"
+}
