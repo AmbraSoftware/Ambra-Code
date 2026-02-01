@@ -64,7 +64,8 @@ async function main() {
         rechargePercent: 5.0, // 5%
         creditRiskFixed: 1.00,
         creditRiskPercent: 4.0, // 4%
-        transactionPercent: 4.0 // 4%
+        transactionPercent: 4.0, // 4%
+        convenienceFee: 2.99,
       }
     },
     {
@@ -77,7 +78,8 @@ async function main() {
         rechargePercent: 0.0,
         creditRiskFixed: 0.00,
         creditRiskPercent: 0.0,
-        transactionPercent: 0.0
+        transactionPercent: 0.0,
+        convenienceFee: 0.00,
       }
     },
   ];

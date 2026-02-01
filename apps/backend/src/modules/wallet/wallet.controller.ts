@@ -19,6 +19,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/users.decorator';
 import { AuthenticatedUserPayload } from '../auth/dto/user-payload.dto';
 import { RechargeDto } from './dto/recharge.dto';
+import { CashInDto } from './dto/cash-in.dto';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -61,6 +62,26 @@ export class WalletController {
   ) {
     // FIX: Passamos o objeto 'user' completo para que o Service valide o vínculo multi-tenant
     return this.walletService.recharge(user, rechargeDto);
+  }
+
+  @Post('cash-in')
+  @Roles(
+    UserRole.OPERATOR_SALES,
+    UserRole.OPERATOR_MEAL,
+    UserRole.SCHOOL_ADMIN,
+    UserRole.SUPER_ADMIN,
+  )
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(AuditInterceptor)
+  @Audit('WALLET_CASH_IN', 'Wallet')
+  @ApiOperation({ summary: 'Recarga de balcão (cash-in) convertendo dinheiro em saldo na carteira.' })
+  @ApiResponse({ status: 200, description: 'Cash-in efetuado com sucesso.' })
+  async cashIn(
+    @CurrentUser() user: AuthenticatedUserPayload,
+    @Body() cashInDto: CashInDto,
+  ) {
+    return this.walletService.cashIn(user, cashInDto);
   }
 
   @Post('dependent/:dependentId/lock')

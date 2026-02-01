@@ -40,6 +40,12 @@ export class OfflineSyncService {
     const { offlineId, walletId, amount, type, description, occurredAt } =
       txData;
 
+    if (type === 'PURCHASE') {
+      throw new Error(
+        'Compra offline direta desabilitada. Utilize sincronização via /orders para garantir reserva de estoque e regras de negócio.',
+      );
+    }
+
     // Idempotency Check: Don't process if already synced
     const existing = await this.prisma.transaction.findUnique({
       where: { offlineId },

@@ -29,12 +29,13 @@ export class FeeCalculatorService {
   private readonly logger = new Logger(FeeCalculatorService.name);
 
   // Default ROI Fallback (Hardcoded Safety Net)
+  private readonly HARD_FALLBACK_CONVENIENCE_FEE = 2.99;
   private readonly DEFAULTS: FeesConfig = {
     rechargeFixed: 0.0,
     rechargePercent: 0.0,
     creditRiskFixed: 0.0,
     creditRiskPercent: 0.0,
-    convenienceFee: 0.0,
+    convenienceFee: 2.99,
   };
 
   private isPremium(user?: Pick<User, 'subscriptionStatus' | 'subscriptionPlanId' | 'subscriptionExpiresAt'>): boolean {
@@ -62,7 +63,22 @@ export class FeeCalculatorService {
     const config = this.resolveFeesConfig(school);
 
     const premium = this.isPremium(user);
-    const rawConvenience = premium ? 0 : Number(config.convenienceFee ?? config.rechargeFixed ?? 0);
+    let rawConvenience = 0;
+    if (!premium) {
+      const configured = Number(config.convenienceFee ?? config.rechargeFixed);
+      const isValidConfigured = Number.isFinite(configured) && configured > 0;
+
+      rawConvenience = isValidConfigured
+        ? configured
+        : this.HARD_FALLBACK_CONVENIENCE_FEE;
+
+      if (!isValidConfigured) {
+        this.logger.warn(
+          `Config de taxa inválida/ausente. Usando fallback hard de R$${this.HARD_FALLBACK_CONVENIENCE_FEE.toFixed(2)}.`,
+        );
+      }
+    }
+
     const convenienceFee = new Prisma.Decimal(rawConvenience);
 
     // Para o piloto v2.1: a captura de valor é na entrada do recurso (convenienceFee).

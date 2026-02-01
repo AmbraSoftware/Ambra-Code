@@ -5,11 +5,14 @@ import {
   InternalServerErrorException,
   Logger,
   HttpException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateRechargeDto } from './dto/create-recharge.dto';
-import { Prisma } from '@prisma/client';
+import { Plan, Prisma, School, User, TransactionType } from '@prisma/client';
 import { TransactionService } from '../transactions/transactions.service';
+import { FeeCalculatorService } from '../transactions/fee-calculator.service';
+import { RequestRefundDto } from './dto/request-refund.dto';
 
 @Injectable()
 export class PaymentService {
@@ -18,6 +21,7 @@ export class PaymentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly transactionsService: TransactionService,
+    private readonly feeCalculator: FeeCalculatorService,
   ) { }
 
   /**
@@ -138,7 +142,11 @@ export class PaymentService {
             { id: userId },
           ],
         },
-        select: { wallet: { select: { id: true } } },
+        select: {
+          id: true,
+          schoolId: true,
+          wallet: { select: { id: true } },
+        },
       });
 
       if (!dependent) {
@@ -152,17 +160,56 @@ export class PaymentService {
         );
       }
 
+      const payer = await tx.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          subscriptionPlanId: true,
+          subscriptionStatus: true,
+          subscriptionExpiresAt: true,
+        },
+      });
+
+      if (!payer) {
+        throw new NotFoundException('Pagador não encontrado.');
+      }
+
+      if (!dependent.schoolId) {
+        throw new BadRequestException('Aluno/dependente não está associado a uma escola.');
+      }
+
+      const school = await tx.school.findUnique({
+        where: { id: dependent.schoolId },
+        include: { plan: true },
+      });
+
+      if (!school?.plan) {
+        throw new BadRequestException('Escola sem plano associado (feesConfig indisponível).');
+      }
+
       // 3. Ledger PENDING (fonte da verdade para o webhook)
       const amountDecimal = new Prisma.Decimal(amount);
+
+      const split = this.feeCalculator.calculateRechargeSplit(
+        amount,
+        school as School & { plan: Plan },
+        payer as unknown as User,
+      );
+
+      if (split.totalPaid.lessThan(split.creditAmount)) {
+        throw new InternalServerErrorException(
+          'Invariante violada: grossAmount < amount (net).',
+        );
+      }
 
       const pendingTransaction = await tx.transaction.create({
         data: {
           walletId: dependent.wallet.id,
           amount: amountDecimal,
-          platformFee: new Prisma.Decimal(0),
-          grossAmount: amount,
+          platformFee: new Prisma.Decimal(split.platformFee.toNumber()),
+          grossAmount: new Prisma.Decimal(split.totalPaid.toNumber()),
           metadata: {
-            splitRule: { payer: 'CUSTOMER', fee: 0 },
+            splitRule: { payer: 'CUSTOMER', fee: split.platformFee.toNumber() },
           },
           netAmount: amountDecimal,
           runningBalance: 0,
@@ -204,5 +251,154 @@ export class PaymentService {
         'Não foi possível gerar a cobrança PIX para o pagamento.',
       );
     }
+  }
+
+  /**
+   * [P1] Refund Engine (MVP)
+   * Cria um RefundRequest e TRAVA o saldo reembolsável via transação REFUND_LOCK.
+   * O pagamento PIX de saída será feito manualmente (por enquanto).
+   */
+  async requestRefund(userId: string, dto: RequestRefundDto) {
+    const { transactionId, pixKey, pixKeyType } = dto;
+
+    return this.prisma.$transaction(
+      async (tx: Prisma.TransactionClient) => {
+        // 1) Carregar transação original (recarga) + wallet
+        const original = await tx.transaction.findUnique({
+          where: { id: transactionId },
+          select: {
+            id: true,
+            type: true,
+            status: true,
+            createdAt: true,
+            walletId: true,
+            grossAmount: true,
+            netAmount: true,
+            platformFee: true,
+            wallet: {
+              select: {
+                id: true,
+                balance: true,
+                version: true,
+                userId: true,
+                user: { select: { schoolId: true } },
+              },
+            },
+          },
+        });
+
+        if (!original || !original.wallet) {
+          throw new NotFoundException('Transação não encontrada.');
+        }
+
+        if (original.type !== TransactionType.RECHARGE) {
+          throw new BadRequestException('Apenas recargas podem ser reembolsadas.');
+        }
+
+        if (original.status !== 'COMPLETED') {
+          throw new BadRequestException('Apenas recargas concluídas podem ser reembolsadas.');
+        }
+
+        // 2) AuthZ: somente dono da carteira pode solicitar (pai/aluno)
+        if (original.wallet.userId !== userId) {
+          throw new ForbiddenException('Acesso negado.');
+        }
+
+        // 3) Idempotência: não permitir múltiplos RefundRequests para a mesma transação
+        const existing = await tx.refundRequest.findUnique({
+          where: { originalTransactionId: original.id },
+          select: { id: true, status: true },
+        });
+
+        if (existing) {
+          throw new BadRequestException('Já existe uma solicitação de reembolso para esta transação.');
+        }
+
+        // 4) CDC (7 dias) + saldo fungível
+        const now = new Date();
+        const daysSince = Math.floor(
+          (now.getTime() - original.createdAt.getTime()) / (1000 * 60 * 60 * 24),
+        );
+        const withinCdc = daysSince <= 7;
+
+        const originalNet = Number(original.netAmount);
+        const originalGross = original.grossAmount ? Number(original.grossAmount) : originalNet;
+        const walletBalance = Number(original.wallet.balance);
+
+        const refundableNet = Math.max(0, Math.min(originalNet, walletBalance));
+        if (refundableNet <= 0) {
+          throw new BadRequestException('Saldo insuficiente para reembolso.');
+        }
+
+        const feeReversed = withinCdc && refundableNet === originalNet;
+        const refundAmount = feeReversed ? originalGross : refundableNet;
+
+        // 5) REFUND_LOCK: trava o saldo reembolsável na carteira (sempre em cima do NET)
+        const lockAmount = refundableNet;
+        const newBalance = walletBalance - lockAmount;
+
+        const { count } = await tx.wallet.updateMany({
+          where: { id: original.wallet.id, version: original.wallet.version },
+          data: { balance: newBalance, version: { increment: 1 } },
+        });
+
+        if (count !== 1) {
+          throw new InternalServerErrorException('Falha de concorrência financeira.');
+        }
+
+        const lockTx = await tx.transaction.create({
+          data: {
+            walletId: original.wallet.id,
+            userId: original.wallet.userId,
+            amount: new Prisma.Decimal(-lockAmount),
+            platformFee: new Prisma.Decimal(0),
+            netAmount: new Prisma.Decimal(-lockAmount),
+            runningBalance: new Prisma.Decimal(newBalance),
+            type: TransactionType.REFUND_LOCK,
+            status: 'COMPLETED',
+            description: 'Refund Lock (solicitação de reembolso)',
+            metadata: {
+              originalTransactionId: original.id,
+              refundableNet,
+              withinCdc,
+              feeReversed,
+            },
+          },
+          select: { id: true },
+        });
+
+        // 6) Persistir RefundRequest (PENDING)
+        const rr = await tx.refundRequest.create({
+          data: {
+            requesterId: userId,
+            walletId: original.wallet.id,
+            originalTransactionId: original.id,
+            lockTransactionId: lockTx.id,
+            amount: new Prisma.Decimal(refundAmount),
+            lockedAmount: new Prisma.Decimal(lockAmount),
+            feeReversed,
+            pixKey,
+            pixKeyType,
+            status: 'PENDING',
+          },
+          select: {
+            id: true,
+            status: true,
+            amount: true,
+            lockedAmount: true,
+            feeReversed: true,
+          },
+        });
+
+        return {
+          refundRequestId: rr.id,
+          status: rr.status,
+          amount: Number(rr.amount),
+          lockedAmount: Number(rr.lockedAmount),
+          feeReversed: rr.feeReversed,
+        };
+      },
+      { isolationLevel: 'Serializable' },
+    );
   }
 }

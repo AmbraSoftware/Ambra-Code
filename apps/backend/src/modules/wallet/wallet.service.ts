@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RechargeDto } from './dto/recharge.dto';
+import { CashInDto } from './dto/cash-in.dto';
 import { UpdateWalletLimitsDto } from './dto/update-wallet-limits.dto';
 import { AuditService } from '../audit/audit.service';
 import { AuthenticatedUserPayload } from '../auth/dto/user-payload.dto';
@@ -29,6 +30,15 @@ export class WalletService {
     walletId: string,
     dto: UpdateWalletLimitsDto,
   ) {
+    const userRoles = user.roles || (user.role ? [user.role] : []);
+    const isAdmin =
+      userRoles.includes(UserRole.SUPER_ADMIN) ||
+      userRoles.includes(UserRole.SCHOOL_ADMIN);
+
+    if (!isAdmin) {
+      throw new ForbiddenException('Acesso negado.');
+    }
+
     const hasAnyField =
       dto.overdraftLimit !== undefined || dto.dailySpendLimit !== undefined;
 
@@ -47,6 +57,7 @@ export class WalletService {
             dailySpendLimit: true,
             overdraftLimit: true,
             isDebtBlocked: true,
+            negativeSince: true,
             user: { select: { schoolId: true } },
           },
         });
@@ -55,7 +66,7 @@ export class WalletService {
           throw new NotFoundException('Carteira não encontrada.');
         }
 
-        const isSuperAdmin = user.role === UserRole.SUPER_ADMIN;
+        const isSuperAdmin = userRoles.includes(UserRole.SUPER_ADMIN);
         if (!isSuperAdmin) {
           if (!user.schoolId || wallet.user.schoolId !== user.schoolId) {
             throw new ForbiddenException('Acesso negado.');
@@ -79,7 +90,12 @@ export class WalletService {
         // Regra: se saldo estiver dentro do limite negativo permitido, desbloqueia.
         // Se ficar fora, bloqueia.
         const isWithinOverdraft = balance >= -newOverdraftLimit;
-        const nextIsDebtBlocked = newOverdraftLimit > 0 ? !isWithinOverdraft : balance < 0;
+        const nextIsDebtBlocked =
+          newOverdraftLimit > 0 ? !isWithinOverdraft : balance < 0;
+
+        const nextNegativeSince = nextIsDebtBlocked
+          ? wallet.negativeSince || new Date()
+          : null;
 
         const updated = await tx.wallet.update({
           where: { id: walletId },
@@ -91,6 +107,7 @@ export class WalletService {
               ? { dailySpendLimit: new Prisma.Decimal(dto.dailySpendLimit) }
               : {}),
             isDebtBlocked: nextIsDebtBlocked,
+            negativeSince: nextNegativeSince,
           },
           select: {
             id: true,
@@ -168,6 +185,106 @@ export class WalletService {
       message: 'Recarga efetuada com sucesso.',
       newBalance: result.newBalance,
     };
+  }
+
+  async cashIn(user: AuthenticatedUserPayload, dto: CashInDto) {
+    const { dependentId, amount } = dto;
+
+    const isAdmin =
+      user.role === UserRole.SCHOOL_ADMIN || user.role === UserRole.SUPER_ADMIN;
+    const isOperator =
+      user.role === UserRole.OPERATOR_SALES || user.role === UserRole.OPERATOR_MEAL;
+
+    if (!isAdmin && !isOperator) {
+      throw new ForbiddenException('Acesso negado.');
+    }
+
+    return this.prisma.$transaction(
+      async (tx: Prisma.TransactionClient) => {
+        const dependent = await tx.user.findUnique({
+          where: { id: dependentId },
+          select: {
+            id: true,
+            schoolId: true,
+            wallet: {
+              select: {
+                id: true,
+                balance: true,
+                version: true,
+                isDebtBlocked: true,
+                negativeSince: true,
+              },
+            },
+          },
+        });
+
+        if (!dependent?.wallet) {
+          throw new NotFoundException('Carteira não encontrada para este dependente.');
+        }
+
+        if (user.role !== UserRole.SUPER_ADMIN) {
+          if (!user.schoolId || !dependent.schoolId || dependent.schoolId !== user.schoolId) {
+            throw new ForbiddenException('Acesso negado.');
+          }
+        }
+
+        const currentBalance = Number(dependent.wallet.balance);
+        const newBalance = currentBalance + Number(amount);
+        const isSolvent = newBalance >= 0;
+
+        const { count } = await tx.wallet.updateMany({
+          where: { id: dependent.wallet.id, version: dependent.wallet.version },
+          data: {
+            balance: newBalance,
+            version: { increment: 1 },
+            negativeSince: isSolvent ? null : dependent.wallet.negativeSince,
+            isDebtBlocked: isSolvent ? false : dependent.wallet.isDebtBlocked,
+          },
+        });
+
+        if (count !== 1) {
+          throw new ForbiddenException('Falha de concorrência. Tente novamente.');
+        }
+
+        const cashInAmount = new Prisma.Decimal(amount);
+
+        const transaction = await tx.transaction.create({
+          data: {
+            walletId: dependent.wallet.id,
+            userId: dependent.id,
+            amount: cashInAmount,
+            grossAmount: cashInAmount,
+            platformFee: new Prisma.Decimal(0),
+            netAmount: cashInAmount,
+            runningBalance: new Prisma.Decimal(newBalance),
+            type: 'RECHARGE',
+            status: 'COMPLETED',
+            description: 'Recarga de balcão (cash-in)',
+            metadata: {
+              source: 'CASH_IN',
+              cashierUserId: user.id,
+            },
+          },
+          select: { id: true },
+        });
+
+        await this.auditService.logAction(tx, {
+          userId: user.id,
+          action: 'WALLET_CASH_IN',
+          entity: 'Wallet',
+          entityId: dependent.wallet.id,
+          meta: { amount, dependentId, transactionId: transaction.id },
+          schoolId: dependent.schoolId || undefined,
+        });
+
+        return {
+          message: 'Cash-in efetuado com sucesso.',
+          newBalance,
+          transactionId: transaction.id,
+        };
+      },
+      { isolationLevel: 'Serializable' },
+    );
   }
 
   /**

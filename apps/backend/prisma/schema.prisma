@@ -224,6 +224,7 @@ model User {
   ordersAsStudent       Order[]               @relation("StudentOrders")
   restrictedProducts    ProductRestriction[]
   transactions          Transaction[]
+  refundRequests         RefundRequest[]
   canteen               Canteen?              @relation(fields: [canteenId], references: [id])
   government            Government?           @relation(fields: [governmentId], references: [id])
   school                School?               @relation(fields: [schoolId], references: [id])
@@ -316,6 +317,7 @@ model Wallet {
   negativeSince    DateTime?     @db.Timestamptz(3)
   dailySpending    DailySpend[]
   transactions     Transaction[]
+  refundRequests   RefundRequest[]
   user             User          @relation(fields: [userId], references: [id])
 
   @@map("wallets")
@@ -343,6 +345,8 @@ model Transaction {
   createdAt      DateTime           @default(now()) @db.Timestamptz(3)
   fiscalItem     FiscalPendingItem?
   invoice        Invoice?
+  refundRequestAsOriginal RefundRequest? @relation("RefundOriginalTransaction")
+  refundRequestAsLock     RefundRequest? @relation("RefundLockTransaction")
   operator       Operator?          @relation(fields: [operatorId], references: [id])
   order          Order?             @relation(fields: [orderId], references: [id])
   user           User?              @relation(fields: [userId], references: [id])
@@ -390,6 +394,31 @@ model FiscalPendingItem {
 
   @@index([operatorId, status])
   @@map("fiscal_pending_items")
+}
+
+model RefundRequest {
+  id                   String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  requesterId          String             @db.Uuid
+  walletId             String             @db.Uuid
+  originalTransactionId String            @unique @db.Uuid
+  lockTransactionId    String             @unique @db.Uuid
+  amount               Decimal            @db.Decimal(12, 2)
+  lockedAmount         Decimal            @db.Decimal(12, 2)
+  feeReversed          Boolean            @default(false)
+  pixKey               String
+  pixKeyType           String?
+  status               RefundRequestStatus @default(PENDING)
+  failureReason        String?
+  createdAt            DateTime           @default(now()) @db.Timestamptz(3)
+  updatedAt            DateTime           @updatedAt @db.Timestamptz(3)
+
+  requester            User               @relation(fields: [requesterId], references: [id])
+  wallet               Wallet             @relation(fields: [walletId], references: [id])
+  originalTransaction  Transaction        @relation("RefundOriginalTransaction", fields: [originalTransactionId], references: [id])
+  lockTransaction      Transaction        @relation("RefundLockTransaction", fields: [lockTransactionId], references: [id])
+
+  @@index([walletId, status, createdAt(sort: Desc)])
+  @@map("refund_requests")
 }
 
 model WeeklyMenu {
@@ -734,9 +763,18 @@ enum TransactionType {
   RECHARGE
   PURCHASE
   REFUND
+  REFUND_LOCK
   WITHDRAWAL
   COMMISSION
   CREDIT_EXPENSE
+}
+
+enum RefundRequestStatus {
+  PENDING
+  WAITING_FUNDS
+  COMPLETED
+  REJECTED
+  CANCELLED
 }
 
 enum TransactionStatus {

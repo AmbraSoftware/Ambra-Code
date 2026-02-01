@@ -9,6 +9,7 @@ import { AsaasService } from '../modules/asaas/asaas.service';
 import { AsaasWebhookService } from '../modules/asaas/asaas.webhook.service';
 import { TransactionService } from '../modules/transactions/transactions.service';
 import { StockService } from '../modules/stock/stock.service';
+import { OrdersService } from '../modules/orders/orders.service';
 import { Logger } from '@nestjs/common';
 import { UserRole, CanteenType } from '@prisma/client';
 
@@ -23,6 +24,7 @@ async function bootstrap() {
     const webhookService = app.get(AsaasWebhookService);
     const transactionService = app.get(TransactionService);
     const stockService = app.get(StockService);
+    const ordersService = app.get(OrdersService);
     const logger = new Logger('SystemVerification');
 
     logger.log('🚀 Starting Full System Verification Check (REAL API MODE)...');
@@ -255,13 +257,11 @@ async function bootstrap() {
                 }
             });
 
-            // Execute Purchase
-            await transactionService.processPurchase(guardian.id, guardian.id, 10.00);
-
-            // Manually trigger stock (as per Orders link)
-            await prisma.$transaction(async (tx) => {
-                await stockService.confirmSaleInTransaction(tx, `order_${i}`, [{ productId: prod.id, quantity: 1 }], targetCanteen.id);
-            });
+            // Execute Purchase via Orders (Stock reservation + rules)
+            await ordersService.create(guardian.id, {
+                studentId: guardian.id,
+                items: [{ productId: prod.id, quantity: 1 }],
+            } as any);
 
             // Verify Stock
             const pCheck = await prisma.product.findUnique({ where: { id: prod.id } });

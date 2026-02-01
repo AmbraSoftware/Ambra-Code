@@ -20,6 +20,7 @@ import {
 import { Throttle } from '@nestjs/throttler';
 import { PaymentService } from './payment.service';
 import { CreateRechargeDto } from './dto/create-recharge.dto';
+import { RequestRefundDto } from './dto/request-refund.dto';
 
 @ApiTags('Payment')
 @ApiBearerAuth()
@@ -54,5 +55,20 @@ export class PaymentController {
     @Body() createRechargeDto: CreateRechargeDto,
   ) {
     return this.paymentService.generatePixRecharge(user.id, createRechargeDto);
+  }
+
+  @Post('refund-request')
+  @Roles('GUARDIAN', 'STUDENT')
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '[P1] Solicita reembolso de saldo (cria RefundRequest + REFUND_LOCK).',
+  })
+  @ApiResponse({ status: 200, description: 'Solicitação criada com sucesso.' })
+  async requestRefund(
+    @CurrentUser() user: AuthenticatedUserPayload,
+    @Body() dto: RequestRefundDto,
+  ) {
+    return this.paymentService.requestRefund(user.id, dto);
   }
 }

@@ -116,11 +116,18 @@ export class OrdersService {
         // Busca configurações da Cantina para validar turno
         const canteen = await tx.canteen.findUnique({
           where: { id: firstCanteenId },
-          select: { openingTime: true, closingTime: true, type: true }
+          select: { openingTime: true, closingTime: true, type: true, operatorId: true }
         });
 
         if (canteen && canteen.type === 'COMMERCIAL') { // Apenas comercial bloqueia, merenda é livre/logística
           await this.validateOperationalHours(canteen.openingTime, canteen.closingTime);
+        }
+
+        const operatorId = canteen?.operatorId;
+        if (!operatorId) {
+          throw new BadRequestException(
+            'Cantina sem operador fiscal vinculado. Não é possível registrar trilha fiscal do pedido.',
+          );
         }
 
         const schoolId = wallet.user.schoolId;
@@ -195,11 +202,21 @@ export class OrdersService {
         });
 
         // ETAPA 4: Débito Financeiro
-        await this.transactionService.debitFromWalletForOrderInTransaction(tx, {
+        const debitResult = await this.transactionService.debitFromWalletForOrderInTransaction(tx, {
           buyerId,
           studentId,
           totalAmount,
           orderId: order.id,
+        });
+
+        // ETAPA 4.5: Trilhas Fiscais (MVP) - registra item pendente mesmo sem emissão ativa
+        await tx.fiscalPendingItem.create({
+          data: {
+            operatorId,
+            transactionId: debitResult.transactionId,
+            amount: new Prisma.Decimal(totalAmount),
+            status: 'PENDING_SALE',
+          },
         });
 
         // ETAPA 5: Finalização e Confirmação de Reserva (Baixa de Estoque)

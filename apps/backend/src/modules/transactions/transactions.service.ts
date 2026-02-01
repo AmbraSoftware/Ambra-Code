@@ -136,7 +136,7 @@ export class TransactionService {
       description: `Recarga Ambra - ${school.name}`,
       splitValue: split.netAmount.toNumber(),
       externalReference: pendingTransactionId,
-    });
+    }, { apiKey: operator.asaasApiKey || undefined });
 
     await this.prisma.transaction.update({
       where: { id: pendingTransactionId },
@@ -256,7 +256,7 @@ export class TransactionService {
       walletId: operator.asaasWalletId || operator.asaasId,
       description: `Recarga Nodum - ${userSchool.name}`,
       splitValue: split.netAmount.toNumber(), // Net for Operator
-    });
+    }, { apiKey: operator.asaasApiKey || undefined });
 
     // 4. Return Payload to Frontend
     return {
@@ -423,16 +423,8 @@ export class TransactionService {
     studentId: string,
     totalAmount: number,
   ) {
-    return this.prisma.$transaction(
-      async (tx) => {
-        return this.debitFromWalletForOrderInTransaction(tx, {
-          buyerId,
-          studentId,
-          totalAmount,
-          orderId: undefined,
-        });
-      },
-      { isolationLevel: 'Serializable' },
+    throw new BadRequestException(
+      'Compra direta desabilitada. Utilize o checkout via /orders para garantir reserva de estoque e regras de negócio.',
     );
   }
 

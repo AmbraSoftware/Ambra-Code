@@ -43,6 +43,8 @@ export interface AsaasSubscriptionData {
 export class AsaasService {
   private readonly logger = new Logger(AsaasService.name);
   private readonly http: AxiosInstance;
+  private readonly baseURL: string;
+  private readonly masterApiKey: string;
 
   constructor(private readonly configService: ConfigService) {
     const asaasEnv = this.configService.get('ASAAS_ENV', 'sandbox');
@@ -53,6 +55,9 @@ export class AsaasService {
         ? 'https://api.asaas.com/v3'
         : 'https://sandbox.asaas.com/api/v3';
 
+    this.baseURL = baseURL;
+    this.masterApiKey = apiKey;
+
     this.http = axios.create({
       baseURL,
       headers: {
@@ -62,6 +67,20 @@ export class AsaasService {
     });
 
     this.logger.log(`AsaasService initialized in ${asaasEnv.toUpperCase()} mode.`);
+  }
+
+  private getHttp(apiKey?: string): AxiosInstance {
+    if (!apiKey || apiKey === this.masterApiKey) {
+      return this.http;
+    }
+
+    return axios.create({
+      baseURL: this.baseURL,
+      headers: {
+        access_token: apiKey,
+        'Content-Type': 'application/json',
+      },
+    });
   }
 
   /**
@@ -130,10 +149,12 @@ export class AsaasService {
    * Cria uma cobrança PIX com Split de Pagamento.
    * Regra Flexível: Usa splitValue se informado, caso contrário fallback para regra fixa.
    */
-  async createPixCharge(splitData: AsaasPixSplitData) {
+  async createPixCharge(splitData: AsaasPixSplitData, opts?: { apiKey?: string }) {
     this.logger.log(
       `Creating PIX Charge of R$ ${splitData.value} for Wallet ${splitData.walletId} with Split...`,
     );
+
+    const http = this.getHttp(opts?.apiKey);
 
     if (process.env.NODE_ENV === 'test') {
       const operatorSplitValue = splitData.splitValue ?? splitData.value;
@@ -154,7 +175,7 @@ export class AsaasService {
         customerId = await this.ensureCustomer({
           name: 'Cliente Nodum',
           cpfCnpj: splitData.customer,
-        });
+        }, opts);
       } catch (e) {
         this.logger.warn(
           'Failed to resolve customer by CPF. Trying raw value.',
@@ -181,7 +202,7 @@ export class AsaasService {
         ],
       };
 
-      const response = await this.http.post('/payments', payload);
+      const response = await http.post('/payments', payload);
 
       return {
         id: response.data.id,
@@ -217,12 +238,14 @@ export class AsaasService {
     name: string;
     cpfCnpj: string;
     email?: string;
-  }) {
+  }, opts?: { apiKey?: string }) {
     // Clean Tax ID
     const cleanTaxId = data.cpfCnpj.replace(/[^\d]/g, '');
 
+    const http = this.getHttp(opts?.apiKey);
+
     // 1. Search
-    const search = await this.http.get('/customers', {
+    const search = await http.get('/customers', {
       params: { cpfCnpj: cleanTaxId },
     });
     if (search.data.data && search.data.data.length > 0) {
@@ -231,7 +254,7 @@ export class AsaasService {
 
     // 2. Create
     try {
-      const create = await this.http.post('/customers', {
+      const create = await http.post('/customers', {
         ...data,
         cpfCnpj: cleanTaxId,
       });
@@ -288,6 +311,15 @@ export class AsaasService {
       `Error ${context}`,
       error.response?.data || error.message,
     );
+
+    const asaasErrors = error.response?.data?.errors;
+    const firstCode = Array.isArray(asaasErrors) ? asaasErrors?.[0]?.code : undefined;
+    if (firstCode === 'access_token_not_found') {
+      throw new BadRequestException(
+        'Asaas Error: access_token_not_found (verifique ASAAS_API_KEY / credenciais da subconta e ambiente sandbox/production).',
+      );
+    }
+
     throw new BadRequestException(
       `Asaas Error: ${JSON.stringify(error.response?.data?.errors || error.message)}`,
     );
