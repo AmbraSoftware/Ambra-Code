@@ -5,6 +5,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model PlatformSystem {
@@ -494,22 +495,23 @@ model KitItem {
 }
 
 model Order {
-  id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  orderHash    String        @unique
-  totalAmount  Decimal       @db.Decimal(12, 2)
-  status       OrderStatus   @default(PENDING)
-  buyerId      String        @db.Uuid
-  studentId    String        @db.Uuid
-  schoolId     String        @db.Uuid
-  deliveredAt  DateTime?     @db.Timestamptz(3)
-  createdAt    DateTime      @default(now()) @db.Timestamptz(3)
-  updatedAt    DateTime      @updatedAt @db.Timestamptz(3)
-  scheduledFor DateTime?     @db.Timestamptz(3)
+  id           String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderHash    String             @unique
+  totalAmount  Decimal            @db.Decimal(12, 2)
+  status       OrderStatus        @default(PENDING)
+  buyerId      String             @db.Uuid
+  studentId    String             @db.Uuid
+  schoolId     String             @db.Uuid
+  deliveredAt  DateTime?          @db.Timestamptz(3)
+  createdAt    DateTime           @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime           @updatedAt @db.Timestamptz(3)
+  scheduledFor DateTime?          @db.Timestamptz(3)
   items        OrderItem[]
-  buyer        User          @relation("BuyerOrders", fields: [buyerId], references: [id])
-  school       School        @relation(fields: [schoolId], references: [id])
-  student      User          @relation("StudentOrders", fields: [studentId], references: [id])
+  buyer        User               @relation("BuyerOrders", fields: [buyerId], references: [id])
+  school       School             @relation(fields: [schoolId], references: [id])
+  student      User               @relation("StudentOrders", fields: [studentId], references: [id])
   transactions Transaction[]
+  stockReservations StockReservation[]  // NOVO: Relação inversa
 
   @@index([schoolId, createdAt(sort: Desc)])
   @@index([studentId])
@@ -567,14 +569,19 @@ model StockReservation {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   productId String   @db.Uuid
   canteenId String   @db.Uuid
+  orderId   String?  @db.Uuid  // NOVO: Vinculação ao pedido
   quantity  Int
   reason    String   @default("CHECKOUT")
-  status    String   @default("ACTIVE")
+  status    String   @default("ACTIVE")  // ACTIVE | COMPLETED | EXPIRED | CANCELLED
   expiresAt DateTime @db.Timestamptz(3)
   createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)  // NOVO: Para limpeza eficiente
   canteen   Canteen  @relation(fields: [canteenId], references: [id])
   product   Product  @relation(fields: [productId], references: [id])
+  order     Order?   @relation(fields: [orderId], references: [id])
 
+  @@index([orderId, status])  // NOVO: Para queries eficientes
+  @@index([status, updatedAt])  // NOVO: Para limpeza de registros antigos
   @@index([expiresAt])
   @@map("stock_reservations")
 }
