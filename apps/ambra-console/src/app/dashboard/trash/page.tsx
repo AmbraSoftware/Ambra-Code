@@ -33,6 +33,8 @@ export default function TrashPage() {
   const [items, setItems] = useState<DeletedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterType, setFilterType] = useState<string>("all");
+  const [filterDate, setFilterDate] = useState<string>("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<DeletedItem | null>(null);
   const [actionType, setActionType] = useState<'RESTORE' | 'DELETE'>('RESTORE');

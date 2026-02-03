@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { api } from "@/lib/api";
 import { PlusCircle, Loader2 } from "lucide-react";
 import { useSchools } from "@/hooks/use-api";
-import { UserRole } from "@/types";
+import { UserRole, CreateUserDto } from "@/types";
 
 // Schema com suporte a multi-role
 const formSchema = z.object({
@@ -240,7 +240,7 @@ export function CreateUserDialog({ onSuccess, defaultRole, triggerLabel = "Adici
                                             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Operação</p>
                                             {[
                                                 { value: UserRole.OPERATOR_SALES, label: "Operador de Vendas" },
-                                                { value: UserRole.OPERATOR_MEAL, label: "Operador de Merenda" },
+                                                { value: 'OPERATOR_MEAL' as any, label: "Operador de Merenda" },
                                                 // CANTEEN_OPERATOR removido - usar OPERATOR_SALES ou OPERATOR_MEAL
                                             ].map((role) => (
                                                 <FormField

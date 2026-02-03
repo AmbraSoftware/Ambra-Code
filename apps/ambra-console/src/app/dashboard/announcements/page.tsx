@@ -176,7 +176,7 @@ function CampaignsTab() {
     setSortConfig({ key, direction });
   };
 
-  const activeCampaigns = campaigns.filter(c => c.status === 'ACTIVE' || c.status === 'SCHEDULED');
+  const activeCampaigns = campaigns.filter(c => c.status === 'Enviado' || c.status === 'Agendado');
 
   const filteredAndSortedCampaigns = useMemo(() => {
     let sortableItems = [...activeCampaigns];
@@ -249,16 +249,16 @@ function CampaignsTab() {
                     <TableRow key={campaign.id}>
                       <TableCell className="font-medium">{campaign.title}</TableCell>
                       <TableCell>
-                        <Badge variant={campaign.status === "ACTIVE" ? "default" : "secondary"}>
+                        <Badge variant={campaign.status === "Enviado" ? "default" : "secondary"}>
                           {campaign.status}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {campaign.targetRoles?.length || 0} roles, {campaign.targetSchools?.length || 0} escolas
+                        {(campaign as any).targetRoles?.length || 0} roles, {(campaign as any).targetSchools?.length || 0} escolas
                       </TableCell>
                       <TableCell className="text-sm">
-                        {campaign.scheduledDate 
-                          ? format(new Date(campaign.scheduledDate), "dd/MM/yyyy HH:mm", { locale: ptBR })
+                        {(campaign as any).scheduledDate 
+                          ? format(new Date((campaign as any).scheduledDate), "dd/MM/yyyy HH:mm", { locale: ptBR })
                           : 'Não agendada'}
                       </TableCell>
                       <TableCell className="text-right">

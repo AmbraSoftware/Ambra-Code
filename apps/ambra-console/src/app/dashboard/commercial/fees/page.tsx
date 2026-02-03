@@ -11,6 +11,7 @@ import { Switch } from '@/components/ui/switch';
 import { ArrowLeft, Save, AlertCircle, Banknote, CreditCard, TrendingUp, TrendingDown, Building2, Users2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
+import { api } from '@/lib/api';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface PaymentMethodFee {

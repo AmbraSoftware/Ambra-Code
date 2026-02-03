@@ -27,8 +27,8 @@ const formSchema = z.object({
     adminEmail: z.string().email({ message: "Email inválido." }),
     adminPassword: z.string().min(8, { message: "A senha deve ter pelo menos 8 caracteres." }),
     // Configuração Híbrida: Escola pode ter Merenda e/ou Cantina
-    hasMerenda: z.boolean().default(false),
-    hasCanteen: z.boolean().default(false),
+    hasMerenda: z.boolean(),
+    hasCanteen: z.boolean(),
 }).refine(
     (data) => data.hasMerenda || data.hasCanteen,
     {

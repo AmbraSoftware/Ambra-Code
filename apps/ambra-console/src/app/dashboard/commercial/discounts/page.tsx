@@ -196,9 +196,9 @@ export default function DiscountsPage() {
   // Filtrar planos por audience
   const availablePlans = plans.filter(p => {
     if (formData.audience === 'B2B') {
-      return p.target === 'SCHOOL_SAAS';
+      return (p as any).target === 'SCHOOL_SAAS';
     } else {
-      return p.target === 'GUARDIAN_PREMIUM';
+      return (p as any).target === 'GUARDIAN_PREMIUM';
     }
   });
 

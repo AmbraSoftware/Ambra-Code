@@ -105,6 +105,18 @@ export interface CreateSchoolInput {
   adminPassword: string;
 }
 
+export interface CreateUserDto {
+  name: string;
+  email?: string;
+  password?: string;
+  roles: string[];
+  role: string;
+  taxId?: string;
+  canteenId?: string;
+  schoolId?: string;
+  nfcId?: string;
+}
+
 export interface Campaign {
   id: string;
   title: string;
