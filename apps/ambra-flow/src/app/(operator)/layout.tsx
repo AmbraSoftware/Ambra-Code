@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { UserRole } from '@nodum/shared';
+import { removeAuthToken } from '@/lib/auth-utils';
 
 /**
  * Layout Operator Mode (Kiosk)
@@ -41,8 +41,6 @@ export default function OperatorLayout({
 
             // Verifica se tem role de Operator
             const isOperator = userRoles.some((role: string) => 
-                role === UserRole.OPERATOR_SALES || 
-                role === UserRole.OPERATOR_MEAL ||
                 role === 'OPERATOR_SALES' || role === 'OPERATOR_MEAL'
             );
 
