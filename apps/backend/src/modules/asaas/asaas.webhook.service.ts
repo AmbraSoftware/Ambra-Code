@@ -80,7 +80,11 @@ export class AsaasWebhookService {
           break;
 
         case 'PAYMENT_OVERDUE':
-          this.logger.warn(`Payment Overdue: ${event.payment.id}`);
+          if (event.payment?.subscription) {
+            await this.handleSubscriptionPaymentFailed(event.payment);
+          } else {
+            this.logger.warn(`Payment Overdue: ${event.payment.id}`);
+          }
           break;
 
         // [CRITICAL] Split & Financials
@@ -132,7 +136,15 @@ export class AsaasWebhookService {
 
   private async handlePaymentReceived(payment: any) {
     const externalReference = payment.externalReference;
+    const paymentId = payment.id;
 
+    // CASE 1: Subscription Payment (B2C Premium)
+    if (payment.subscription) {
+      await this.handleSubscriptionPaymentConfirmed(payment);
+      return;
+    }
+
+    // CASE 2: Regular Wallet Recharge
     if (!externalReference) {
       this.logger.warn(
         `Payment ${payment.id} has no externalReference. Cannot link to User easily.`,
@@ -140,22 +152,21 @@ export class AsaasWebhookService {
       return;
     }
 
-    const paymentId = payment.id;
-
-    // Check internal idempotency
-    const existingTx = await this.prisma.transaction.findFirst({
-      where: { providerId: paymentId },
-      select: { id: true },
-    });
-
-    if (existingTx) {
-      return;
-    }
-
     const pendingId = String(externalReference);
 
     await this.prisma.$transaction(
       async (tx) => {
+        // FIX: Idempotency check MOVED INSIDE transaction
+        const existingTx = await tx.transaction.findFirst({
+          where: { providerId: paymentId },
+          select: { id: true, status: true },
+        });
+
+        if (existingTx && existingTx.status === 'COMPLETED') {
+          this.logger.log(`Payment ${paymentId} already processed. Skipping.`);
+          return;
+        }
+
         const pending = await tx.transaction.findFirst({
           where: { id: pendingId, status: 'PENDING', type: 'RECHARGE' },
           include: { wallet: true },
@@ -178,7 +189,8 @@ export class AsaasWebhookService {
           data: {
             status: 'COMPLETED',
             providerId: paymentId,
-            grossAmount: pending.grossAmount ?? pending.amount.plus(pending.platformFee),
+            grossAmount:
+              pending.grossAmount ?? pending.amount.plus(pending.platformFee),
             metadata: {
               asaasPaymentId: paymentId,
               splitRule: {
@@ -204,6 +216,189 @@ export class AsaasWebhookService {
         }
       },
       { isolationLevel: 'Serializable' },
+    );
+  }
+
+  /**
+   * [B2C Premium] Handle Subscription Payment Confirmation
+   * Activates Premium status and sets SOS Merenda overdraftLimit
+   * 
+   * FIX v4.0.4: Idempotency check moved inside transaction
+   */
+  private async handleSubscriptionPaymentConfirmed(payment: any) {
+    const subscriptionId = payment.subscription;
+    const paymentId = payment.id;
+
+    this.logger.log(
+      `Processing subscription payment: ${paymentId} for subscription: ${subscriptionId}`,
+    );
+
+    const SOS_MERENDA_LIMIT = 10.0; // R$ 10,00 - configurable
+
+    await this.prisma.$transaction(async (tx) => {
+      // FIX: Idempotency check inside transaction
+      const existingTx = await tx.transaction.findFirst({
+        where: { providerId: paymentId, status: 'COMPLETED' },
+        select: { id: true },
+      });
+
+      if (existingTx) {
+        this.logger.log(`Subscription payment ${paymentId} already processed. Skipping.`);
+        return;
+      }
+
+      // Find the pending subscription transaction
+      const pendingTx = await tx.transaction.findFirst({
+        where: {
+          providerId: subscriptionId,
+          status: 'PENDING',
+          type: 'RECHARGE',
+        },
+        include: { wallet: true },
+      });
+
+      if (!pendingTx) {
+        this.logger.warn(
+          `No pending subscription transaction found for subscription ${subscriptionId}`,
+        );
+        return;
+      }
+
+      const userId = pendingTx.userId;
+      if (!userId) {
+        this.logger.warn(`No userId found for transaction ${pendingTx.id}`);
+        return;
+      }
+
+      // 1. Update transaction to COMPLETED
+      await tx.transaction.update({
+        where: { id: pendingTx.id },
+        data: {
+          status: 'COMPLETED',
+          providerId: paymentId,
+          metadata: {
+            ...((pendingTx.metadata as object) || {}),
+            asaasPaymentId: paymentId,
+            subscriptionId: subscriptionId,
+            paymentDate: new Date().toISOString(),
+          },
+        },
+      });
+
+      // 2. Activate Premium subscription
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          subscriptionStatus: 'ACTIVE',
+          subscriptionExpiresAt: new Date(
+            new Date().setMonth(new Date().getMonth() + 1),
+          ), // +1 month
+        },
+      });
+
+      // 3. Activate SOS Merenda (set overdraftLimit)
+      await tx.wallet.update({
+        where: { userId: userId },
+        data: {
+          overdraftLimit: SOS_MERENDA_LIMIT,
+          isDebtBlocked: false, // Allow overdraft usage
+        },
+      });
+
+      // Notify user via existing method (outside transaction for non-critical)
+      try {
+        await this.notificationsService.notifyPaymentReceived(
+          userId,
+          Number(pendingTx.amount),
+        );
+      } catch (e) {
+        this.logger.error(`Failed to notify user ${userId}`, e);
+      }
+    });
+
+    this.logger.log(
+      `✅ Premium activated. SOS Merenda enabled (R$ ${SOS_MERENDA_LIMIT}).`,
+    );
+  }
+
+  /**
+   * [B2C Premium] Handle Subscription Payment Failure/Overdue
+   * Deactivates Premium and resets overdraftLimit (SOS Merenda)
+   * 
+   * FIX v4.0.4: Idempotency check added to prevent duplicate processing
+   */
+  private async handleSubscriptionPaymentFailed(payment: any) {
+    const subscriptionId = payment.subscription;
+    const paymentId = payment.id;
+
+    this.logger.warn(
+      `Subscription payment failed: ${paymentId} for subscription: ${subscriptionId}`,
+    );
+
+    await this.prisma.$transaction(async (tx) => {
+      // FIX: Check if already processed
+      const existingTx = await tx.transaction.findFirst({
+        where: { providerId: paymentId },
+        select: { id: true, status: true },
+      });
+
+      if (existingTx && existingTx.status === 'FAILED') {
+        this.logger.log(`Subscription failure ${paymentId} already processed. Skipping.`);
+        return;
+      }
+
+      // Find the subscription transaction
+      const txRecord = await tx.transaction.findFirst({
+        where: {
+          providerId: subscriptionId,
+          type: 'RECHARGE',
+        },
+        include: { wallet: true },
+      });
+
+      if (!txRecord || !txRecord.userId) {
+        this.logger.warn(
+          `No subscription transaction found for subscription ${subscriptionId}`,
+        );
+        return;
+      }
+
+      const userId = txRecord.userId;
+
+      // 1. Update transaction to FAILED
+      await tx.transaction.update({
+        where: { id: txRecord.id },
+        data: {
+          status: 'FAILED',
+          metadata: {
+            ...((txRecord.metadata as object) || {}),
+            asaasPaymentId: paymentId,
+            failureDate: new Date().toISOString(),
+            failureReason: payment.failureReason || 'PAYMENT_OVERDUE',
+          },
+        },
+      });
+
+      // 2. Deactivate Premium subscription
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          subscriptionStatus: 'SUSPENDED',
+        },
+      });
+
+      // 3. Deactivate SOS Merenda (reset overdraftLimit)
+      await tx.wallet.update({
+        where: { userId: userId },
+        data: {
+          overdraftLimit: 0,
+          isDebtBlocked: true, // Block new purchases if negative
+        },
+      });
+    });
+
+    this.logger.log(
+      `⚠️ Premium suspended. SOS Merenda disabled (overdraftLimit=0).`,
     );
   }
 

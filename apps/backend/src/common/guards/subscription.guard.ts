@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   Injectable,
@@ -51,7 +49,8 @@ export class SubscriptionGuard extends JwtAuthGuard implements CanActivate {
 
     // 3. Isenta administradores globais e rotas não-tenant
     // ✅ FIX: Usar roles array ao invés de role singular
-    const isSuperAdmin = user?.roles?.includes('SUPER_ADMIN') || user?.role === 'SUPER_ADMIN';
+    const isSuperAdmin =
+      user?.roles?.includes('SUPER_ADMIN') || user?.role === 'SUPER_ADMIN';
     if (!schoolId || isSuperAdmin) {
       return true;
     }

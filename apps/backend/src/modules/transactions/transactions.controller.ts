@@ -8,6 +8,7 @@ import {
   HttpStatus,
   HttpCode,
   Query,
+  ForbiddenException,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/users.decorator';
@@ -16,12 +17,12 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TransactionService } from './transactions.service';
 import { OfflineSyncService } from './offline-sync.service';
 import { SyncBatchDto } from './dto/offline-transaction.dto';
-// import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard'; // Assuming standard guard exists
-// import { RequestWithUser } from '../../auth/interfaces/request-with-user.interface';
+import { CreateCashInDto } from './dto/create-cash-in.dto';
 
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '@prisma/client';
+import { PrismaService } from '../../prisma/prisma.service';
 
 @ApiTags('Transactions')
 @ApiBearerAuth()
@@ -31,6 +32,7 @@ export class TransactionsController {
   constructor(
     private readonly transactionsService: TransactionService,
     private readonly offlineSyncService: OfflineSyncService,
+    private readonly prisma: PrismaService,
   ) {}
 
   @Post('sync')
@@ -39,12 +41,46 @@ export class TransactionsController {
     return this.offlineSyncService.syncBatch(batchDto.transactions);
   }
 
-  @Post('recharge')
+  /**
+   * [ADMIN/OPERATOR] Recarga de Balcão (Dinheiro Físico)
+   * Permite que operadores creditem saldo manualmente quando o pagamento
+   * é feito em dinheiro físico no balcão da cantina.
+   * 
+   * RLS: O usuário-alvo deve pertencer à mesma escola do operador/admin.
+   */
+  @Post('admin/cash-in')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN)
-  @ApiOperation({ summary: 'Realiza recarga manual de saldo (Admin).' })
-  async createRecharge(@Body() body: { userId: string; amount: number }) {
-    return this.transactionsService.processRecharge(body.userId, body.amount);
+  @Roles(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN, UserRole.OPERATOR_SALES)
+  @ApiOperation({
+    summary: 'Recarga de Balcão - Credita saldo manualmente (dinheiro físico).',
+    description: 'Usado por operadores para creditar saldo quando o pagamento é feito em dinheiro no balcão.',
+  })
+  async createCashIn(
+    @CurrentUser() user: AuthenticatedUserPayload,
+    @Body() dto: CreateCashInDto,
+  ) {
+    // Validação RLS: O usuário-alvo deve pertencer à escola do admin/operador
+    const targetUser = await this.prisma.user.findUnique({
+      where: { id: dto.userId },
+      select: { schoolId: true, name: true },
+    });
+
+    if (!targetUser) {
+      throw new ForbiddenException('Usuário não encontrado.');
+    }
+
+    // SUPER_ADMIN pode recarregar qualquer um, outros só da mesma escola
+    if (user.role !== UserRole.SUPER_ADMIN && targetUser.schoolId !== user.schoolId) {
+      throw new ForbiddenException('Você só pode recarregar usuários da sua escola.');
+    }
+
+    return this.transactionsService.processCashIn({
+      operatorId: user.id,
+      targetUserId: dto.userId,
+      amount: dto.amount,
+      paymentMethod: dto.paymentMethod || 'CASH',
+      notes: dto.notes,
+    });
   }
 
   @Get()

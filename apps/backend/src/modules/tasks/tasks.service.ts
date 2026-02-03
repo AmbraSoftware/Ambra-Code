@@ -19,6 +19,8 @@ export class TasksService {
    * identifica e marca essas reservas como 'EXPIRED', liberando o estoque de volta para
    * venda e garantindo que o inventário disponível esteja sempre correto, prevenindo
    * a perda de vendas por estoque falsamente indisponível.
+   * 
+   * FIX v4.0.4: Também faz hard delete de reservas EXPIRED/CANCELLED antigas (>7 dias)
    */
   @Cron(CronExpression.EVERY_5_MINUTES)
   async handleExpiredStockReservations() {
@@ -40,25 +42,59 @@ export class TasksService {
 
       if (expiredReservations.length === 0) {
         this.logger.log('Nenhuma reserva expirada encontrada.');
-        return;
+      } else {
+        const idsToExpire = expiredReservations.map((res) => res.id);
+
+        // Buscar detalhes completos para o log de inventário
+        const expiredDetails = await this.prisma.stockReservation.findMany({
+          where: { id: { in: idsToExpire } },
+          select: { id: true, productId: true, canteenId: true, quantity: true },
+        });
+
+        const { count } = await this.prisma.stockReservation.updateMany({
+          where: {
+            id: {
+              in: idsToExpire,
+            },
+          },
+          data: {
+            status: 'EXPIRED',
+          },
+        });
+
+        // Log de liberação de estoque virtual
+        for (const detail of expiredDetails) {
+          await this.prisma.inventoryLog.create({
+            data: {
+              productId: detail.productId,
+              canteenId: detail.canteenId,
+              change: 0,
+              reason: `Reserva expirada e liberada (Qty: ${detail.quantity})`,
+            },
+          });
+        }
+
+        this.logger.log(
+          `${count} reservas de estoque foram marcadas como expiradas.`,
+        );
       }
 
-      const idsToExpire = expiredReservations.map((res) => res.id);
-
-      const { count } = await this.prisma.stockReservation.updateMany({
+      // FIX: Hard delete de reservas antigas (ghost stock cleanup)
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const { count: deletedCount } = await this.prisma.stockReservation.deleteMany({
         where: {
-          id: {
-            in: idsToExpire,
+          status: { in: ['EXPIRED', 'CANCELLED'] },
+          updatedAt: {
+            lt: sevenDaysAgo,
           },
-        },
-        data: {
-          status: 'EXPIRED',
         },
       });
 
-      this.logger.log(
-        `${count} reservas de estoque foram marcadas como expiradas.`,
-      );
+      if (deletedCount > 0) {
+        this.logger.log(
+          `${deletedCount} reservas expiradas antigas foram removidas permanentemente.`,
+        );
+      }
     } catch (error) {
       // Adiciona logging de erro estruturado para garantir a observabilidade.
       this.logger.error('Falha ao processar reservas de estoque expiradas.', {
@@ -102,7 +138,7 @@ export class TasksService {
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async syncSchoolSubscriptions() {
     this.logger.log('Synchronizing School Subscriptions with Asaas...');
-    
+
     // Buscar escolas com assinaturas ativas
     const schools = await this.prisma.school.findMany({
       where: {
@@ -121,22 +157,27 @@ export class TasksService {
         // Consultar status no Asaas (usando http client do service)
         // [MOCK IMPLEMENTATION] Simulating Asaas Check
         // Em produção, isso chamaria this.asaasService.getSubscription(school.subscriptionId)
-        
+
         const isMockOverdue = false; // Force "ACTIVE" for now to avoid accidental suspensions
 
         if (isMockOverdue) {
-           this.logger.warn(`Subscription ${school.subscriptionId} is OVERDUE. Suspending school ${school.name}...`);
-           await this.prisma.school.update({
-             where: { id: school.id },
-             data: { status: 'SUSPENDED' }
-           });
+          this.logger.warn(
+            `Subscription ${school.subscriptionId} is OVERDUE. Suspending school ${school.name}...`,
+          );
+          await this.prisma.school.update({
+            where: { id: school.id },
+            data: { status: 'SUSPENDED' },
+          });
         } else {
-           this.logger.debug(`Subscription ${school.subscriptionId} is ACTIVE.`);
+          this.logger.debug(`Subscription ${school.subscriptionId} is ACTIVE.`);
         }
-        
+
         updatedCount++;
       } catch (error) {
-        this.logger.error(`Failed to sync subscription for ${school.name}`, error);
+        this.logger.error(
+          `Failed to sync subscription for ${school.name}`,
+          error,
+        );
       }
     }
 

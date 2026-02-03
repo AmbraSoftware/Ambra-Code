@@ -9,9 +9,9 @@ export type UserRole =
   | 'GOV_ADMIN'
   | 'GUARDIAN'
   | 'STUDENT'
-  | 'CONSUMER'
-  // Legacy
-  // Legacy roles removidos
+  | 'CONSUMER';
+// Legacy
+// Legacy roles removidos
 
 export interface AuthenticatedUserPayload {
   id: string;

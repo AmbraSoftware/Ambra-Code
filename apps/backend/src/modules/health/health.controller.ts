@@ -19,7 +19,7 @@ import { UserRole } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { Public } from '../auth/decorators/public.decorator';  // ✅ Import do decorator
+import { Public } from '../auth/decorators/public.decorator'; // ✅ Import do decorator
 
 @ApiTags('Health')
 @Controller('health')
@@ -32,10 +32,10 @@ export class HealthController {
     private prisma: PrismaService,
     private redisCache: RedisCacheService,
     private eventEmitter: EventEmitter2,
-  ) { }
+  ) {}
 
   @Get()
-  @Public()  // ✅ Permitir acesso sem autenticação
+  @Public() // ✅ Permitir acesso sem autenticação
   @ApiOperation({ summary: 'Verifica a saúde dos serviços críticos' })
   @ApiResponse({ status: 200, description: 'Sistema operando normalmente' })
   @ApiResponse({

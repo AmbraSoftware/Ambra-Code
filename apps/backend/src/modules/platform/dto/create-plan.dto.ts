@@ -1,4 +1,11 @@
-import { IsString, IsOptional, IsNumber, IsEnum, IsJSON, Min } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsNumber,
+  IsEnum,
+  IsJSON,
+  Min,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PlanTarget, PlanStatus } from '@prisma/client';
 
@@ -7,12 +14,15 @@ export class CreatePlanDto {
   @IsString()
   name: string;
 
-  @ApiPropertyOptional({ example: 'Acesso completo a todas as features', description: 'Descrição' })
+  @ApiPropertyOptional({
+    example: 'Acesso completo a todas as features',
+    description: 'Descrição',
+  })
   @IsOptional()
   @IsString()
   description?: string;
 
-  @ApiProperty({ example: 199.90, description: 'Preço Mensal' })
+  @ApiProperty({ example: 199.9, description: 'Preço Mensal' })
   @IsNumber()
   @Min(0)
   price: number;

@@ -66,7 +66,9 @@ export class AsaasService {
       },
     });
 
-    this.logger.log(`AsaasService initialized in ${asaasEnv.toUpperCase()} mode.`);
+    this.logger.log(
+      `AsaasService initialized in ${asaasEnv.toUpperCase()} mode.`,
+    );
   }
 
   private getHttp(apiKey?: string): AxiosInstance {
@@ -131,10 +133,7 @@ export class AsaasService {
   /**
    * Atualiza dados de uma Subconta (Confirmação Anual de Dados).
    */
-  async updateSubAccount(
-    id: string,
-    data: Partial<AsaasSubAccountData>,
-  ) {
+  async updateSubAccount(id: string, data: Partial<AsaasSubAccountData>) {
     this.logger.log(`Updating Subaccount ${id} (Annual Confirmation)...`);
     try {
       // Asaas V3 Update Pattern
@@ -149,7 +148,10 @@ export class AsaasService {
    * Cria uma cobrança PIX com Split de Pagamento.
    * Regra Flexível: Usa splitValue se informado, caso contrário fallback para regra fixa.
    */
-  async createPixCharge(splitData: AsaasPixSplitData, opts?: { apiKey?: string }) {
+  async createPixCharge(
+    splitData: AsaasPixSplitData,
+    opts?: { apiKey?: string },
+  ) {
     this.logger.log(
       `Creating PIX Charge of R$ ${splitData.value} for Wallet ${splitData.walletId} with Split...`,
     );
@@ -172,10 +174,13 @@ export class AsaasService {
     // Resolve Customer ID if CPF passed
     if (splitData.customer.length <= 14) {
       try {
-        customerId = await this.ensureCustomer({
-          name: 'Cliente Nodum',
-          cpfCnpj: splitData.customer,
-        }, opts);
+        customerId = await this.ensureCustomer(
+          {
+            name: 'Cliente Nodum',
+            cpfCnpj: splitData.customer,
+          },
+          opts,
+        );
       } catch (e) {
         this.logger.warn(
           'Failed to resolve customer by CPF. Trying raw value.',
@@ -234,11 +239,14 @@ export class AsaasService {
   /**
    * Helper: Ensure Customer Exists
    */
-  async ensureCustomer(data: {
-    name: string;
-    cpfCnpj: string;
-    email?: string;
-  }, opts?: { apiKey?: string }) {
+  async ensureCustomer(
+    data: {
+      name: string;
+      cpfCnpj: string;
+      email?: string;
+    },
+    opts?: { apiKey?: string },
+  ) {
     // Clean Tax ID
     const cleanTaxId = data.cpfCnpj.replace(/[^\d]/g, '');
 
@@ -298,7 +306,10 @@ export class AsaasService {
       });
       return response.data;
     } catch (error: any) {
-      this.logger.error(`Error updating subscription ${id}`, error.response?.data);
+      this.logger.error(
+        `Error updating subscription ${id}`,
+        error.response?.data,
+      );
       return null;
     }
   }
@@ -313,7 +324,9 @@ export class AsaasService {
     );
 
     const asaasErrors = error.response?.data?.errors;
-    const firstCode = Array.isArray(asaasErrors) ? asaasErrors?.[0]?.code : undefined;
+    const firstCode = Array.isArray(asaasErrors)
+      ? asaasErrors?.[0]?.code
+      : undefined;
     if (firstCode === 'access_token_not_found') {
       throw new BadRequestException(
         'Asaas Error: access_token_not_found (verifique ASAAS_API_KEY / credenciais da subconta e ambiente sandbox/production).',

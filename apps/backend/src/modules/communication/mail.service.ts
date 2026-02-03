@@ -48,12 +48,15 @@ export class MailService {
             <a href="${resetLink}" style="display: inline-block; background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Redefinir Senha</a>
             <p style="margin-top: 20px; font-size: 12px; color: #666;">Se você não solicitou isso, ignore este e-mail.</p>
           </div>
-        `
+        `,
       });
 
       this.logger.log(`Password reset email sent to ${email}`);
     } catch (error) {
-      this.logger.error(`Error sending email via Resend: ${error.message}`, error.stack);
+      this.logger.error(
+        `Error sending email via Resend: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }

@@ -1,5 +1,4 @@
 import { api } from './api';
-import { UserRole } from '@nodum/shared';
 
 export interface User {
     id: string;
@@ -7,6 +6,7 @@ export interface User {
     email: string;
     role: string; // Legacy single role
     roles?: string[]; // Multi-role support
+    class?: string;
     profile?: {
         class?: string;
         restrictions?: string[];
@@ -16,6 +16,7 @@ export interface User {
         balance: number;
     };
     imageUrl?: string;
+    avatarUrl?: string;
     createdAt: string;
     // Guardian specific
     dependents?: User[];

@@ -1,7 +1,13 @@
 import { api } from './api';
 import { Product } from './stock.service';
 import { Student } from './students.service';
-import { CreateOrderDto } from '@nodum/shared';
+
+type CreateOrderDto = {
+    buyerId?: string;
+    studentId: string;
+    items: Array<{ productId: string; quantity: number }>;
+    scheduledFor?: string;
+};
 
 export const posService = {
     // Get only available products for the POS grid with caching
@@ -59,6 +65,23 @@ export const posService = {
                     status: 'PENDING_SYNC',
                     orderHash: 'OFFLINE-' + Math.random().toString(36).substring(7)
                 };
+            }
+
+            // 409 Conflict (race condition / stock reservation conflict)
+            if (error.response?.status === 409) {
+                const friendly = new Error(
+                    'Conflito ao processar a venda (provável disputa de estoque). Atualize e tente novamente.',
+                ) as any;
+                friendly.response = {
+                    ...(error.response || {}),
+                    data: {
+                        ...(error.response?.data || {}),
+                        message:
+                            error.response?.data?.message ||
+                            'Conflito ao processar a venda (provável disputa de estoque). Atualize e tente novamente.',
+                    },
+                };
+                throw friendly;
             }
             throw error;
         }

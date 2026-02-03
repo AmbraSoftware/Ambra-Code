@@ -14,6 +14,8 @@ import { formatCurrency } from '@/lib/utils';
 const toCents = (value: number) => Math.round(value * 100);
 const fromCents = (cents: number) => cents / 100;
 
+const DEFAULT_PIX_FEE = 2.99;
+
 export default function RechargePage() {
   const router = useRouter();
   const [amount, setAmount] = useState('');
@@ -43,9 +45,10 @@ export default function RechargePage() {
 
     // Trabalhar com centavos (inteiros) para precisão
     const amountCents = toCents(amountValue);
-    // MVP Web: sem fees (endpoint de fees é SUPER_ADMIN). Mantemos total = amount.
-    const totalFeesCents = 0;
-    const totalCents = amountCents;
+    // MVP Web: endpoint de fees é SUPER_ADMIN. Para evitar recibo "Taxa 0",
+    // usamos uma estimativa segura (fallback) até termos endpoint público por plano.
+    const totalFeesCents = toCents(DEFAULT_PIX_FEE);
+    const totalCents = amountCents + totalFeesCents;
 
     return {
       amount: fromCents(amountCents),
@@ -93,9 +96,13 @@ export default function RechargePage() {
         amount: totals.amount,
       });
 
-      const creditAmount = totals.amount;
-      const totalAmount = typeof data.totalAmount === 'number' ? data.totalAmount : creditAmount;
-      const feeAmount = Math.max(0, Number((totalAmount - creditAmount).toFixed(2)));
+      const creditAmount = typeof data.netAmount === 'number' ? data.netAmount : totals.amount;
+      const totalAmount = typeof data.totalAmount === 'number'
+        ? data.totalAmount
+        : (typeof data.grossAmount === 'number' ? data.grossAmount : creditAmount);
+      const feeAmount = typeof data.fees === 'number'
+        ? data.fees
+        : Math.max(0, Number((totalAmount - creditAmount).toFixed(2)));
 
       setPixData({
         code: data.pixCopyPaste || data.pixCode,

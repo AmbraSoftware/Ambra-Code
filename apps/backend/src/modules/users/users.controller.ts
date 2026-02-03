@@ -35,7 +35,6 @@ import { AuditInterceptor } from '../../common/interceptors/audit.interceptor';
 import { Audit } from '../../common/decorators/audit.decorator';
 import { CacheService } from '../../common/cache/cache.service';
 
-
 @ApiTags('User Management')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -44,7 +43,7 @@ export class UsersController {
   constructor(
     private readonly usersService: UsersService,
     private readonly cacheService: CacheService,
-  ) { }
+  ) {}
 
   @Post()
   @Roles(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN, UserRole.MERCHANT_ADMIN)
@@ -64,7 +63,9 @@ export class UsersController {
 
     // Operator validation
     if (user.role === UserRole.MERCHANT_ADMIN && !user.canteenId) {
-        throw new BadRequestException('Operador sem cantina vinculada não pode criar usuários.');
+      throw new BadRequestException(
+        'Operador sem cantina vinculada não pode criar usuários.',
+      );
     }
 
     // Garantimos que o utilizador só cria membros para a sua própria escola
@@ -77,7 +78,8 @@ export class UsersController {
   @Audit('BULK_CREATE_USERS', 'User')
   @ApiOperation({
     summary: 'Importação em massa de usuários (Partial Success).',
-    description: 'Processa lista de usuários. Retorna relatório de sucessos e falhas. Ideal para CSV Import.',
+    description:
+      'Processa lista de usuários. Retorna relatório de sucessos e falhas. Ideal para CSV Import.',
   })
   async createBulk(
     @Body() bulkDto: BulkCreateUserDto,
@@ -96,7 +98,8 @@ export class UsersController {
   )
   @ApiOperation({
     summary: 'Lista todos os utilizadores da escola (Isolamento RLS ativo).',
-    description: '[v4.5] Suporta filtros de auditoria: ?filter=negative_balance ou ?filter=inactive_30d',
+    description:
+      '[v4.5] Suporta filtros de auditoria: ?filter=negative_balance ou ?filter=inactive_30d',
   })
   async findAll(
     @CurrentUser() user: AuthenticatedUserPayload,
@@ -107,7 +110,8 @@ export class UsersController {
     @Query('take') take?: string,
   ) {
     const isOperator =
-      user.roles?.includes('OPERATOR_SALES') || user.roles?.includes('OPERATOR_MEAL');
+      user.roles?.includes('OPERATOR_SALES') ||
+      user.roles?.includes('OPERATOR_MEAL');
 
     if (isOperator) {
       const normalizedSearch = (search || '').trim();
@@ -146,7 +150,10 @@ export class UsersController {
     summary: '[P0] Vincula NFC (UID Hex) a um usuário.',
   })
   @ApiResponse({ status: 200, description: 'NFC vinculado com sucesso.' })
-  @ApiResponse({ status: 409, description: 'NFC já está vinculado a outro usuário.' })
+  @ApiResponse({
+    status: 409,
+    description: 'NFC já está vinculado a outro usuário.',
+  })
   async bindNfc(
     @Param('userId', ParseUUIDPipe) userId: string,
     @Body('nfcId') nfcId: string,
@@ -157,11 +164,18 @@ export class UsersController {
     }
 
     try {
-      return await this.usersService.bindNfcId(userId, nfcId, user.schoolId || undefined, user.id);
+      return await this.usersService.bindNfcId(
+        userId,
+        nfcId,
+        user.schoolId || undefined,
+        user.id,
+      );
     } catch (error: any) {
       if (error instanceof ConflictException) throw error;
       if (error?.code === 'P2002') {
-        throw new ConflictException('Este NFC já está vinculado a outro usuário.');
+        throw new ConflictException(
+          'Este NFC já está vinculado a outro usuário.',
+        );
       }
       throw error;
     }
@@ -170,8 +184,10 @@ export class UsersController {
   @Get('stats')
   @Roles(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN, UserRole.MERCHANT_ADMIN)
   @ApiOperation({
-    summary: '[v4.5] Retorna estatísticas de alunos para contadores de filtros.',
-    description: 'Endpoint otimizado com cache de 60s para exibir contadores nos botões de filtro (Total, Saldo Negativo, Inativos 30d).',
+    summary:
+      '[v4.5] Retorna estatísticas de alunos para contadores de filtros.',
+    description:
+      'Endpoint otimizado com cache de 60s para exibir contadores nos botões de filtro (Total, Saldo Negativo, Inativos 30d).',
   })
   @ApiResponse({
     status: 200,
@@ -199,7 +215,9 @@ export class UsersController {
     }
 
     // If not in cache, fetch from database
-    const stats = await this.usersService.getStudentStats(user.schoolId || undefined);
+    const stats = await this.usersService.getStudentStats(
+      user.schoolId || undefined,
+    );
 
     // Cache for 60 seconds
     this.cacheService.set(cacheKey, stats, 60000);
@@ -210,8 +228,10 @@ export class UsersController {
   @Get('export-csv')
   @Roles(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN, UserRole.MERCHANT_ADMIN)
   @ApiOperation({
-    summary: '[v4.5] Exporta relatório financeiro em CSV com conformidade brasileira.',
-    description: 'Gera CSV formatado para Excel BR (separador ;, fuso horário Brasília).',
+    summary:
+      '[v4.5] Exporta relatório financeiro em CSV com conformidade brasileira.',
+    description:
+      'Gera CSV formatado para Excel BR (separador ;, fuso horário Brasília).',
   })
   async exportCSV(
     @CurrentUser() user: AuthenticatedUserPayload,
@@ -226,7 +246,7 @@ export class UsersController {
       user.schoolId || undefined,
       start,
       end,
-      user.canteenId || undefined
+      user.canteenId || undefined,
     );
 
     const today = new Date().toISOString().split('T')[0];
@@ -238,7 +258,6 @@ export class UsersController {
   }
 
   @Get(':id')
-
   @ApiOperation({ summary: 'Busca um utilizador específico por ID.' })
   async findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.usersService.findOne(id);

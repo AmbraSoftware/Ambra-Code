@@ -1,10 +1,6 @@
-/* eslint-disable @typescript-eslint/require-await */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { AsaasService } from '../asaas/asaas.service';
 import { Logger } from '@nestjs/common';
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+
 import {
   Injectable,
   ConflictException,
@@ -22,7 +18,7 @@ export class PlatformService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly asaasService: AsaasService,
-  ) { }
+  ) {}
 
   /**
    * Cria uma nova vertical de negócio no ecossistema NODUM.
@@ -416,10 +412,10 @@ export class PlatformService {
       // Searching by ID if UUID, otherwise massive scan is dangerous.
       isUuid
         ? this.prisma.transaction.findMany({
-          where: { id: term },
-          take: 5,
-          include: { user: { select: { name: true } } },
-        })
+            where: { id: term },
+            take: 5,
+            include: { user: { select: { name: true } } },
+          })
         : [],
 
       // 4. Search Systems

@@ -7,12 +7,15 @@ export class CreateStudentProfileDto {
   @IsOptional()
   class?: string;
 
-  @ApiProperty({ description: 'Lista de alergias ou restrições', example: ['Amendoim', 'Lactose'] })
+  @ApiProperty({
+    description: 'Lista de alergias ou restrições',
+    example: ['Amendoim', 'Lactose'],
+  })
   @IsArray()
   @IsOptional()
   restrictions?: string[];
 
-  @ApiProperty({ description: 'Limite diário de gastos', example: 50.00 })
+  @ApiProperty({ description: 'Limite diário de gastos', example: 50.0 })
   @IsNumber()
   @IsOptional()
   dailyLimit?: number;

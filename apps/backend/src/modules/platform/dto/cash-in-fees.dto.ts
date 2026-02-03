@@ -11,7 +11,7 @@ export class PaymentMethodFeeDto {
   @IsBoolean()
   chargeCustomer: boolean;
 
-  @ApiProperty({ description: 'Taxa fixa ao cliente (R$)', example: 4.00 })
+  @ApiProperty({ description: 'Taxa fixa ao cliente (R$)', example: 4.0 })
   @IsNumber()
   @Min(0)
   customerFeeFixed: number;

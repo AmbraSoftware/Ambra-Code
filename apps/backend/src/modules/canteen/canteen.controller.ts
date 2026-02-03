@@ -34,7 +34,7 @@ import { Audit } from '../../common/decorators/audit.decorator';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('canteen')
 export class CanteenController {
-  constructor(private readonly canteenService: CanteenService) { }
+  constructor(private readonly canteenService: CanteenService) {}
 
   @Get('pos/student/nfc/:nfcId')
   @Roles(UserRole.OPERATOR_SALES, UserRole.OPERATOR_MEAL)
@@ -42,13 +42,20 @@ export class CanteenController {
     summary: '[P0] Lookup de aluno por NFC (Leitor USB/Teclado).',
   })
   @ApiResponse({ status: 200, description: 'Aluno localizado.' })
-  @ApiResponse({ status: 403, description: 'Acesso negado / Tenant incorreto.' })
+  @ApiResponse({
+    status: 403,
+    description: 'Acesso negado / Tenant incorreto.',
+  })
   @ApiResponse({ status: 404, description: 'Aluno não encontrado.' })
   async getStudentByNfcId(
     @Param('nfcId') nfcId: string,
     @CurrentUser() user: AuthenticatedUserPayload,
   ) {
-    return this.canteenService.getStudentByNfcId(nfcId, user.schoolId, user.canteenId);
+    return this.canteenService.getStudentByNfcId(
+      nfcId,
+      user.schoolId,
+      user.canteenId,
+    );
   }
 
   @Get('pos/students/search')
@@ -62,7 +69,12 @@ export class CanteenController {
     @Query('search') search?: string,
     @Query('take') take?: string,
   ) {
-    return this.canteenService.searchStudentsForPos(user.schoolId, user.canteenId, search, take);
+    return this.canteenService.searchStudentsForPos(
+      user.schoolId,
+      user.canteenId,
+      search,
+      take,
+    );
   }
 
   @Get('order/scan/:hash')

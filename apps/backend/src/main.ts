@@ -68,5 +68,5 @@ async function bootstrap() {
   logger.log(`Application is running on: http://localhost:${port}`);
   logger.log(`Swagger UI is available at: http://localhost:${port}/api/docs`);
 }
-// eslint-disable-next-line @typescript-eslint/no-floating-promises
+
 bootstrap();

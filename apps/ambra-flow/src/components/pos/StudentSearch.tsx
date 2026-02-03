@@ -15,6 +15,10 @@ export function StudentSearch({ onSelect, selectedStudent }: StudentSearchProps)
     const [results, setResults] = useState<Student[]>([]);
     const [isSearching, setIsSearching] = useState(false);
 
+    const getStudentClassLabel = (student: Student) => {
+        return (student as any)?.class || (student as any)?.profile?.class;
+    };
+
     useEffect(() => {
         const timeoutId = setTimeout(async () => {
             if (query.length >= 3) {
@@ -34,14 +38,31 @@ export function StudentSearch({ onSelect, selectedStudent }: StudentSearchProps)
     }, [query]);
 
     if (selectedStudent) {
+        const classLabel = getStudentClassLabel(selectedStudent);
         return (
             <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 mb-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-bold">
-                        {selectedStudent.name.charAt(0).toUpperCase()}
+                    <div className="w-[72px] h-[72px] rounded-xl overflow-hidden bg-primary/20 flex items-center justify-center shrink-0">
+                        {(selectedStudent as any)?.avatarUrl ? (
+                            <img
+                                src={(selectedStudent as any).avatarUrl}
+                                alt={selectedStudent.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                    (e.currentTarget as HTMLImageElement).style.display = 'none';
+                                }}
+                            />
+                        ) : (
+                            <span className="text-primary font-bold text-2xl">
+                                {selectedStudent.name.charAt(0).toUpperCase()}
+                            </span>
+                        )}
                     </div>
-                    <div>
-                        <p className="font-bold text-gray-900 dark:text-white text-sm">{selectedStudent.name}</p>
+                    <div className="min-w-0">
+                        <p className="font-bold text-gray-900 dark:text-white text-sm truncate">{selectedStudent.name}</p>
+                        {classLabel && (
+                            <p className="text-xs text-gray-600 dark:text-gray-400 truncate">Turma: {classLabel}</p>
+                        )}
                         <p className="text-xs text-gray-600 dark:text-gray-400">Saldo: R$ {Number(selectedStudent.wallet?.balance || 0).toFixed(2)}</p>
                     </div>
                 </div>
@@ -78,7 +99,30 @@ export function StudentSearch({ onSelect, selectedStudent }: StudentSearchProps)
                                 onClick={() => { onSelect(student); setResults([]); setQuery(''); }}
                                 className="w-full p-3 text-left hover:bg-gray-50 dark:hover:bg-zinc-700 flex items-center justify-between border-b border-gray-100 dark:border-zinc-700/50 last:border-0"
                             >
-                                <span className="font-medium text-gray-800 dark:text-gray-200">{student.name}</span>
+                                <div className="flex items-center gap-3 min-w-0">
+                                    <div className="w-10 h-10 rounded-lg overflow-hidden bg-primary/20 flex items-center justify-center shrink-0">
+                                        {(student as any)?.avatarUrl ? (
+                                            <img
+                                                src={(student as any).avatarUrl}
+                                                alt={student.name}
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                    (e.currentTarget as HTMLImageElement).style.display = 'none';
+                                                }}
+                                            />
+                                        ) : (
+                                            <span className="text-primary font-bold">
+                                                {student.name.charAt(0).toUpperCase()}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="min-w-0">
+                                        <span className="font-medium text-gray-800 dark:text-gray-200 block truncate">{student.name}</span>
+                                        {getStudentClassLabel(student) && (
+                                            <span className="text-xs text-gray-500 block truncate">Turma: {getStudentClassLabel(student)}</span>
+                                        )}
+                                    </div>
+                                </div>
                                 <span className={`text-xs font-bold ${Number(student.wallet?.balance || 0) < 0 ? 'text-red-500' : 'text-green-600'}`}>
                                     R$ {Number(student.wallet?.balance || 0).toFixed(2)}
                                 </span>

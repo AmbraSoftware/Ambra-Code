@@ -22,18 +22,18 @@ export class PaymentService {
     private readonly prisma: PrismaService,
     private readonly transactionsService: TransactionService,
     private readonly feeCalculator: FeeCalculatorService,
-  ) { }
+  ) {}
 
   /**
    * Valida se o usuário tem permissão para criar uma recarga.
-   * 
+   *
    * REGRA DE NEGÓCIO (Compliance 2026):
    * 1. GUARDIAN: Sempre permitido.
    * 2. STUDENT:
    *    - Cenário A (Autonomia): Sem responsável vinculado E 16+ anos → PERMITE
    *    - Cenário B (Permissão): Com responsável E flag canRechargeAlone=true → PERMITE
    *    - Caso contrário: BLOQUEIA
-   * 
+   *
    * @param userId ID do usuário solicitante
    * @param dependentId ID do dependente (pode ser o próprio usuário)
    * @throws {ForbiddenException} Se o aluno não tiver permissão
@@ -70,7 +70,8 @@ export class PaymentService {
 
     // 2. Se for STUDENT: Validar regras
     if (user.roles.includes('STUDENT')) {
-      const hasGuardian = user.guardianRelations && user.guardianRelations.length > 0;
+      const hasGuardian =
+        user.guardianRelations && user.guardianRelations.length > 0;
 
       // Cenário A: Autonomia (Sem responsável E 16+ anos)
       if (!hasGuardian && user.birthDate) {
@@ -104,7 +105,10 @@ export class PaymentService {
     let age = today.getFullYear() - birth.getFullYear();
     const monthDiff = today.getMonth() - birth.getMonth();
 
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && today.getDate() < birth.getDate())
+    ) {
       age--;
     }
 
@@ -113,9 +117,9 @@ export class PaymentService {
 
   /**
    * Gera uma solicitação de recarga PIX, criando uma transação pendente e um QR Code.
-   * 
+   *
    * ATUALIZAÇÃO v4.0: Agora valida se STUDENT pode criar recargas (16+ anos OU permissão).
-   * 
+   *
    * @param userId O ID do usuário solicitante (GUARDIAN ou STUDENT).
    * @param createRechargeDto Os dados da recarga (dependente e valor).
    * @returns Um objeto com o ID da transação, um QR Code em Base64 e um texto "Copia e Cola".
@@ -175,7 +179,9 @@ export class PaymentService {
       }
 
       if (!dependent.schoolId) {
-        throw new BadRequestException('Aluno/dependente não está associado a uma escola.');
+        throw new BadRequestException(
+          'Aluno/dependente não está associado a uma escola.',
+        );
       }
 
       const school = await tx.school.findUnique({
@@ -184,13 +190,15 @@ export class PaymentService {
       });
 
       if (!school?.plan) {
-        throw new BadRequestException('Escola sem plano associado (feesConfig indisponível).');
+        throw new BadRequestException(
+          'Escola sem plano associado (feesConfig indisponível).',
+        );
       }
 
       // 3. Ledger PENDING (fonte da verdade para o webhook)
       const amountDecimal = new Prisma.Decimal(amount);
 
-      const split = this.feeCalculator.calculateRechargeSplit(
+      const split = await this.feeCalculator.calculateRechargeSplit(
         amount,
         school as School & { plan: Plan },
         payer as unknown as User,
@@ -292,11 +300,15 @@ export class PaymentService {
         }
 
         if (original.type !== TransactionType.RECHARGE) {
-          throw new BadRequestException('Apenas recargas podem ser reembolsadas.');
+          throw new BadRequestException(
+            'Apenas recargas podem ser reembolsadas.',
+          );
         }
 
         if (original.status !== 'COMPLETED') {
-          throw new BadRequestException('Apenas recargas concluídas podem ser reembolsadas.');
+          throw new BadRequestException(
+            'Apenas recargas concluídas podem ser reembolsadas.',
+          );
         }
 
         // 2) AuthZ: somente dono da carteira pode solicitar (pai/aluno)
@@ -311,18 +323,23 @@ export class PaymentService {
         });
 
         if (existing) {
-          throw new BadRequestException('Já existe uma solicitação de reembolso para esta transação.');
+          throw new BadRequestException(
+            'Já existe uma solicitação de reembolso para esta transação.',
+          );
         }
 
         // 4) CDC (7 dias) + saldo fungível
         const now = new Date();
         const daysSince = Math.floor(
-          (now.getTime() - original.createdAt.getTime()) / (1000 * 60 * 60 * 24),
+          (now.getTime() - original.createdAt.getTime()) /
+            (1000 * 60 * 60 * 24),
         );
         const withinCdc = daysSince <= 7;
 
         const originalNet = Number(original.netAmount);
-        const originalGross = original.grossAmount ? Number(original.grossAmount) : originalNet;
+        const originalGross = original.grossAmount
+          ? Number(original.grossAmount)
+          : originalNet;
         const walletBalance = Number(original.wallet.balance);
 
         const refundableNet = Math.max(0, Math.min(originalNet, walletBalance));
@@ -343,7 +360,9 @@ export class PaymentService {
         });
 
         if (count !== 1) {
-          throw new InternalServerErrorException('Falha de concorrência financeira.');
+          throw new InternalServerErrorException(
+            'Falha de concorrência financeira.',
+          );
         }
 
         const lockTx = await tx.transaction.create({

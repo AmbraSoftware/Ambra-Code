@@ -24,7 +24,19 @@ import { AsaasModule } from '../asaas/asaas.module';
     GlobalAdminController, // Métoras e Dashboard Master
     FinanceController,
   ],
-  providers: [PlatformService, BillingService, HealthService, FeesService, CouponsService],
-  exports: [PlatformService, BillingService, HealthService, FeesService, CouponsService],
+  providers: [
+    PlatformService,
+    BillingService,
+    HealthService,
+    FeesService,
+    CouponsService,
+  ],
+  exports: [
+    PlatformService,
+    BillingService,
+    HealthService,
+    FeesService,
+    CouponsService,
+  ],
 })
 export class PlatformModule {}

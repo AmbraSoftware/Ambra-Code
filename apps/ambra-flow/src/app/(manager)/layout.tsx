@@ -7,7 +7,6 @@ import Logo from '@/components/ui/Logo';
 import { LayoutDashboard, Utensils, Users, Megaphone, Package, Store, DollarSign, Settings, LogOut, Menu, X, UserCog } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';
-import { UserRole } from '@nodum/shared';
 import { removeAuthToken } from '@/lib/auth-utils';
 
 /**
@@ -45,10 +44,8 @@ export default function ManagerLayout({
 
             // Verifica se tem role de Manager
             const isManager = userRoles.some((role: string) => 
-                role === UserRole.MERCHANT_ADMIN || 
-                role === UserRole.SCHOOL_ADMIN ||
-                role === UserRole.SUPER_ADMIN ||
                 role === 'MERCHANT_ADMIN' ||
+                role === 'SCHOOL_ADMIN' ||
                 role === 'SUPER_ADMIN'
             );
 

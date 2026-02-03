@@ -36,7 +36,7 @@ import { TenantCacheInterceptor } from '../../common/interceptors/tenant-cache.i
 @Controller('products')
 @UseInterceptors(TenantCacheInterceptor) // Cache ativado com isolamento de Tenant
 export class ProductsController {
-  constructor(private readonly productsService: ProductsService) { }
+  constructor(private readonly productsService: ProductsService) {}
 
   @Post()
   @Roles(UserRole.SCHOOL_ADMIN, UserRole.OPERATOR_SALES, UserRole.OPERATOR_MEAL)
@@ -78,7 +78,8 @@ export class ProductsController {
   @Roles(UserRole.SCHOOL_ADMIN, UserRole.OPERATOR_SALES, UserRole.OPERATOR_MEAL)
   @ApiOperation({
     summary: '[v4.5] Retorna produtos com estoque crítico ou baixo.',
-    description: 'Critical: stock = 0, Warning: stock > 0 && stock <= minStockAlert',
+    description:
+      'Critical: stock = 0, Warning: stock > 0 && stock <= minStockAlert',
   })
   @ApiResponse({
     status: 200,
@@ -86,20 +87,17 @@ export class ProductsController {
     schema: {
       example: {
         critical: [
-          { id: '...', name: 'Coca-Cola', stock: 0, minStockAlert: 10 }
+          { id: '...', name: 'Coca-Cola', stock: 0, minStockAlert: 10 },
         ],
-        warning: [
-          { id: '...', name: 'Suco', stock: 5, minStockAlert: 10 }
-        ]
-      }
-    }
+        warning: [{ id: '...', name: 'Suco', stock: 5, minStockAlert: 10 }],
+      },
+    },
   })
   async getStockAlerts(@CurrentUser() user: AuthenticatedUserPayload) {
     return this.productsService.getStockAlerts(user.schoolId!, user.canteenId);
   }
 
   @Get(':id')
-
   @ApiOperation({ summary: 'Detalhes de um produto específico.' })
   async findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.productsService.findOne(id);
@@ -125,8 +123,9 @@ export class ProductsController {
   async updateStock(
     @Param('id', ParseUUIDPipe) id: string,
     @Body('change') change: number,
+    @CurrentUser() user: AuthenticatedUserPayload,
   ) {
-    return this.productsService.updateStock(id, change);
+    return this.productsService.updateStock(id, change, user.schoolId!);
   }
 
   @Delete(':id')

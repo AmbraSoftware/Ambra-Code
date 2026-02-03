@@ -27,10 +27,10 @@ import { RequestRefundDto } from './dto/request-refund.dto';
 @Controller('payment')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class PaymentController {
-  constructor(private readonly paymentService: PaymentService) { }
+  constructor(private readonly paymentService: PaymentService) {}
 
   @Post('recharge-request')
-  @Roles('GUARDIAN', 'STUDENT')  // ✅ Nova regra: Alunos 15+ também podem criar recargas
+  @Roles('GUARDIAN', 'STUDENT') // ✅ Nova regra: Alunos 15+ também podem criar recargas
   @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 requests per minute
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -62,7 +62,8 @@ export class PaymentController {
   @Throttle({ default: { limit: 3, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[P1] Solicita reembolso de saldo (cria RefundRequest + REFUND_LOCK).',
+    summary:
+      '[P1] Solicita reembolso de saldo (cria RefundRequest + REFUND_LOCK).',
   })
   @ApiResponse({ status: 200, description: 'Solicitação criada com sucesso.' })
   async requestRefund(

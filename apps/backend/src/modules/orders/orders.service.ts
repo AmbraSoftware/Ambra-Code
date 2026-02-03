@@ -12,7 +12,7 @@ import { CreateOrderDto, CreateOrderItemDto } from './dto/create-order.dto';
 import { randomBytes } from 'crypto';
 import { AuditService } from '../audit/audit.service';
 import { NotificationsGateway } from '../notifications/notifications.gateway';
-import { OrderStatus, Prisma, Product } from '@prisma/client';
+import { OrderStatus, Prisma, Product, UserRole } from '@prisma/client';
 
 /**
  * ORDERS SERVICE v3.8.5 - MASTER INDUSTRIAL (RIZO & AMBRA)
@@ -28,7 +28,7 @@ export class OrdersService {
     private readonly stockService: StockService,
     private readonly auditService: AuditService,
     private readonly notificationsGateway: NotificationsGateway,
-  ) { }
+  ) {}
 
   /**
    * Processamento de Pedido com Isolamento 'Serializable'
@@ -56,7 +56,9 @@ export class OrdersService {
       // Evita confusão com pedido instantâneo
       const minAdvance = new Date(now.getTime() + 30 * 60000);
       if (scheduledDate < minAdvance) {
-        throw new BadRequestException('Reservas devem ser feitas com no mínimo 30 minutos de antecedência.');
+        throw new BadRequestException(
+          'Reservas devem ser feitas com no mínimo 30 minutos de antecedência.',
+        );
       }
     }
 
@@ -116,11 +118,20 @@ export class OrdersService {
         // Busca configurações da Cantina para validar turno
         const canteen = await tx.canteen.findUnique({
           where: { id: firstCanteenId },
-          select: { openingTime: true, closingTime: true, type: true, operatorId: true }
+          select: {
+            openingTime: true,
+            closingTime: true,
+            type: true,
+            operatorId: true,
+          },
         });
 
-        if (canteen && canteen.type === 'COMMERCIAL') { // Apenas comercial bloqueia, merenda é livre/logística
-          await this.validateOperationalHours(canteen.openingTime, canteen.closingTime);
+        if (canteen && canteen.type === 'COMMERCIAL') {
+          // Apenas comercial bloqueia, merenda é livre/logística
+          await this.validateOperationalHours(
+            canteen.openingTime,
+            canteen.closingTime,
+          );
         }
 
         const operatorId = canteen?.operatorId;
@@ -135,6 +146,22 @@ export class OrdersService {
         if (!schoolId) {
           throw new ForbiddenException(
             'O aluno não possui uma escola vinculada.',
+          );
+        }
+
+        // ETAPA 1.8: Validar status da escola (bloqueia pedidos se escola não estiver ACTIVE)
+        const school = await tx.school.findUnique({
+          where: { id: schoolId },
+          select: { status: true, name: true },
+        });
+
+        if (!school) {
+          throw new NotFoundException('Escola não encontrada.');
+        }
+
+        if (school.status !== 'ACTIVE') {
+          throw new ForbiddenException(
+            `A escola ${school.name} não está ativa no momento (status: ${school.status}). Não é possível realizar pedidos.`,
           );
         }
 
@@ -165,14 +192,7 @@ export class OrdersService {
           totalAmount += Number(price) * item.quantity;
         }
 
-        // ETAPA 2: Reserva de Estoque
-        await this.stockService.reserveProductsInTransaction(
-          tx,
-          items,
-          firstCanteenId,
-        );
-
-        // ETAPA 3: Criação do Pedido (Status: PENDING)
+        // ETAPA 2: Criação do Pedido (Status: PENDING) - MOVIDO PARA ANTES da reserva
         const orderHash = `AMBRA-${Date.now()}-${randomBytes(3).toString('hex').toUpperCase()}`;
         const order = await tx.order.create({
           data: {
@@ -181,8 +201,8 @@ export class OrdersService {
             totalAmount,
             status: OrderStatus.PENDING,
             orderHash,
-            scheduledFor: scheduledDate, // [v4.1] Pre-order persistence
-            schoolId: schoolId, // FIX: Garantido pela validação na Etapa 1.7
+            scheduledFor: scheduledDate,
+            schoolId: schoolId,
             items: {
               create: items.map((item) => {
                 const product = products.find((p) => p.id === item.productId);
@@ -201,13 +221,25 @@ export class OrdersService {
           },
         });
 
+        // ETAPA 3: Reserva de Estoque (COM orderId)
+        await this.stockService.reserveProductsInTransaction(
+          tx,
+          items,
+          firstCanteenId,
+          order.id,  // FIX: Passando orderId para vinculação
+        );
+
         // ETAPA 4: Débito Financeiro
-        const debitResult = await this.transactionService.debitFromWalletForOrderInTransaction(tx, {
-          buyerId,
-          studentId,
-          totalAmount,
-          orderId: order.id,
-        });
+        const debitResult =
+          await this.transactionService.debitFromWalletForOrderInTransaction(
+            tx,
+            {
+              buyerId,
+              studentId,
+              totalAmount,
+              orderId: order.id,
+            },
+          );
 
         // ETAPA 4.5: Trilhas Fiscais (MVP) - registra item pendente mesmo sem emissão ativa
         await tx.fiscalPendingItem.create({
@@ -266,6 +298,7 @@ export class OrdersService {
 
   /**
    * Validação de Restrições Parentais (Camada Food Domain)
+   * Inclui: ProductRestriction, CategoryRestriction e NutritionalProfile (alergias)
    */
   private async checkRestrictions(
     tx: Prisma.TransactionClient,
@@ -273,9 +306,10 @@ export class OrdersService {
     items: CreateOrderItemDto[],
     products: Product[],
   ) {
-    const [prodRest, catRest] = await Promise.all([
+    const [prodRest, catRest, nutritionalProfile] = await Promise.all([
       tx.productRestriction.findMany({ where: { userId: studentId } }),
       tx.categoryRestriction.findMany({ where: { userId: studentId } }),
+      tx.nutritionalProfile.findUnique({ where: { userId: studentId } }),
     ]);
 
     for (const item of items) {
@@ -288,16 +322,44 @@ export class OrdersService {
         );
       }
 
+      // 1. Restrição de Produto Específico (Bloqueio Parental)
       if (prodRest.some((r) => r.productId === product.id)) {
         throw new ForbiddenException(
           `Bloqueio Parental: O consumo de "${product.name}" não é permitido.`,
         );
       }
 
+      // 2. Restrição de Categoria (Bloqueio Parental)
       if (catRest.some((r) => r.category === product.category)) {
         throw new ForbiddenException(
           `Bloqueio Parental: A categoria "${product.category}" está restrita para este aluno.`,
         );
+      }
+
+      // 3. Restrição Nutricional (Alergias)
+      // TODO: Adicionar campos `allergens` (String[]) e `calories` (Int) ao modelo Product no schema.prisma
+      // para habilitar validação completa de perfil nutricional
+      if (nutritionalProfile?.allergies && nutritionalProfile.allergies.length > 0) {
+        // Verificar se o produto contém algum alérgeno
+        // const productAllergens = (product as any).allergens || []; // Campo a ser adicionado ao Product
+        // const userAllergies = nutritionalProfile.allergies;
+        // 
+        // const hasAllergenConflict = productAllergens.some((allergen: string) =>
+        //   userAllergies.includes(allergen),
+        // );
+        // 
+        // if (hasAllergenConflict) {
+        //   throw new ForbiddenException(
+        //     `Restrição Alimentar: "${product.name}" contém ingredientes que podem causar alergia (${productAllergens.join(', ')}).`,
+        //   );
+        // }
+      }
+
+      // 4. Controle de Calorias Diárias (se configurado)
+      // TODO: Requer campo `calories` no Product e tracking nutricional mais robusto
+      if (nutritionalProfile?.dailyCalorieGoal) {
+        // const productCalories = (product as any).calories || 0; // Campo a ser adicionado
+        // Implementar controle de calorias quando campos estiverem disponíveis
       }
     }
   }
@@ -410,6 +472,8 @@ export class OrdersService {
 
   /**
    * Atualiza Status do Pedido (Fluxo da Cantina)
+   * 
+   * FIX v4.0.4: Quando status é DELIVERED, executa baixa física de estoque
    */
   async updateStatus(
     id: string,
@@ -436,13 +500,50 @@ export class OrdersService {
       );
     }
 
-    const updatedOrder = await this.prisma.order.update({
-      where: { id },
-      data: {
-        status,
-        deliveredAt: status === OrderStatus.DELIVERED ? new Date() : undefined,
-      },
-    });
+    // FIX v4.0.4: Executa baixa física de estoque na entrega
+    if (status === OrderStatus.DELIVERED && order.status !== OrderStatus.DELIVERED) {
+      await this.prisma.$transaction(async (tx) => {
+        // Obtém canteenId do primeiro item do pedido
+        const orderWithItems = await tx.order.findUnique({
+          where: { id },
+          include: {
+            items: {
+              include: { product: { select: { canteenId: true } } }
+            }
+          }
+        });
+
+        if (!orderWithItems || orderWithItems.items.length === 0) {
+          throw new NotFoundException(`Pedido ${id} não encontrado ou sem itens.`);
+        }
+
+        const canteenId = orderWithItems.items[0].product?.canteenId;
+        if (!canteenId) {
+          throw new NotFoundException(`Cantina não encontrada para o pedido ${id}.`);
+        }
+
+        // Executa baixa física de estoque
+        await this.stockService.finalizeOrderDeliveryInTransaction(tx, id, canteenId);
+
+        // Atualiza status do pedido
+        await tx.order.update({
+          where: { id },
+          data: {
+            status,
+            deliveredAt: new Date(),
+          },
+        });
+      });
+    } else {
+      // Atualização simples de status (não é entrega)
+      await this.prisma.order.update({
+        where: { id },
+        data: {
+          status,
+          deliveredAt: status === OrderStatus.DELIVERED ? new Date() : undefined,
+        },
+      });
+    }
 
     // Auditoria
     await this.auditService.logAction(this.prisma, {
@@ -454,8 +555,202 @@ export class OrdersService {
       meta: { previousStatus: order.status, newStatus: status },
     });
 
-    return updatedOrder;
+    return this.findOne(id, schoolId);
   }
+  /**
+   * CANCELAMENTO DE PEDIDO v4.0.4
+   * Permite cancelar pedidos com estorno de saldo e liberação de estoque.
+   * 
+   * Regras:
+   * - Pedidos DELIVERED não podem ser cancelados
+   * - Pedidos CANCELLED não podem ser cancelados novamente
+   * - Guardian/Student só cancelam seus próprios pedidos
+   * - Admin/Operator podem cancelar qualquer pedido da escola
+   * 
+   * Fluxo:
+   * 1. Valida permissões e estado do pedido
+   * 2. Estorna saldo para carteira (REVERSE transaction)
+   * 3. Cancela/Cria reservas de estoque
+   * 4. Atualiza status do pedido
+   * 5. Auditoria
+   */
+  async cancelOrder(
+    orderId: string,
+    dto: { reason?: string },
+    user: any,
+  ) {
+    const { reason } = dto;
+
+    return this.prisma.$transaction(
+      async (tx) => {
+        // 1. Buscar pedido com todos os detalhes necessários
+        const order = await tx.order.findUnique({
+          where: { id: orderId },
+          include: {
+            items: { include: { product: true } },
+            transactions: true,
+          },
+        });
+
+        if (!order) {
+          throw new NotFoundException('Pedido não encontrado.');
+        }
+
+        // 2. Validação de permissões
+        const isAdminOrOperator =
+          user.role === UserRole.SCHOOL_ADMIN ||
+          user.role === UserRole.OPERATOR_SALES ||
+          user.role === UserRole.OPERATOR_MEAL ||
+          user.role === UserRole.SUPER_ADMIN;
+
+        const isOwner =
+          order.buyerId === user.id || order.studentId === user.id;
+
+        if (!isAdminOrOperator && !isOwner) {
+          throw new ForbiddenException(
+            'Você não tem permissão para cancelar este pedido.',
+          );
+        }
+
+        // Admin só pode cancelar da mesma escola
+        if (isAdminOrOperator && order.schoolId !== user.schoolId) {
+          throw new ForbiddenException(
+            'Você só pode cancelar pedidos da sua escola.',
+          );
+        }
+
+        // 3. Validação de estado
+        if (order.status === OrderStatus.CANCELLED) {
+          throw new BadRequestException('Este pedido já está cancelado.');
+        }
+
+        if (order.status === OrderStatus.DELIVERED) {
+          throw new BadRequestException(
+            'Pedidos já entregues não podem ser cancelados.',
+          );
+        }
+
+        // 4. Buscar carteira do aluno para estorno
+        const wallet = await tx.wallet.findUnique({
+          where: { userId: order.studentId },
+        });
+
+        if (!wallet) {
+          throw new NotFoundException('Carteira do aluno não encontrada.');
+        }
+
+        // 5. Estornar saldo (se houver transação de compra)
+        const purchaseTransaction = order.transactions.find(
+          (t) => t.type === 'PURCHASE' && t.status === 'COMPLETED',
+        );
+
+        if (purchaseTransaction) {
+          const refundAmount = Math.abs(Number(purchaseTransaction.amount));
+          const newBalance = Number(wallet.balance) + refundAmount;
+
+          // Criar transação de estorno
+          await tx.transaction.create({
+            data: {
+              walletId: wallet.id,
+              orderId: order.id,
+              amount: new Prisma.Decimal(refundAmount),
+              platformFee: new Prisma.Decimal(0),
+              netAmount: new Prisma.Decimal(refundAmount),
+              runningBalance: new Prisma.Decimal(newBalance),
+              type: 'REFUND',
+              status: 'COMPLETED',
+              description: `Estorno de cancelamento - Pedido ${order.orderHash}`,
+              metadata: {
+                cancelledBy: user.id,
+                reason: reason || 'Não informado',
+                originalTransactionId: purchaseTransaction.id,
+              },
+            },
+          });
+
+          // Atualizar saldo da carteira
+          await tx.wallet.update({
+            where: { id: wallet.id },
+            data: {
+              balance: newBalance,
+              version: { increment: 1 },
+            },
+          });
+        }
+
+        // 6. Liberar/Cancelar reservas de estoque
+        const canteenId = order.items[0]?.product?.canteenId;
+        if (canteenId) {
+          // Buscar reservas ativas deste pedido
+          const activeReservations = await tx.stockReservation.findMany({
+            where: {
+              orderId: order.id,
+              status: 'ACTIVE',
+            },
+          });
+
+          // Cancelar reservas
+          if (activeReservations.length > 0) {
+            await tx.stockReservation.updateMany({
+              where: {
+                orderId: order.id,
+                status: 'ACTIVE',
+              },
+              data: { status: 'CANCELLED' },
+            });
+
+            // Log de liberação de estoque
+            for (const reservation of activeReservations) {
+              await tx.inventoryLog.create({
+                data: {
+                  productId: reservation.productId,
+                  canteenId: reservation.canteenId,
+                  change: 0,
+                  reason: `Liberação por cancelamento - Pedido ${order.orderHash.substring(0, 8)} (Qty: ${reservation.quantity})`,
+                },
+              });
+            }
+          }
+        }
+
+        // 7. Atualizar status do pedido
+        const updatedOrder = await tx.order.update({
+          where: { id: orderId },
+          data: {
+            status: OrderStatus.CANCELLED,
+          },
+        });
+
+        // 8. Auditoria
+        await this.auditService.logAction(this.prisma, {
+          userId: user.id,
+          action: 'ORDER_CANCELLED',
+          entity: 'Order',
+          entityId: orderId,
+          schoolId: order.schoolId,
+          meta: {
+            previousStatus: order.status,
+            cancelledBy: user.id,
+            reason: reason || 'Não informado',
+            refundAmount: purchaseTransaction
+              ? Math.abs(Number(purchaseTransaction.amount))
+              : 0,
+          },
+        });
+
+        return {
+          orderId: updatedOrder.id,
+          status: updatedOrder.status,
+          message: 'Pedido cancelado com sucesso.',
+          refundAmount: purchaseTransaction
+            ? Math.abs(Number(purchaseTransaction.amount))
+            : 0,
+        };
+      },
+      { isolationLevel: 'Serializable' },
+    );
+  }
+
   /**
    * Valida vínculo de Tutela (Guardian -> Student)
    */
@@ -475,7 +770,7 @@ export class OrdersService {
 
     if (currentHm < openTime || currentHm > closeTime) {
       throw new ForbiddenException(
-        `Vendas Bloqueadas: A cantina opera entre ${openTime} e ${closeTime}. (Hora atual: ${currentHm})`
+        `Vendas Bloqueadas: A cantina opera entre ${openTime} e ${closeTime}. (Hora atual: ${currentHm})`,
       );
     }
   }

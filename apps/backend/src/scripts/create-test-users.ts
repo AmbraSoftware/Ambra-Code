@@ -12,7 +12,7 @@ async function main() {
 
   // Buscar escola Elite
   const schoolElite = await prisma.school.findFirst({
-    where: { slug: 'colegio-elite' }
+    where: { slug: 'colegio-elite' },
   });
 
   if (!schoolElite) {
@@ -23,10 +23,10 @@ async function main() {
   // 1. ALUNO
   const student = await prisma.user.upsert({
     where: { email: 'aluno@teste.com' },
-    update: { 
+    update: {
       passwordHash: hashedPassword,
       role: UserRole.STUDENT,
-      roles: [UserRole.STUDENT]
+      roles: [UserRole.STUDENT],
     },
     create: {
       name: 'João da Silva',
@@ -43,20 +43,20 @@ async function main() {
   // Carteira do Aluno
   await prisma.wallet.upsert({
     where: { userId: student.id },
-    update: { balance: 50.00 },
+    update: { balance: 50.0 },
     create: {
       userId: student.id,
-      balance: 50.00,
-    }
+      balance: 50.0,
+    },
   });
 
   // 2. RESPONSÁVEL (GUARDIAN)
   const guardian = await prisma.user.upsert({
     where: { email: 'pai@teste.com' },
-    update: { 
+    update: {
       passwordHash: hashedPassword,
       role: UserRole.GUARDIAN,
-      roles: [UserRole.GUARDIAN]
+      roles: [UserRole.GUARDIAN],
     },
     create: {
       name: 'Maria da Silva',
@@ -73,11 +73,11 @@ async function main() {
   // Carteira do Responsável
   await prisma.wallet.upsert({
     where: { userId: guardian.id },
-    update: { balance: 200.00 },
+    update: { balance: 200.0 },
     create: {
       userId: guardian.id,
-      balance: 200.00,
-    }
+      balance: 200.0,
+    },
   });
 
   console.log('\n✅ USUÁRIOS CRIADOS COM SUCESSO!\n');

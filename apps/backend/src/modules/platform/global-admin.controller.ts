@@ -1,4 +1,14 @@
-import { Controller, Get, Put, Post, Delete, Param, Body, UseGuards, Logger } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Put,
+  Post,
+  Delete,
+  Param,
+  Body,
+  UseGuards,
+  Logger,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -103,7 +113,10 @@ export class GlobalAdminController {
   async calculateFees(
     @Body() body: { amount: number; method: 'boleto' | 'pix' },
   ) {
-    return this.feesService.calculateFeesForTransaction(body.amount, body.method);
+    return this.feesService.calculateFeesForTransaction(
+      body.amount,
+      body.method,
+    );
   }
 
   // ==========================================
@@ -164,11 +177,20 @@ export class GlobalAdminController {
   @Post('coupons/validate')
   @Roles(UserRole.SUPER_ADMIN, UserRole.MERCHANT_ADMIN, UserRole.GUARDIAN)
   @ApiOperation({ summary: 'Validar e aplicar cupom a uma compra' })
-  @ApiResponse({ status: 200, description: 'Cupom validado e aplicado com sucesso' })
+  @ApiResponse({
+    status: 200,
+    description: 'Cupom validado e aplicado com sucesso',
+  })
   @ApiResponse({ status: 400, description: 'Cupom inválido ou expirado' })
   @ApiResponse({ status: 404, description: 'Cupom não encontrado' })
   async validateCoupon(
-    @Body() body: { code: string; amount: number; planId?: string; audience?: string },
+    @Body()
+    body: {
+      code: string;
+      amount: number;
+      planId?: string;
+      audience?: string;
+    },
   ) {
     this.logger.log(`🎫 Validando cupom: ${body.code}`);
     return this.couponsService.validateAndApplyCoupon(

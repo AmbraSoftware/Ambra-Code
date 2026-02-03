@@ -21,7 +21,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly asaasService: AsaasService, // [FIX] Inject AsaasService
-  ) { }
+  ) {}
 
   /**
    * Autentica um usuário com base em suas credenciais.
@@ -55,7 +55,10 @@ export class AuthService {
       throw new UnauthorizedException('Credenciais inválidas.');
     }
 
-    this.validateTenantAccess(user.roles as unknown as UserRole[], user.school?.status as SchoolStatus);
+    this.validateTenantAccess(
+      user.roles as unknown as UserRole[],
+      user.school?.status as SchoolStatus,
+    );
 
     const payload = {
       sub: user.id,
@@ -209,7 +212,7 @@ export class AuthService {
               // This throws, causing Transaction Rollback
               throw new BadRequestException(
                 'Falha na criação da Conta Digital Asaas: ' +
-                (error.message || 'Erro desconhecido'),
+                  (error.message || 'Erro desconhecido'),
               );
             }
           }
@@ -268,11 +271,12 @@ export class AuthService {
               passwordHash,
               // [v5.0] Multi-Role Support
               roles: [
-                profileType === 'school'
-                  ? 'SCHOOL_ADMIN'
-                  : 'MERCHANT_ADMIN'
+                profileType === 'school' ? 'SCHOOL_ADMIN' : 'MERCHANT_ADMIN',
               ] as any,
-              role: profileType === 'school' ? UserRole.SCHOOL_ADMIN : 'MERCHANT_ADMIN' as any, // Legacy
+              role:
+                profileType === 'school'
+                  ? UserRole.SCHOOL_ADMIN
+                  : ('MERCHANT_ADMIN' as any), // Legacy
               schoolId: schoolId,
               termsAccepted: true,
               termsVersion: consentVersion,
@@ -378,7 +382,7 @@ export class AuthService {
         name: true,
         email: true,
         role: true,
-        roles: true,  // ✅ Adicionar array de roles
+        roles: true, // ✅ Adicionar array de roles
         schoolId: true,
         mustChangePassword: true,
       },
@@ -388,8 +392,8 @@ export class AuthService {
     const payload = {
       sub: user.id,
       email: user.email,
-      role: user.role,  // Manter para compatibilidade
-      roles: user.roles as unknown as UserRole[],  // ✅ Adicionar array de roles
+      role: user.role, // Manter para compatibilidade
+      roles: user.roles as unknown as UserRole[], // ✅ Adicionar array de roles
       schoolId: user.schoolId,
       mustChangePassword: user.mustChangePassword, // Now false
     };
@@ -400,7 +404,7 @@ export class AuthService {
         id: user.id,
         name: user.name,
         role: user.role,
-        roles: user.roles as unknown as UserRole[],  // ✅ Adicionar array de roles
+        roles: user.roles as unknown as UserRole[], // ✅ Adicionar array de roles
         schoolId: user.schoolId,
         mustChangePassword: user.mustChangePassword,
       },

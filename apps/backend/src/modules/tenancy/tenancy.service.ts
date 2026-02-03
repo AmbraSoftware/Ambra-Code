@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   Injectable,
   ConflictException,
@@ -10,7 +7,13 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateSchoolDto } from './dto/create-school.dto';
 import { UpdateSchoolDto } from './dto/update-school.dto';
-import { UserRole, SchoolStatus, Prisma, PlanStatus, CanteenType } from '@prisma/client';
+import {
+  UserRole,
+  SchoolStatus,
+  Prisma,
+  PlanStatus,
+  CanteenType,
+} from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 /**
@@ -155,7 +158,11 @@ export class TenancyService {
           adminId: admin.id,
           system: system.name,
           plan: plan.name,
-          canteens: createdCanteens.map(c => ({ id: c.id, name: c.name, type: c.type })),
+          canteens: createdCanteens.map((c) => ({
+            id: c.id,
+            name: c.name,
+            type: c.type,
+          })),
         };
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
@@ -335,7 +342,9 @@ export class TenancyService {
    * Listagem de todas as escolas (Visão Gabriel SuperAdmin)
    */
   async listAllSchools(status?: string) {
-    const where: Prisma.SchoolWhereInput = status ? { status: status as SchoolStatus } : {};
+    const where: Prisma.SchoolWhereInput = status
+      ? { status: status as SchoolStatus }
+      : {};
 
     return this.prisma.school.findMany({
       where,
@@ -385,14 +394,16 @@ export class TenancyService {
   async deleteGovernment(id: string) {
     // Check integrity constraints
     const government = await this.prisma.government.findUnique({
-        where: { id },
-        include: { _count: { select: { schools: true } } }
+      where: { id },
+      include: { _count: { select: { schools: true } } },
     });
 
     if (!government) throw new NotFoundException('Governo não encontrado.');
 
     if (government._count.schools > 0) {
-        throw new BadRequestException('Não é possível remover governo com escolas vinculadas.');
+      throw new BadRequestException(
+        'Não é possível remover governo com escolas vinculadas.',
+      );
     }
 
     return this.prisma.government.delete({ where: { id } });

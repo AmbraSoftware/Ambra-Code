@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   Injectable,
   CanActivate,
@@ -18,9 +17,9 @@ type UserRole =
   | 'GOV_ADMIN'
   | 'GUARDIAN'
   | 'STUDENT'
-  | 'CONSUMER'
-  // Legacy
-  // Legacy roles removidos - usar SUPER_ADMIN, MERCHANT_ADMIN, OPERATOR_SALES, OPERATOR_MEAL
+  | 'CONSUMER';
+// Legacy
+// Legacy roles removidos - usar SUPER_ADMIN, MERCHANT_ADMIN, OPERATOR_SALES, OPERATOR_MEAL
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -37,7 +36,7 @@ export class RolesGuard implements CanActivate {
     }
 
     const request = context.switchToHttp().getRequest();
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+
     const user: AuthenticatedUserPayload = request.user;
 
     if (!user || (!user.roles && !user.role)) {

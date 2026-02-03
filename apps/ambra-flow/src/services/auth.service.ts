@@ -1,5 +1,13 @@
 import { api } from './api';
-import { UserRole } from '@nodum/shared';
+
+export type UserRole =
+    | 'STUDENT'
+    | 'GUARDIAN'
+    | 'MERCHANT_ADMIN'
+    | 'SCHOOL_ADMIN'
+    | 'SUPER_ADMIN'
+    | 'OPERATOR_SALES'
+    | 'OPERATOR_MEAL';
 
 export type RegisterData = {
     profileType: 'school' | 'operator';
@@ -49,6 +57,3 @@ export type LoginResponse = {
         schoolId?: string;
     };
 };
-
-// Re-export UserRole from shared for convenience
-export { UserRole };

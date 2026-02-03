@@ -17,8 +17,8 @@ type UserRole =
 interface JwtPayload {
   sub: string;
   email: string;
-  role?: UserRole;  // ✅ Opcional para compatibilidade
-  roles?: UserRole[];  // ✅ Array de roles (v5.0 Multi-Role Support)
+  role?: UserRole; // ✅ Opcional para compatibilidade
+  roles?: UserRole[]; // ✅ Array de roles (v5.0 Multi-Role Support)
   schoolId: string | null;
 }
 
@@ -41,7 +41,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         id: true,
         email: true,
         role: true,
-        roles: true,  // ✅ Adicionar array de roles (v5.0 Multi-Role Support)
+        roles: true, // ✅ Adicionar array de roles (v5.0 Multi-Role Support)
         schoolId: true,
         canteenId: true,
         deletedAt: true,

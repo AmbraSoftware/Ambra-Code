@@ -6,7 +6,10 @@ import { Buffer } from 'buffer';
 export class StorageService {
   private readonly logger = new Logger(StorageService.name);
 
-  async uploadFile(fileBuffer: Buffer, fileName: string): Promise<{ url: string }> {
+  async uploadFile(
+    fileBuffer: Buffer,
+    fileName: string,
+  ): Promise<{ url: string }> {
     const uniqueFileName = `${Date.now()}-${fileName}`;
 
     try {
@@ -16,17 +19,25 @@ export class StorageService {
 
       const blob = await put(uniqueFileName, fileBuffer, {
         access: 'public',
-        addRandomSuffix: false // We already made it unique
+        addRandomSuffix: false, // We already made it unique
       });
 
       this.logger.log(`File uploaded to Vercel Blob: ${blob.url}`);
       return { url: blob.url };
     } catch (error) {
-      this.logger.error(`Error uploading to Vercel Blob: ${error.message}`, error.stack);
+      this.logger.error(
+        `Error uploading to Vercel Blob: ${error.message}`,
+        error.stack,
+      );
 
       // Fallback for dev/mock if token is missing, to not block local dev completely if not configured
-      if (process.env.NODE_ENV !== 'production' && !process.env.BLOB_READ_WRITE_TOKEN) {
-        this.logger.warn('BLOB_READ_WRITE_TOKEN not found. Using Mock fallback.');
+      if (
+        process.env.NODE_ENV !== 'production' &&
+        !process.env.BLOB_READ_WRITE_TOKEN
+      ) {
+        this.logger.warn(
+          'BLOB_READ_WRITE_TOKEN not found. Using Mock fallback.',
+        );
         return { url: `https://mock-storage.local/${uniqueFileName}` };
       }
 
@@ -40,7 +51,10 @@ export class StorageService {
       await del(url);
       this.logger.log(`File deleted from Vercel Blob: ${url}`);
     } catch (error) {
-      this.logger.error(`Error deleting from Vercel Blob: ${error.message}`, error.stack);
+      this.logger.error(
+        `Error deleting from Vercel Blob: ${error.message}`,
+        error.stack,
+      );
       // Don't throw on delete error to avoid regarding "cleanup" as critical failure
     }
   }

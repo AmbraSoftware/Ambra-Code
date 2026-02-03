@@ -18,7 +18,7 @@ export function CreateAnnouncementModal({ isOpen, onClose, onSuccess }: CreateAn
     const [formData, setFormData] = useState<CreateAnnouncementDto>({
         title: '',
         message: '',
-        targetRole: UserRole.STUDENT,
+        targetRole: 'STUDENT',
         scope: 'SCHOOL',
         targetIds: []
     });
@@ -71,8 +71,8 @@ export function CreateAnnouncementModal({ isOpen, onClose, onSuccess }: CreateAn
                     <div className="grid grid-cols-2 gap-3">
                         <button
                             type="button"
-                            onClick={() => setFormData({ ...formData, targetRole: UserRole.STUDENT })}
-                            className={`p-3 rounded-lg border text-left transition-all ${formData.targetRole === UserRole.STUDENT
+                            onClick={() => setFormData({ ...formData, targetRole: 'STUDENT' })}
+                            className={`p-3 rounded-lg border text-left transition-all ${formData.targetRole === 'STUDENT'
                                 ? 'border-primary bg-primary/5 ring-1 ring-primary'
                                 : 'border-gray-200 dark:border-zinc-700 hover:border-gray-300'
                                 }`}
@@ -86,8 +86,8 @@ export function CreateAnnouncementModal({ isOpen, onClose, onSuccess }: CreateAn
 
                         <button
                             type="button"
-                            onClick={() => setFormData({ ...formData, targetRole: UserRole.GUARDIAN })}
-                            className={`p-3 rounded-lg border text-left transition-all ${formData.targetRole === UserRole.GUARDIAN
+                            onClick={() => setFormData({ ...formData, targetRole: 'GUARDIAN' })}
+                            className={`p-3 rounded-lg border text-left transition-all ${formData.targetRole === 'GUARDIAN'
                                 ? 'border-primary bg-primary/5 ring-1 ring-primary'
                                 : 'border-gray-200 dark:border-zinc-700 hover:border-gray-300'
                                 }`}

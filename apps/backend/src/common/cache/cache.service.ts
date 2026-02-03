@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 
 interface CacheEntry {

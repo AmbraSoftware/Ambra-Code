@@ -10,7 +10,7 @@ import { UpdateProductDto } from './dto/update-product.dto';
 
 @Injectable()
 export class ProductsService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * ELITE SECURITY: Enforce Strict Canteen-School Ownership
@@ -42,7 +42,9 @@ export class ProductsService {
         where: { schoolId },
       });
       if (!defaultCanteen) {
-        throw new NotFoundException('Nenhuma cantina encontrada para esta escola.');
+        throw new NotFoundException(
+          'Nenhuma cantina encontrada para esta escola.',
+        );
       }
       targetCanteenId = defaultCanteen.id;
     }
@@ -88,7 +90,7 @@ export class ProductsService {
    * [v4.5] Alertas de Estoque - Ruptura e Estoque Baixo
    * O 'porquê': Permite que gestores identifiquem rapidamente produtos que precisam
    * de reposição, evitando rupturas que impactam vendas.
-   * 
+   *
    * @param schoolId - ID da escola (RLS)
    * @param canteenId - ID da cantina (opcional)
    * @returns Produtos críticos (stock=0) e em alerta (stock<=minStockAlert)
@@ -118,9 +120,9 @@ export class ProductsService {
     });
 
     // Separar em critical (ruptura) e warning (estoque baixo)
-    const critical = products.filter(p => p.stock === 0);
+    const critical = products.filter((p) => p.stock === 0);
     const warning = products.filter(
-      p => p.stock > 0 && p.stock <= (p.minStockAlert || 10)
+      (p) => p.stock > 0 && p.stock <= (p.minStockAlert || 10),
     );
 
     return {
@@ -131,7 +133,6 @@ export class ProductsService {
   }
 
   async findOne(id: string) {
-
     const product = await this.prisma.product.findFirst({
       where: { id, deletedAt: null },
     });
@@ -173,13 +174,21 @@ export class ProductsService {
   }
 
   /**
-   * AJUSTE DE ESTOQUE v3.8.3 - INDUSTRIAL
-   * Resolve o erro: Property 'updateStock' does not exist.
+   * AJUSTE DE ESTOQUE v3.8.5 - INDUSTRIAL
+   * 
+   * FIX v4.0.4: Adicionada validação de schoolId para RLS
    */
-  async updateStock(id: string, change: number) {
+  async updateStock(id: string, change: number, schoolId?: string) {
     return this.prisma.$transaction(async (tx) => {
       const product = await tx.product.findUnique({ where: { id } });
       if (!product) throw new NotFoundException('Produto não encontrado.');
+      
+      // FIX: Validar se produto pertence à escola (RLS)
+      if (schoolId && product.schoolId !== schoolId) {
+        throw new ForbiddenException(
+          'Acesso negado. Este produto não pertence à escola solicitada.',
+        );
+      }
 
       const updated = await tx.product.update({
         where: { id },

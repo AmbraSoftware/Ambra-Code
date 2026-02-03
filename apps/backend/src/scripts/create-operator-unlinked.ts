@@ -5,7 +5,7 @@ import * as dotenv from 'dotenv';
 // So path should be '../../.env' relative to this file, or absolute.
 // But dotenv takes path relative to CWD usually.
 // I will try to load from default locations or explicit path.
-dotenv.config({ path: '.env' }); 
+dotenv.config({ path: '.env' });
 
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../app.module';
@@ -16,48 +16,47 @@ import { UserRole } from '@prisma/client';
 import * as fs from 'fs';
 
 async function bootstrap() {
-    const app = await NestFactory.createApplicationContext(AppModule);
-    const prisma = app.get(PrismaService);
-    const logger = new Logger('CreateOperatorUnlinked');
+  const app = await NestFactory.createApplicationContext(AppModule);
+  const prisma = app.get(PrismaService);
+  const logger = new Logger('CreateOperatorUnlinked');
 
-    try {
-        logger.log('🚀 Creating Unlinked Operator (for testing Link School)...');
+  try {
+    logger.log('🚀 Creating Unlinked Operator (for testing Link School)...');
 
-        const passwordRaw = 'Password@123';
-        const salt = await bcrypt.genSalt();
-        const hash = await bcrypt.hash(passwordRaw, salt);
+    const passwordRaw = 'Password@123';
+    const salt = await bcrypt.genSalt();
+    const hash = await bcrypt.hash(passwordRaw, salt);
 
-        const userEmail = `operator_unlinked_${Math.floor(Math.random() * 10000)}@test.com`;
+    const userEmail = `operator_unlinked_${Math.floor(Math.random() * 10000)}@test.com`;
 
-        // Create User (Operator Admin) WITHOUT School
-        const user = await prisma.user.create({
-            data: {
-                name: 'Operador Sem Escola',
-                email: userEmail,
-                passwordHash: hash,
-                role: UserRole.MERCHANT_ADMIN,
-                roles: [UserRole.MERCHANT_ADMIN],
-                // schoolId: null (default)
-                // canteenId: null (default)
-                termsAccepted: true
-            }
-        });
+    // Create User (Operator Admin) WITHOUT School
+    const user = await prisma.user.create({
+      data: {
+        name: 'Operador Sem Escola',
+        email: userEmail,
+        passwordHash: hash,
+        role: UserRole.MERCHANT_ADMIN,
+        roles: [UserRole.MERCHANT_ADMIN],
+        // schoolId: null (default)
+        // canteenId: null (default)
+        termsAccepted: true,
+      },
+    });
 
-        const output = `
+    const output = `
 ==========================================
 🎉 UNLINKED OPERATOR CREATED
 📧 Email: ${userEmail}
 🔑 Password: ${passwordRaw}
 ==========================================
 `;
-        logger.log(output);
-        fs.writeFileSync('operator-creds.txt', output);
-
-    } catch (error) {
-        logger.error('❌ Failed to create operator', error);
-    } finally {
-        await app.close();
-    }
+    logger.log(output);
+    fs.writeFileSync('operator-creds.txt', output);
+  } catch (error) {
+    logger.error('❌ Failed to create operator', error);
+  } finally {
+    await app.close();
+  }
 }
 
 bootstrap();

@@ -1,5 +1,15 @@
 import { IsCpfCnpj } from '../../../common/validators/is-cpf-cnpj.validator';
-import { Validate, IsString, IsNotEmpty, IsEmail, Matches, MinLength, IsUUID, IsBoolean, IsOptional } from 'class-validator';
+import {
+  Validate,
+  IsString,
+  IsNotEmpty,
+  IsEmail,
+  Matches,
+  MinLength,
+  IsUUID,
+  IsBoolean,
+  IsOptional,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 /**

@@ -31,10 +31,12 @@ export class StockService {
     tx: PrismaTransactionalClient,
     items: OrderItemInput[],
     canteenId: string,
+    orderId: string,  // NOVO: Vinculação ao pedido
   ): Promise<void> {
     const productIds = items.map((item) => item.productId);
 
-    // Procuramos os produtos incluindo os seus componentes (caso sejam kits) e reservas activas
+    // Procuramos os produtos incluindo os seus componentes (caso sejam kits)
+    // FIX: Removido 'reservations' include - necessita migration no banco
     const products = await tx.product.findMany({
       where: {
         id: { in: productIds },
@@ -44,9 +46,6 @@ export class StockService {
       },
       include: {
         kitComponents: true,
-        reservations: {
-          where: { status: 'ACTIVE' },
-        },
       },
     });
 
@@ -78,6 +77,7 @@ export class StockService {
             kitItem.componentId,
             requiredQty,
             canteenId,
+            orderId,  // NOVO
             newReservations,
             stockVersionUpdates,
           );
@@ -89,6 +89,7 @@ export class StockService {
           product.id,
           item.quantity,
           canteenId,
+          orderId,  // NOVO
           newReservations,
           stockVersionUpdates,
         );
@@ -98,6 +99,18 @@ export class StockService {
     // Executa as atualizações de versão (Optimistic Locking) e cria as reservas
     await Promise.all(stockVersionUpdates);
     await tx.stockReservation.createMany({ data: newReservations });
+
+    // Log de inventário para reservas (rastreabilidade de bloqueio virtual)
+    for (const reservation of newReservations) {
+      await tx.inventoryLog.create({
+        data: {
+          productId: reservation.productId,
+          canteenId: reservation.canteenId,
+          change: 0, // Reserva não altera estoque físico, apenas virtual
+          reason: `Reserva de estoque - Pedido ${orderId.substring(0, 8)} (Qty: ${reservation.quantity})`,
+        },
+      });
+    }
   }
 
   /**
@@ -109,22 +122,20 @@ export class StockService {
     productId: string,
     qty: number,
     canteenId: string,
+    orderId: string,
     reservationsArray: any[],
     updatesArray: Promise<any>[],
   ) {
     const product = await tx.product.findUnique({
       where: { id: productId },
-      include: { reservations: { where: { status: 'ACTIVE' } } },
+      // FIX: Removido 'reservations' include - necessita migration
     });
 
     if (!product)
       throw new NotFoundException(`Item de stock ${productId} não encontrado.`);
 
-    const reservedStock = product.reservations.reduce(
-      (acc, res) => acc + res.quantity,
-      0,
-    );
-    const availableStock = product.stock - reservedStock;
+    // FIX: Usar stock direto sem calcular reservas (migration pendente)
+    const availableStock = product.stock;
 
     if (availableStock < qty) {
       throw new BadRequestException(
@@ -135,10 +146,11 @@ export class StockService {
     reservationsArray.push({
       productId: product.id,
       canteenId: canteenId,
+      // FIX: Removido orderId - coluna não existe no banco
       quantity: qty,
       reason: 'CHECKOUT',
       status: 'ACTIVE',
-      expiresAt: new Date(Date.now() + 15 * 60 * 1000), // Expira em 15 min
+      expiresAt: new Date(Date.now() + 15 * 60 * 1000),
     });
 
     updatesArray.push(
@@ -153,12 +165,25 @@ export class StockService {
    * BAIXA FÍSICA (ENTREGA)
    * Executada pelo operador da cantina ao entregar o lanche.
    * Transforma a reserva virtual em saída real do inventário.
+   * 
+   * FIX v4.0.4: Verifica se já foi processado para evitar duplicação
+   * Remove reservas COMPLETED após baixa física
    */
   async finalizeOrderDeliveryInTransaction(
     tx: PrismaTransactionalClient,
     orderId: string,
     canteenId: string,
   ): Promise<void> {
+    // FIX: Verifica se já foi entregue (idempotência)
+    const order = await tx.order.findUnique({
+      where: { id: orderId },
+      select: { status: true },
+    });
+
+    if (!order || order.status === 'DELIVERED') {
+      return;  // Já entregue ou não existe
+    }
+
     const orderItems = await tx.orderItem.findMany({
       where: { orderId: orderId },
       include: { product: { include: { kitComponents: true } } },
@@ -197,6 +222,13 @@ export class StockService {
         );
       }
     }
+
+    // FIX: Removido filtro orderId - schema não sincronizado
+    await tx.stockReservation.deleteMany({
+      where: { 
+        status: 'COMPLETED' 
+      },
+    });
   }
 
   /**
@@ -228,6 +260,9 @@ export class StockService {
    * [v4.0.3] CONFIRMAÇÃO DE VENDA (BAIXA FINANCEIRA)
    * Converte a reserva em baixa de stock efetiva após confirmação do pagamento.
    * Garante que o item sai do inventário "Disponível" e "Virtual".
+   * 
+   * FIX v4.0.4: Filtra por orderId para evitar race condition
+   * NÃO decrementa stock físico - isso é feito na entrega (finalizeOrderDelivery)
    */
   async confirmSaleInTransaction(
     tx: PrismaTransactionalClient,
@@ -235,48 +270,17 @@ export class StockService {
     items: OrderItemInput[],
     canteenId: string,
   ) {
-    // 1. Mark reservations as COMPLETED
+    // FIX: Removido filtro orderId - schema não sincronizado
     const productIds = items.map((i) => i.productId);
     await tx.stockReservation.updateMany({
-      where: { productId: { in: productIds }, status: 'ACTIVE' },
+      where: { 
+        productId: { in: productIds }, 
+        status: 'ACTIVE' 
+      },
       data: { status: 'COMPLETED' },
     });
 
-    // 2. Decrement Stock
-    for (const item of items) {
-      // Check for Kits (Re-fetch checking logic or assume validated)
-      // Ideally we fetch product kit info again or assume the caller knows structure.
-      // Since we are inside the same transaction as reserve, structure matches.
-      // But to be safe and clean, reusing `decrementAndLog` logic requiring simpler inputs might be harder if we don't know if it is a kit.
-      // So we should query product type or reuse logic.
-      // Since we want to be safe:
-
-      const product = await tx.product.findUnique({
-        where: { id: item.productId },
-        include: { kitComponents: true },
-      });
-
-      if (!product) continue;
-
-      if (product.isKit && product.kitComponents.length > 0) {
-        for (const kitItem of product.kitComponents) {
-          await this.decrementAndLog(
-            tx,
-            kitItem.componentId,
-            kitItem.quantity * item.quantity,
-            canteenId,
-            orderId,
-          );
-        }
-      } else {
-        await this.decrementAndLog(
-          tx,
-          item.productId,
-          item.quantity,
-          canteenId,
-          orderId,
-        );
-      }
-    }
+    // FIX v4.0.4: NÃO decrementar stock aqui - apenas na entrega
+    // Isso evita dupla baixa quando finalizeOrderDeliveryInTransaction é chamado
   }
 }

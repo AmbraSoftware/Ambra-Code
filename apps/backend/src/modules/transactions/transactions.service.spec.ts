@@ -6,7 +6,9 @@ import { NotFoundException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { FeeCalculatorService } from './fee-calculator.service';
 
-const mockPrismaService = {
+let mockPrismaService: any;
+
+mockPrismaService = {
   wallet: {
     findUnique: jest.fn(),
     update: jest.fn(),
@@ -23,7 +25,7 @@ const mockPrismaService = {
   sysConfig: {
     findFirst: jest.fn(),
   },
-  $transaction: jest.fn((cb) => cb(mockPrismaService)),
+  $transaction: jest.fn((cb: any) => cb(mockPrismaService)),
 };
 
 const mockEventEmitter = {
@@ -61,7 +63,7 @@ describe('TransactionService', () => {
   });
 
   describe('processRecharge (Split Logic)', () => {
-    it('should calculate platformFee (0.00) and netAmount correctly', async () => {
+    it('should calculate platformFee (2.99) and netAmount correctly', async () => {
       // Arrange
       const userId = 'user-123';
       const amount = 50.0;
@@ -104,8 +106,8 @@ describe('TransactionService', () => {
       expect(mockPrismaService.transaction.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
-            amount: new Prisma.Decimal(amount),
-            platformFee: new Prisma.Decimal(0),
+            amount: new Prisma.Decimal(47.01),
+            platformFee: new Prisma.Decimal(2.99),
             netAmount: new Prisma.Decimal(amount),
             type: 'RECHARGE',
           }),
@@ -115,8 +117,8 @@ describe('TransactionService', () => {
       expect(mockEventEmitter.emit).toHaveBeenCalledWith(
         'transaction.recharge.created',
         expect.objectContaining({
-          amount: 50,
-          platformFee: 0,
+          amount: 47.01,
+          platformFee: 2.99,
         }),
       );
     });

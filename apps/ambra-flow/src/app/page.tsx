@@ -4,7 +4,6 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Logo from '@/components/ui/Logo';
-import { UserRole } from '@nodum/shared';
 
 /**
  * Landing Page com Redirecionamento Inteligente
@@ -35,17 +34,14 @@ export default function LandingPage() {
 
             // Verifica se é Manager
             const isManager = userRoles.some((role: string) => 
-                role === UserRole.MERCHANT_ADMIN || 
-                role === UserRole.SCHOOL_ADMIN ||
-                role === UserRole.SUPER_ADMIN ||
                 role === 'MERCHANT_ADMIN' ||
+                role === 'SCHOOL_ADMIN' ||
+                role === 'SUPER_ADMIN' ||
                 role === 'SUPER_ADMIN'
             );
 
             // Verifica se é Operator
             const isOperator = userRoles.some((role: string) => 
-                role === UserRole.OPERATOR_SALES || 
-                role === UserRole.OPERATOR_MEAL ||
                 role === 'OPERATOR_SALES' || role === 'OPERATOR_MEAL'
             );
 

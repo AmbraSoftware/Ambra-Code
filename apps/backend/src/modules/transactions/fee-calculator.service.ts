@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Plan, Prisma, School, User } from '@prisma/client';
+import { PrismaService } from '../../prisma/prisma.service';
 
 // Interfaces for JSON Configuration
 export interface FeesConfig {
@@ -12,10 +13,10 @@ export interface FeesConfig {
 }
 
 export interface SplitResult {
-  totalPaid: Prisma.Decimal;      // What the parent pays (Credit + Convenience)
-  creditAmount: Prisma.Decimal;   // What goes into Wallet
-  platformFee: Prisma.Decimal;    // What Nodum keeps (Fixed + Percent + Risk)
-  netAmount: Prisma.Decimal;      // What School/Operator gets
+  totalPaid: Prisma.Decimal; // What the parent pays (Credit + Convenience)
+  creditAmount: Prisma.Decimal; // What goes into Wallet
+  platformFee: Prisma.Decimal; // What Nodum keeps (Fixed + Percent + Risk)
+  netAmount: Prisma.Decimal; // What School/Operator gets
   breakdown: {
     convenience: Prisma.Decimal;
     serviceFixed: Prisma.Decimal;
@@ -28,20 +29,24 @@ export interface SplitResult {
 export class FeeCalculatorService {
   private readonly logger = new Logger(FeeCalculatorService.name);
 
-  // Default ROI Fallback (Hardcoded Safety Net)
-  private readonly HARD_FALLBACK_CONVENIENCE_FEE = 2.99;
-  private readonly DEFAULTS: FeesConfig = {
-    rechargeFixed: 0.0,
-    rechargePercent: 0.0,
-    creditRiskFixed: 0.0,
-    creditRiskPercent: 0.0,
-    convenienceFee: 2.99,
-  };
+  // Fallback apenas se banco estiver vazio (deve ter pelo menos um registro)
+  private readonly HARDCODED_FALLBACK = 2.99;
 
-  private isPremium(user?: Pick<User, 'subscriptionStatus' | 'subscriptionPlanId' | 'subscriptionExpiresAt'>): boolean {
+  constructor(private readonly prisma: PrismaService) {}
+
+  private isPremium(
+    user?: Pick<
+      User,
+      'subscriptionStatus' | 'subscriptionPlanId' | 'subscriptionExpiresAt'
+    >,
+  ): boolean {
     if (!user?.subscriptionPlanId) return false;
     if (user.subscriptionStatus !== 'ACTIVE') return false;
-    if (user.subscriptionExpiresAt && new Date(user.subscriptionExpiresAt).getTime() < Date.now()) return false;
+    if (
+      user.subscriptionExpiresAt &&
+      new Date(user.subscriptionExpiresAt).getTime() < Date.now()
+    )
+      return false;
     return true;
   }
 
@@ -52,12 +57,12 @@ export class FeeCalculatorService {
    * @param user The user performing the recharge (to check for Premium)
    * @param isRecovery Whether this is a debt recovery recharge (triggers risk fees)
    */
-  calculateRechargeSplit(
+  async calculateRechargeSplit(
     amount: number | Prisma.Decimal,
     school: School & { plan: Plan },
     user?: User,
-    isRecovery = false
-  ): SplitResult {
+    isRecovery = false,
+  ): Promise<SplitResult> {
     const creditValue = new Prisma.Decimal(amount);
 
     const config = this.resolveFeesConfig(school);
@@ -65,16 +70,19 @@ export class FeeCalculatorService {
     const premium = this.isPremium(user);
     let rawConvenience = 0;
     if (!premium) {
-      const configured = Number(config.convenienceFee ?? config.rechargeFixed);
-      const isValidConfigured = Number.isFinite(configured) && configured > 0;
+      // Buscar taxa do banco (CashInFee) - profissional, configurável sem deploy
+      const cashInFee = await this.prisma.cashInFee.findFirst();
+      const pixCustomerFixed = cashInFee?.pixCustomerFixed ?? this.HARDCODED_FALLBACK;
+      
+      // Usar configuração do School/Plan se existir, senão do CashInFee
+      const configured = Number(config.convenienceFee ?? pixCustomerFixed);
+      const isValidConfigured = Number.isFinite(configured) && configured >= 0;
 
-      rawConvenience = isValidConfigured
-        ? configured
-        : this.HARD_FALLBACK_CONVENIENCE_FEE;
+      rawConvenience = isValidConfigured ? configured : this.HARDCODED_FALLBACK;
 
       if (!isValidConfigured) {
         this.logger.warn(
-          `Config de taxa inválida/ausente. Usando fallback hard de R$${this.HARD_FALLBACK_CONVENIENCE_FEE.toFixed(2)}.`,
+          `Config de taxa inválida/ausente. Usando fallback de R$${this.HARDCODED_FALLBACK.toFixed(2)}.`,
         );
       }
     }
@@ -102,8 +110,8 @@ export class FeeCalculatorService {
         convenience: convenienceFee,
         serviceFixed,
         servicePercent,
-        riskFee
-      }
+        riskFee,
+      },
     };
   }
 
@@ -118,7 +126,7 @@ export class FeeCalculatorService {
       return school.plan.feesConfig as unknown as FeesConfig;
     }
 
-    // 3. Defaults
-    return this.DEFAULTS;
+    // 3. Retornar objeto vazio - taxa virá do CashInFee do banco
+    return {};
   }
 }

@@ -12,10 +12,11 @@ import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(createUserDto: CreateUserDto, schoolId: string) {
-    const { password, profile, taxId, mobilePhone, roles, role, ...userData } = createUserDto;
+    const { password, profile, taxId, mobilePhone, roles, role, ...userData } =
+      createUserDto;
 
     // Validação: senha obrigatória na criação
     if (!password) {
@@ -26,7 +27,9 @@ export class UsersService {
     // Operadores podem ter email opcional (gerado automaticamente)
     const isOperator = role === 'OPERATOR_SALES' || role === 'OPERATOR_MEAL';
     if (!isOperator && !userData.email) {
-      throw new BadRequestException('Email é obrigatório para este tipo de usuário.');
+      throw new BadRequestException(
+        'Email é obrigatório para este tipo de usuário.',
+      );
     }
 
     return this.prisma.$transaction(
@@ -44,19 +47,24 @@ export class UsersService {
         const hashedPassword = await bcrypt.hash(password, 10);
 
         // Determina roles array: usa roles fornecido ou cria array com role único
-        const rolesArray = roles && roles.length > 0 
-          ? roles.map(r => r as any)
-          : [role as any];
+        const rolesArray =
+          roles && roles.length > 0
+            ? roles.map((r) => r as any)
+            : [role as any];
 
         // Prepare Wallet Data (Student only)
-        const walletData = role === 'STUDENT' ? {
-            create: {
-                dailySpendLimit: profile?.dailyLimit || 0.00
-            }
-        } : undefined;
+        const walletData =
+          role === 'STUDENT'
+            ? {
+                create: {
+                  dailySpendLimit: profile?.dailyLimit || 0.0,
+                },
+              }
+            : undefined;
 
         // Gera email automático para operadores se não fornecido
-        const finalEmail = userData.email || `operator.${Date.now()}@ambra.local`;
+        const finalEmail =
+          userData.email || `operator.${Date.now()}@ambra.local`;
 
         const user = await tx.user.create({
           data: {
@@ -75,16 +83,15 @@ export class UsersService {
 
         // Handle Nutritional Profile (Allergies)
         if (profile?.restrictions && profile.restrictions.length > 0) {
-            await tx.nutritionalProfile.create({
-                data: {
-                    userId: user.id,
-                    allergies: profile.restrictions,
-                    preferences: []
-                }
-            });
+          await tx.nutritionalProfile.create({
+            data: {
+              userId: user.id,
+              allergies: profile.restrictions,
+              preferences: [],
+            },
+          });
         }
 
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { passwordHash: _, ...result } = user;
         return result;
       },
@@ -96,14 +103,21 @@ export class UsersService {
     const results = {
       created: 0,
       errors: [] as { email: string; error: string }[],
-      details: [] as { email: string; status: 'SUCCESS' | 'ERROR'; message?: string }[],
+      details: [] as {
+        email: string;
+        status: 'SUCCESS' | 'ERROR';
+        message?: string;
+      }[],
     };
 
     for (const userDto of bulkDto.users) {
       try {
         await this.create(userDto, schoolId);
         results.created++;
-        results.details.push({ email: userDto.email || 'N/A', status: 'SUCCESS' });
+        results.details.push({
+          email: userDto.email || 'N/A',
+          status: 'SUCCESS',
+        });
       } catch (error: any) {
         let msg = 'Erro desconhecido';
         if (error instanceof ConflictException) {
@@ -114,7 +128,11 @@ export class UsersService {
           msg = error.message;
         }
         results.errors.push({ email: userDto.email || 'N/A', error: msg });
-        results.details.push({ email: userDto.email || 'N/A', status: 'ERROR', message: msg });
+        results.details.push({
+          email: userDto.email || 'N/A',
+          status: 'ERROR',
+          message: msg,
+        });
       }
     }
     return results;
@@ -123,11 +141,11 @@ export class UsersService {
   /**
    * [v4.5] Enhanced findAll with Audit Filters
    * O 'porquê': Permite que gestores identifiquem rapidamente alunos inadimplentes ou inativos.
-   * 
+   *
    * NOTA TÉCNICA (Performance): Para escolas com 2.200+ alunos, considere adicionar um campo
    * `lastActivityAt` na tabela User para otimizar o filtro `inactive_30d`. A query atual usa
    * uma subquery com `transactions: { none: {...} }` que pode ficar lenta em grandes volumes.
-   * 
+   *
    * @param schoolId - ID da escola (RLS)
    * @param role - Filtro por role(s)
    * @param withDeleted - Incluir usuários deletados
@@ -248,7 +266,9 @@ export class UsersService {
         });
 
         if (!user) {
-          throw new NotFoundException('Usuário não encontrado ou acesso negado.');
+          throw new NotFoundException(
+            'Usuário não encontrado ou acesso negado.',
+          );
         }
 
         const existing = await tx.user.findFirst({
@@ -261,7 +281,9 @@ export class UsersService {
         });
 
         if (existing) {
-          throw new ConflictException('Este NFC já está vinculado a outro usuário.');
+          throw new ConflictException(
+            'Este NFC já está vinculado a outro usuário.',
+          );
         }
 
         const updated = await tx.user.update({
@@ -300,7 +322,7 @@ export class UsersService {
    * [v4.5] Student Statistics for Filter Counters
    * O 'porquê': Permite que o frontend exiba contadores dinâmicos nos botões de filtro,
    * dando ao gestor uma visão imediata da situação da escola (inadimplentes, inativos).
-   * 
+   *
    * Performance: Usa Promise.all() para executar as 3 queries em paralelo.
    * Cache: O controller deve aplicar cache Redis de 60s para evitar sobrecarga.
    */
@@ -352,7 +374,7 @@ export class UsersService {
    * [v4.5] Exportação CSV Financeira com Conformidade Brasileira
    * O 'porquê': Permite que gestores exportem relatórios financeiros para Excel
    * com total conformidade ao formato brasileiro (separador ;, fuso horário correto).
-   * 
+   *
    * @param schoolId - ID da escola (RLS)
    * @param startDate - Data inicial (opcional, padrão: 30 dias atrás)
    * @param endDate - Data final (opcional, padrão: hoje)
@@ -367,7 +389,8 @@ export class UsersService {
     // Configurar fuso horário de Brasília
     const now = new Date();
     const defaultEndDate = endDate || now;
-    const defaultStartDate = startDate || new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const defaultStartDate =
+      startDate || new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
     // Buscar alunos com wallet e transações
     const students = await this.prisma.user.findMany({
@@ -416,7 +439,9 @@ export class UsersService {
         .reduce((sum, t) => sum + Number(t.amount), 0);
 
       const lastActivity = student.lastLoginAt
-        ? new Date(student.lastLoginAt).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })
+        ? new Date(student.lastLoginAt).toLocaleString('pt-BR', {
+            timeZone: 'America/Sao_Paulo',
+          })
         : 'Nunca';
 
       return {
@@ -430,12 +455,26 @@ export class UsersService {
     });
 
     // Gerar CSV com separador Excel BR
-    const headers = ['Nome', 'Email', 'Saldo Atual (R$)', 'Total Recargas (R$)', 'Total Compras (R$)', 'Última Atividade'];
+    const headers = [
+      'Nome',
+      'Email',
+      'Saldo Atual (R$)',
+      'Total Recargas (R$)',
+      'Total Compras (R$)',
+      'Última Atividade',
+    ];
     const csvLines = [
       'sep=;', // Instrução para Excel BR
       headers.join(';'),
       ...rows.map((row) =>
-        [row.nome, row.email, row.saldoAtual, row.totalRecargas, row.totalCompras, row.ultimaAtividade].join(';'),
+        [
+          row.nome,
+          row.email,
+          row.saldoAtual,
+          row.totalRecargas,
+          row.totalCompras,
+          row.ultimaAtividade,
+        ].join(';'),
       ),
     ];
 
@@ -443,11 +482,9 @@ export class UsersService {
   }
 
   async findOne(id: string) {
-
     const user = await this.prisma.user.findFirst({
       where: { id: id, deletedAt: null },
       select: {
-
         id: true,
         name: true,
         email: true,
@@ -553,7 +590,6 @@ export class UsersService {
       } as any,
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { passwordHash: _, ...result } = user;
     return result;
   }

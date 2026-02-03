@@ -9,10 +9,10 @@ import {
   Param,
   ParseUUIDPipe,
   UseInterceptors,
-  Query,  // ✅ Adicionado para query params
+  Query, // ✅ Adicionado para query params
 } from '@nestjs/common';
 import { WalletService } from './wallet.service';
-import { PrismaService } from '../../prisma/prisma.service';  // ✅ Adicionado para acesso direto ao Prisma
+import { PrismaService } from '../../prisma/prisma.service'; // ✅ Adicionado para acesso direto ao Prisma
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -43,8 +43,8 @@ import { Audit } from '../../common/decorators/audit.decorator';
 export class WalletController {
   constructor(
     private readonly walletService: WalletService,
-    private readonly prisma: PrismaService,  // ✅ Injeção do Prisma
-  ) { }
+    private readonly prisma: PrismaService, // ✅ Injeção do Prisma
+  ) {}
 
   @Post('recharge')
   @Roles(UserRole.GUARDIAN, UserRole.SCHOOL_ADMIN)
@@ -75,7 +75,10 @@ export class WalletController {
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(AuditInterceptor)
   @Audit('WALLET_CASH_IN', 'Wallet')
-  @ApiOperation({ summary: 'Recarga de balcão (cash-in) convertendo dinheiro em saldo na carteira.' })
+  @ApiOperation({
+    summary:
+      'Recarga de balcão (cash-in) convertendo dinheiro em saldo na carteira.',
+  })
   @ApiResponse({ status: 200, description: 'Cash-in efetuado com sucesso.' })
   async cashIn(
     @CurrentUser() user: AuthenticatedUserPayload,
@@ -139,21 +142,21 @@ export class WalletController {
     });
 
     if (!wallet) {
-      return [];  // Retorna array vazio se não tiver wallet
+      return []; // Retorna array vazio se não tiver wallet
     }
 
     // Buscar transações via Prisma diretamente (alinhado com tipos do Frontend)
     const transactions = await this.prisma.transaction.findMany({
-      where: { walletId: wallet.id },  // ✅ Filtrar por wallet do usuário
+      where: { walletId: wallet.id }, // ✅ Filtrar por wallet do usuário
       orderBy: { createdAt: 'desc' },
       take: limit || 10,
       select: {
         id: true,
-        type: true,  // CASH_IN, PURCHASE, REFUND, ADJUSTMENT
+        type: true, // CASH_IN, PURCHASE, REFUND, ADJUSTMENT
         amount: true,
         description: true,
         createdAt: true,
-        status: true,  // PENDING, COMPLETED, FAILED
+        status: true, // PENDING, COMPLETED, FAILED
       },
     });
 
@@ -161,7 +164,10 @@ export class WalletController {
       ...t,
       type: t.type === 'RECHARGE' ? 'CASH_IN' : t.type,
       amount: Number(t.amount),
-      createdAt: t.createdAt instanceof Date ? t.createdAt.toISOString() : (t.createdAt as any),
+      createdAt:
+        t.createdAt instanceof Date
+          ? t.createdAt.toISOString()
+          : (t.createdAt as any),
     }));
   }
 }

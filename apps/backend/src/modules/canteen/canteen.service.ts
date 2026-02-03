@@ -16,7 +16,7 @@ export class CanteenService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly stockService: StockService,
-  ) { }
+  ) {}
 
   async getStudentByNfcId(
     nfcId: string,
@@ -24,7 +24,9 @@ export class CanteenService {
     canteenId: string | null,
   ) {
     if (!schoolId) {
-      throw new ForbiddenException('Acesso negado. Usuário não está associado a uma escola.');
+      throw new ForbiddenException(
+        'Acesso negado. Usuário não está associado a uma escola.',
+      );
     }
 
     if (!canteenId) {
@@ -73,7 +75,9 @@ export class CanteenService {
     take?: string,
   ) {
     if (!schoolId) {
-      throw new ForbiddenException('Acesso negado. Usuário não está associado a uma escola.');
+      throw new ForbiddenException(
+        'Acesso negado. Usuário não está associado a uma escola.',
+      );
     }
 
     if (!canteenId) {

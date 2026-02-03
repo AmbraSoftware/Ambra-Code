@@ -1,4 +1,12 @@
-import { Controller, Get, UseGuards, Patch, Body } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  UseGuards,
+  Patch,
+  Body,
+  Query,
+  Res,
+} from '@nestjs/common';
 import { SchoolAdminService } from './school-admin.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -12,13 +20,14 @@ import {
 import { CurrentUser } from '../auth/decorators/users.decorator';
 import { AuthenticatedUserPayload } from '../auth/dto/user-payload.dto';
 import { UpdateConfigDto } from './dto/update-config.dto';
+import { Response } from 'express';
 
 @ApiTags('School Administration')
 @ApiBearerAuth()
 @Controller('school-admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class SchoolAdminController {
-  constructor(private readonly schoolAdminService: SchoolAdminService) { }
+  constructor(private readonly schoolAdminService: SchoolAdminService) {}
 
   @Get('dashboard/stats')
   @Roles('SCHOOL_ADMIN')
@@ -64,5 +73,25 @@ export class SchoolAdminController {
       user.schoolId!,
       updateConfigDto,
     );
+  }
+
+  @Get('reports/daily-sales')
+  @Roles('SCHOOL_ADMIN')
+  @ApiOperation({
+    summary: 'Exporta CSV de vendas do dia (fechamento diário).',
+  })
+  @ApiResponse({ status: 200, description: 'CSV gerado com sucesso.' })
+  async exportDailySalesCsv(
+    @CurrentUser() user: AuthenticatedUserPayload,
+    @Query('date') date: string | undefined,
+    @Res() res: Response,
+  ) {
+    const { csv, filename } =
+      await this.schoolAdminService.generateDailySalesCsv(user.schoolId!, date);
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.status(200);
+    res.send(csv);
   }
 }

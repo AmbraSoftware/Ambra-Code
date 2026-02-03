@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import {
   Injectable,
   Logger,
@@ -30,7 +28,7 @@ export class AiService {
    * @returns Uma promessa que resolve para `true` se o serviço estiver pronto.
    * @throws {Error} Se a chave de API do Gemini não estiver configurada.
    */
-  // eslint-disable-next-line @typescript-eslint/require-await
+
   async ping(): Promise<boolean> {
     if (!this.genAI) {
       throw new Error('Gemini API Key not configured');
@@ -52,7 +50,9 @@ export class AiService {
   ): Promise<{ report: string }> {
     // Feature Flag Check
     if (process.env.ENABLE_AI_REPORT !== 'true') {
-        return { report: 'A análise nutricional por IA está desativada temporariamente.' };
+      return {
+        report: 'A análise nutricional por IA está desativada temporariamente.',
+      };
     }
 
     if (!this.genAI) {

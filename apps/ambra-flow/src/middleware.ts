@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { UserRole } from '@nodum/shared';
 
 /**
  * Middleware de Proteção de Rotas
@@ -31,19 +30,13 @@ const operatorSpecificRoutes = ['/settings']; // Apenas operator, não manager
 
 // Roles permitidas para Manager Mode
 const managerRoles = [
-    UserRole.MERCHANT_ADMIN,
-    UserRole.SCHOOL_ADMIN,
-    UserRole.SUPER_ADMIN,
-    // Legacy roles para compatibilidade
     'MERCHANT_ADMIN',
+    'SCHOOL_ADMIN',
     'SUPER_ADMIN',
 ];
 
 // Roles permitidas para Operator Mode
 const operatorRoles = [
-    UserRole.OPERATOR_SALES,
-    UserRole.OPERATOR_MEAL,
-    // Legacy roles para compatibilidade
     'OPERATOR_SALES',
     'OPERATOR_MEAL',
 ];

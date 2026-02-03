@@ -1,7 +1,5 @@
-/* eslint-disable @typescript-eslint/no-floating-promises */
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+
 import {
   WebSocketGateway,
   WebSocketServer,
@@ -42,7 +40,6 @@ export class NotificationsGateway
     const userId = client.user?.id;
 
     if (userId) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       client.join(userId);
       this.logger.log(
         `⚡ Usuário ${userId} conectado e entrou na sala privada.`,

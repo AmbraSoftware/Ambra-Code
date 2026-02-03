@@ -10,7 +10,13 @@ import { AuditModule } from '../audit/audit.module';
 import { TransactionsModule } from '../transactions/transactions.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, HttpModule, AuditModule, TransactionsModule],
+  imports: [
+    PrismaModule,
+    AuthModule,
+    HttpModule,
+    AuditModule,
+    TransactionsModule,
+  ],
   controllers: [PaymentController, PaymentWebhookController],
   providers: [PaymentService, PaymentWebhookService],
 })

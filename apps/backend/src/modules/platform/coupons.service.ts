@@ -1,6 +1,17 @@
-import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CreateCouponDto, UpdateCouponDto, CouponResponseDto, CouponStatus, CouponAudience } from './dto/coupon.dto';
+import {
+  CreateCouponDto,
+  UpdateCouponDto,
+  CouponResponseDto,
+  CouponStatus,
+  CouponAudience,
+} from './dto/coupon.dto';
 
 @Injectable()
 export class CouponsService {
@@ -27,18 +38,30 @@ export class CouponsService {
       }
 
       // Validar que o plano corresponde ao público
-      if (dto.audience === CouponAudience.B2B && plan.target !== 'SCHOOL_SAAS') {
-        throw new BadRequestException('Cupom B2B deve estar vinculado a um plano SCHOOL_SAAS.');
+      if (
+        dto.audience === CouponAudience.B2B &&
+        plan.target !== 'SCHOOL_SAAS'
+      ) {
+        throw new BadRequestException(
+          'Cupom B2B deve estar vinculado a um plano SCHOOL_SAAS.',
+        );
       }
 
-      if (dto.audience === CouponAudience.B2C && plan.target !== 'GUARDIAN_PREMIUM') {
-        throw new BadRequestException('Cupom B2C deve estar vinculado a um plano GUARDIAN_PREMIUM.');
+      if (
+        dto.audience === CouponAudience.B2C &&
+        plan.target !== 'GUARDIAN_PREMIUM'
+      ) {
+        throw new BadRequestException(
+          'Cupom B2C deve estar vinculado a um plano GUARDIAN_PREMIUM.',
+        );
       }
     }
 
     // Validar valor
     if (dto.type === 'PERCENTAGE' && dto.value > 100) {
-      throw new BadRequestException('Desconto percentual não pode ser maior que 100%.');
+      throw new BadRequestException(
+        'Desconto percentual não pode ser maior que 100%.',
+      );
     }
 
     const coupon = await this.prisma.coupon.create({
@@ -209,7 +232,12 @@ export class CouponsService {
   /**
    * Valida e aplica um cupom a uma compra
    */
-  async validateAndApplyCoupon(code: string, amount: number, planId?: string, audience?: CouponAudience) {
+  async validateAndApplyCoupon(
+    code: string,
+    amount: number,
+    planId?: string,
+    audience?: CouponAudience,
+  ) {
     const coupon = await this.prisma.coupon.findUnique({
       where: { code: code.toUpperCase() },
     });
@@ -235,7 +263,9 @@ export class CouponsService {
 
     // Validar público
     if (audience && coupon.audience !== audience) {
-      throw new BadRequestException('Cupom não é válido para este tipo de usuário.');
+      throw new BadRequestException(
+        'Cupom não é válido para este tipo de usuário.',
+      );
     }
 
     // Validar plano
@@ -244,9 +274,10 @@ export class CouponsService {
     }
 
     // Calcular desconto
-    const discount = coupon.type === 'PERCENTAGE'
-      ? (amount * coupon.value) / 100
-      : coupon.value;
+    const discount =
+      coupon.type === 'PERCENTAGE'
+        ? (amount * coupon.value) / 100
+        : coupon.value;
 
     const finalAmount = Math.max(0, amount - discount);
 

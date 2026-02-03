@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   Injectable,
   NotFoundException,
@@ -193,7 +192,8 @@ export class WalletService {
     const isAdmin =
       user.role === UserRole.SCHOOL_ADMIN || user.role === UserRole.SUPER_ADMIN;
     const isOperator =
-      user.role === UserRole.OPERATOR_SALES || user.role === UserRole.OPERATOR_MEAL;
+      user.role === UserRole.OPERATOR_SALES ||
+      user.role === UserRole.OPERATOR_MEAL;
 
     if (!isAdmin && !isOperator) {
       throw new ForbiddenException('Acesso negado.');
@@ -219,11 +219,17 @@ export class WalletService {
         });
 
         if (!dependent?.wallet) {
-          throw new NotFoundException('Carteira não encontrada para este dependente.');
+          throw new NotFoundException(
+            'Carteira não encontrada para este dependente.',
+          );
         }
 
         if (user.role !== UserRole.SUPER_ADMIN) {
-          if (!user.schoolId || !dependent.schoolId || dependent.schoolId !== user.schoolId) {
+          if (
+            !user.schoolId ||
+            !dependent.schoolId ||
+            dependent.schoolId !== user.schoolId
+          ) {
             throw new ForbiddenException('Acesso negado.');
           }
         }
@@ -243,7 +249,9 @@ export class WalletService {
         });
 
         if (count !== 1) {
-          throw new ForbiddenException('Falha de concorrência. Tente novamente.');
+          throw new ForbiddenException(
+            'Falha de concorrência. Tente novamente.',
+          );
         }
 
         const cashInAmount = new Prisma.Decimal(amount);

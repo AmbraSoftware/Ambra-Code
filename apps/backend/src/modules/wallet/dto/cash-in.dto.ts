@@ -3,7 +3,8 @@ import { IsNotEmpty, IsNumber, IsPositive, IsUUID } from 'class-validator';
 
 export class CashInDto {
   @ApiProperty({
-    description: 'O ID único do aluno/dependente que receberá a recarga de balcão.',
+    description:
+      'O ID único do aluno/dependente que receberá a recarga de balcão.',
     example: 'f0e9d8c7-b6a5-4321-fedc-ba9876543210',
   })
   @IsNotEmpty({ message: 'O ID do dependente é obrigatório.' })
@@ -11,7 +12,8 @@ export class CashInDto {
   dependentId: string;
 
   @ApiProperty({
-    description: 'Valor em dinheiro a ser convertido em saldo na carteira (recarga de balcão).',
+    description:
+      'Valor em dinheiro a ser convertido em saldo na carteira (recarga de balcão).',
     example: 2.0,
   })
   @IsNotEmpty({ message: 'O valor é obrigatório.' })

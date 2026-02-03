@@ -7,7 +7,8 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { AsaasService } from '../asaas/asaas.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { Prisma, TransactionType, School, Plan, User } from '@prisma/client';
+import { Prisma, TransactionType, School, Plan, User, TransactionStatus } from '@prisma/client';
+import { EncryptionService } from '../../common/services/encryption.service';
 import { FeeCalculatorService } from './fee-calculator.service';
 
 /**
@@ -47,9 +48,13 @@ export class TransactionService {
     private readonly asaasService: AsaasService,
     private readonly eventEmitter: EventEmitter2,
     private readonly feeCalculator: FeeCalculatorService,
-  ) { }
+    private readonly encryptionService: EncryptionService,
+  ) {}
 
-  async prepareRechargeFromPending(pendingTransactionId: string, payerUserId: string) {
+  async prepareRechargeFromPending(
+    pendingTransactionId: string,
+    payerUserId: string,
+  ) {
     const pending = await this.prisma.transaction.findFirst({
       where: { id: pendingTransactionId, status: 'PENDING', type: 'RECHARGE' },
       include: {
@@ -69,7 +74,9 @@ export class TransactionService {
     });
 
     if (!pending?.wallet?.user?.schoolId) {
-      throw new BadRequestException('Transação pendente inválida para recarga.');
+      throw new BadRequestException(
+        'Transação pendente inválida para recarga.',
+      );
     }
 
     const payer = await this.prisma.user.findUnique({
@@ -119,7 +126,7 @@ export class TransactionService {
 
     const creditAmount = Number(pending.amount);
 
-    const split = this.feeCalculator.calculateRechargeSplit(
+    const split = await this.feeCalculator.calculateRechargeSplit(
       creditAmount,
       school as School & { plan: Plan },
       payer as unknown as User,
@@ -129,14 +136,17 @@ export class TransactionService {
       throw new BadRequestException('Valor inválido para recarga.');
     }
 
-    const pixData = await this.asaasService.createPixCharge({
-      customer: payer.document || '00000000000',
-      value: split.totalPaid.toNumber(),
-      walletId: operator.asaasWalletId || operator.asaasId,
-      description: `Recarga Ambra - ${school.name}`,
-      splitValue: split.netAmount.toNumber(),
-      externalReference: pendingTransactionId,
-    }, { apiKey: operator.asaasApiKey || undefined });
+    const pixData = await this.asaasService.createPixCharge(
+      {
+        customer: payer.document || '00000000000',
+        value: split.totalPaid.toNumber(),
+        walletId: operator.asaasWalletId || operator.asaasId,
+        description: `Recarga Ambra - ${school.name}`,
+        splitValue: split.netAmount.toNumber(),
+        externalReference: pendingTransactionId,
+      },
+      { apiKey: operator.asaasApiKey ? this.encryptionService.decrypt(operator.asaasApiKey) : undefined },
+    );
 
     await this.prisma.transaction.update({
       where: { id: pendingTransactionId },
@@ -171,10 +181,10 @@ export class TransactionService {
 
     // Default "Hardcoded" values (Legacy Support / Safety Net)
     const defaults: FinancialFees = {
-      splitFixed: 5.00,
-      creditRisk: 1.50,
-      recoveryMother: 3.50,
-      recoveryFather: 2.00,
+      splitFixed: 5.0,
+      creditRisk: 1.5,
+      recoveryMother: 3.5,
+      recoveryFather: 2.0,
     };
 
     if (config?.fiscalConfig) {
@@ -185,8 +195,10 @@ export class TransactionService {
         return {
           splitFixed: Number(fees.splitFixed) || defaults.splitFixed,
           creditRisk: Number(fees.creditRisk) || defaults.creditRisk,
-          recoveryMother: Number(fees.recoveryMother) || defaults.recoveryMother,
-          recoveryFather: Number(fees.recoveryFather) || defaults.recoveryFather,
+          recoveryMother:
+            Number(fees.recoveryMother) || defaults.recoveryMother,
+          recoveryFather:
+            Number(fees.recoveryFather) || defaults.recoveryFather,
         };
       }
     }
@@ -202,37 +214,44 @@ export class TransactionService {
   async prepareRecharge(userId: string, amount: number) {
     // 1. Resolve User & School Context first (Need School Plan for Fees)
     const user = await this.prisma.user.findUnique({
-        where: { id: userId },
-        select: { schoolId: true, document: true, name: true, subscriptionPlanId: true },
+      where: { id: userId },
+      select: {
+        schoolId: true,
+        document: true,
+        name: true,
+        subscriptionPlanId: true,
+      },
     });
 
     if (!user?.schoolId) throw new BadRequestException('Usuário sem escola.');
 
     const userSchool = await this.prisma.school.findUnique({
-        where: { id: user.schoolId },
-        include: {
-            plan: true,
-            canteens: {
-                where: { type: 'COMMERCIAL', status: 'ACTIVE' },
-                take: 1,
-            },
+      where: { id: user.schoolId },
+      include: {
+        plan: true,
+        canteens: {
+          where: { type: 'COMMERCIAL', status: 'ACTIVE' },
+          take: 1,
         },
+      },
     });
 
     if (!userSchool || userSchool.canteens.length === 0) {
-        throw new BadRequestException('Escola sem operador comercial ativo.');
+      throw new BadRequestException('Escola sem operador comercial ativo.');
     }
 
     // 2. Calculate Dynamic Fees
-    const split = this.feeCalculator.calculateRechargeSplit(
-        amount, 
-        userSchool, 
-        user as User
+    const split = await this.feeCalculator.calculateRechargeSplit(
+      amount,
+      userSchool,
+      user as User,
     );
 
     // Validate Minimum (at least covers fees)
     if (split.netAmount.isNegative()) {
-        throw new BadRequestException(`O valor mínimo para recarga deve cobrir as taxas.`);
+      throw new BadRequestException(
+        `O valor mínimo para recarga deve cobrir as taxas.`,
+      );
     }
 
     const operatorId = userSchool.canteens[0].operatorId;
@@ -250,13 +269,16 @@ export class TransactionService {
     }
 
     // 3. Call Asaas to Generate PIX with Dynamic Split
-    const pixData = await this.asaasService.createPixCharge({
-      customer: user.document || '00000000000', // Payer CPF
-      value: split.totalPaid.toNumber(), // Total Amount (Credit + Convenience)
-      walletId: operator.asaasWalletId || operator.asaasId,
-      description: `Recarga Nodum - ${userSchool.name}`,
-      splitValue: split.netAmount.toNumber(), // Net for Operator
-    }, { apiKey: operator.asaasApiKey || undefined });
+    const pixData = await this.asaasService.createPixCharge(
+      {
+        customer: user.document || '00000000000', // Payer CPF
+        value: split.totalPaid.toNumber(), // Total Amount (Credit + Convenience)
+        walletId: operator.asaasWalletId || operator.asaasId,
+        description: `Recarga Nodum - ${userSchool.name}`,
+        splitValue: split.netAmount.toNumber(), // Net for Operator
+      },
+      { apiKey: operator.asaasApiKey ? this.encryptionService.decrypt(operator.asaasApiKey) : undefined },
+    );
 
     // 4. Return Payload to Frontend
     return {
@@ -276,7 +298,7 @@ export class TransactionService {
    */
   async processRecharge(userId: string, amount: number, externalId?: string) {
     // amount here is the TOTAL PAID (from webhook)
-    
+
     return this.prisma.$transaction(
       async (tx) => {
         const wallet = await tx.wallet.findUnique({
@@ -292,11 +314,13 @@ export class TransactionService {
         // Fetch user to get schoolId for operator resolution
         const user = await tx.user.findUnique({
           where: { id: userId },
-          include: { school: { include: { plan: true } } }
+          include: { school: { include: { plan: true } } },
         });
 
         if (!user || !user.schoolId || !user.school) {
-          throw new BadRequestException('Utilizador não associado a uma escola.');
+          throw new BadRequestException(
+            'Utilizador não associado a uma escola.',
+          );
         }
 
         // 1. Resolve Operator Context
@@ -333,22 +357,22 @@ export class TransactionService {
         // OR we assume PrepareRecharge set the expectation.
         // The FeeCalculator logic: TotalPaid = Credit + Convenience.
         // So Credit = TotalPaid - Convenience.
-        
-        const split = this.feeCalculator.calculateRechargeSplit(
-            amount, // This logic is slightly circular if we pass Total as Amount. 
-                    // But for now, let's assume 'amount' is what user INTENDED to credit 
-                    // IF the webhook sends the NET value? No, webhook sends GROSS.
-                    // The simplest way is to treat 'amount' as the Credit Value for now 
-                    // and let the fees be deducted from it (classic model) OR
-                    // stick to the new model where Fee is ON TOP.
-                    
-                    // IF Fee is ON TOP, then:
-                    // Credit = Amount - ConvenienceFee.
-            userSchool,
-            user,
-            isRecovery
+
+        const split = await this.feeCalculator.calculateRechargeSplit(
+          amount, // This logic is slightly circular if we pass Total as Amount.
+          // But for now, let's assume 'amount' is what user INTENDED to credit
+          // IF the webhook sends the NET value? No, webhook sends GROSS.
+          // The simplest way is to treat 'amount' as the Credit Value for now
+          // and let the fees be deducted from it (classic model) OR
+          // stick to the new model where Fee is ON TOP.
+
+          // IF Fee is ON TOP, then:
+          // Credit = Amount - ConvenienceFee.
+          userSchool,
+          user,
+          isRecovery,
         );
-        
+
         // Adjust Credit: The amount that goes to wallet is NOT the total paid if convenience fee exists.
         // But in `prepareRecharge`, we calculated Total = Credit + Fee.
         // If user paid Total, then Credit = Total - Fee.
@@ -359,8 +383,8 @@ export class TransactionService {
         // Or just use the breakdown.
         // Platform Fee includes Convenience Fee.
         // Net Amount is for Operator.
-        
-        // Re-run calc with correct input if needed? 
+
+        // Re-run calc with correct input if needed?
         // Let's trust the breakdown for simplicity:
         // Platform keeps: split.platformFee
         // Operator gets: split.netAmount
@@ -415,6 +439,112 @@ export class TransactionService {
   }
 
   /**
+   * [CASH-IN] Recarga de Balcão (Dinheiro Físico)
+   * Processa recarga manual quando o pagamento é feito em dinheiro/cartão no balcão.
+   * 
+   * Diferença de processRecharge: Este é para pagamento PRESENCIAL (cash),
+   * então não há taxa de conveniência (convenienceFee) - o valor é creditado integralmente.
+   * 
+   * @param data Dados da recarga de balcão
+   * @returns Transação criada
+   */
+  async processCashIn(data: {
+    operatorId: string;
+    targetUserId: string;
+    amount: number;
+    paymentMethod?: string;
+    notes?: string;
+  }) {
+    const { operatorId, targetUserId, amount, paymentMethod = 'CASH', notes } = data;
+
+    if (!amount || amount <= 0) {
+      throw new BadRequestException('Valor inválido para recarga.');
+    }
+
+    return this.prisma.$transaction(
+      async (tx) => {
+        // 1. Buscar carteira do usuário alvo
+        const wallet = await tx.wallet.findUnique({
+          where: { userId: targetUserId },
+          include: { user: { select: { id: true, name: true, schoolId: true } } },
+        });
+
+        if (!wallet) {
+          throw new NotFoundException('Carteira não encontrada para este usuário.');
+        }
+
+        // 2. Buscar operador para auditoria
+        const operator = await tx.user.findUnique({
+          where: { id: operatorId },
+          select: { id: true, name: true, roles: true },
+        });
+
+        // 3. Calcular novo saldo (cash-in: sem taxas, valor integral)
+        const currentBalance = Number(wallet.balance);
+        const newBalance = currentBalance + amount;
+
+        // 4. Criar transação de recarga (COMPLETED imediatamente - já foi pago em dinheiro)
+        const transaction = await tx.transaction.create({
+          data: {
+            walletId: wallet.id,
+            userId: targetUserId,
+            amount: new Prisma.Decimal(amount),
+            platformFee: new Prisma.Decimal(0),
+            netAmount: new Prisma.Decimal(amount),
+            runningBalance: new Prisma.Decimal(newBalance),
+            type: TransactionType.RECHARGE,
+            status: 'COMPLETED',
+            description: `Recarga em ${paymentMethod} - Balcão${notes ? `: ${notes}` : ''}`,
+            metadata: {
+              cashIn: true,
+              paymentMethod,
+              operatorId,
+              operatorName: operator?.name,
+              processedAt: new Date().toISOString(),
+            },
+          },
+        });
+
+        // 5. Atualizar saldo da carteira
+        const wasNegative = currentBalance < 0;
+        const isNowSolvent = newBalance >= 0;
+
+        await tx.wallet.update({
+          where: { id: wallet.id, version: wallet.version },
+          data: {
+            balance: newBalance,
+            version: { increment: 1 },
+            // Se estava negativo e agora está solvente, limpar flags
+            isDebtBlocked: wasNegative && isNowSolvent ? false : undefined,
+            negativeSince: wasNegative && isNowSolvent ? null : undefined,
+          },
+        });
+
+        // 6. Emitir evento para notificações
+        this.eventEmitter.emit('transaction.cash-in.created', {
+          transactionId: transaction.id,
+          walletId: wallet.id,
+          amount,
+          targetUserId,
+          operatorId,
+          operatorName: operator?.name,
+        });
+
+        return {
+          transactionId: transaction.id,
+          walletId: wallet.id,
+          previousBalance: currentBalance,
+          newBalance,
+          amount,
+          targetUserName: wallet.user.name,
+          processedBy: operator?.name,
+        };
+      },
+      { isolationLevel: 'Serializable' },
+    );
+  }
+
+  /**
    * PROCESS PURCHASE (Direct Debit)
    * Standalone entry point for quick purchases.
    */
@@ -448,7 +578,9 @@ export class TransactionService {
     });
 
     if (!wallet) {
-      throw new NotFoundException('Carteira não encontrada para este comprador.');
+      throw new NotFoundException(
+        'Carteira não encontrada para este comprador.',
+      );
     }
 
     const currentBalance = Number(wallet.balance);
@@ -456,7 +588,9 @@ export class TransactionService {
 
     // SOS Merenda: se já está em negativo, bloqueia novas compras até regularização
     if (currentBalance < 0) {
-      throw new BadRequestException('Saldo negativo. Regularize com uma recarga.');
+      throw new BadRequestException(
+        'Saldo negativo. Regularize com uma recarga.',
+      );
     }
 
     // Permite saldo ficar negativo até -overdraftLimit
@@ -501,12 +635,17 @@ export class TransactionService {
         balance: newBalance,
         version: { increment: 1 },
         isDebtBlocked: newBalance < 0 ? true : wallet.isDebtBlocked,
-        negativeSince: newBalance < 0 ? wallet.negativeSince || new Date() : wallet.negativeSince,
+        negativeSince:
+          newBalance < 0
+            ? wallet.negativeSince || new Date()
+            : wallet.negativeSince,
       },
     });
 
     if (count !== 1) {
-      throw new InternalServerErrorException('Falha de concorrência financeira.');
+      throw new InternalServerErrorException(
+        'Falha de concorrência financeira.',
+      );
     }
 
     // Ledger Record
@@ -583,5 +722,42 @@ export class TransactionService {
         page: (filters?.skip ?? 0) / (filters?.take ?? 20) + 1,
       },
     };
+  }
+
+  /**
+   * Calcula o auditHash para uma transação (Blockchain-style audit trail)
+   * Cada transação contém o hash da transação anterior da mesma carteira,
+   * criando uma cadeia imutável de auditoria.
+   */
+  private async calculateAuditHash(
+    tx: Prisma.TransactionClient,
+    walletId: string,
+    transactionData: {
+      amount: number;
+      type: TransactionType;
+      status: TransactionStatus;
+      createdAt: Date;
+    },
+  ): Promise<string> {
+    const crypto = await import('crypto');
+
+    // Buscar a transação anterior da mesma carteira
+    const previousTx = await tx.transaction.findFirst({
+      where: { walletId },
+      orderBy: { createdAt: 'desc' },
+      select: { auditHash: true, id: true },
+    });
+
+    const previousHash = previousTx?.auditHash || 'genesis';
+
+    // Criar hash dos dados da transação atual
+    const dataString = `${walletId}:${transactionData.amount}:${transactionData.type}:${transactionData.status}:${transactionData.createdAt.toISOString()}:${previousHash}`;
+
+    const hash = crypto
+      .createHash('sha256')
+      .update(dataString)
+      .digest('hex');
+
+    return hash;
   }
 }

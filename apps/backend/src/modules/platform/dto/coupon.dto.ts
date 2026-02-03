@@ -1,24 +1,37 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsEnum, IsNumber, IsOptional, IsDateString, Min, Max, IsInt, IsUUID } from 'class-validator';
+import {
+  IsString,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsDateString,
+  Min,
+  Max,
+  IsInt,
+  IsUUID,
+} from 'class-validator';
 
 export enum CouponType {
   PERCENTAGE = 'PERCENTAGE',
-  FIXED = 'FIXED'
+  FIXED = 'FIXED',
 }
 
 export enum CouponAudience {
   B2B = 'B2B',
-  B2C = 'B2C'
+  B2C = 'B2C',
 }
 
 export enum CouponStatus {
   ACTIVE = 'ACTIVE',
   EXPIRED = 'EXPIRED',
-  DISABLED = 'DISABLED'
+  DISABLED = 'DISABLED',
 }
 
 export class CreateCouponDto {
-  @ApiProperty({ description: 'Código do cupom (uppercase)', example: 'ESCOLA10' })
+  @ApiProperty({
+    description: 'Código do cupom (uppercase)',
+    example: 'ESCOLA10',
+  })
   @IsString()
   code: string;
 
@@ -36,16 +49,25 @@ export class CreateCouponDto {
   @IsEnum(CouponAudience)
   audience: CouponAudience;
 
-  @ApiPropertyOptional({ description: 'ID do plano restrito (opcional)', example: 'uuid' })
+  @ApiPropertyOptional({
+    description: 'ID do plano restrito (opcional)',
+    example: 'uuid',
+  })
   @IsOptional()
   @IsUUID()
   planId?: string;
 
-  @ApiProperty({ description: 'Data de validade (ISO8601)', example: '2026-03-30T00:00:00Z' })
+  @ApiProperty({
+    description: 'Data de validade (ISO8601)',
+    example: '2026-03-30T00:00:00Z',
+  })
   @IsDateString()
   validUntil: string;
 
-  @ApiPropertyOptional({ description: 'Número máximo de usos (null = ilimitado)', example: 100 })
+  @ApiPropertyOptional({
+    description: 'Número máximo de usos (null = ilimitado)',
+    example: 100,
+  })
   @IsOptional()
   @IsInt()
   @Min(1)

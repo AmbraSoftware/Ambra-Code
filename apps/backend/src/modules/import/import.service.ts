@@ -1,9 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
+
 import {
   Injectable,
   Logger,
@@ -51,14 +47,23 @@ export class ImportService {
     if (mimeType.includes('csv') || mimeType.includes('text')) {
       try {
         const decoded = Buffer.from(fileBase64, 'base64').toString('utf-8');
-        const lines = decoded.split(/\r?\n/).filter(line => line.trim().length > 0);
-        
+        const lines = decoded
+          .split(/\r?\n/)
+          .filter((line) => line.trim().length > 0);
+
         if (lines.length > 1) {
-          const headers = lines[0].toLowerCase().split(/[;,]/).map(h => h.trim().replace(/"/g, ''));
-          
+          const headers = lines[0]
+            .toLowerCase()
+            .split(/[;,]/)
+            .map((h) => h.trim().replace(/"/g, ''));
+
           // Verifica se tem colunas essenciais
-          const hasName = headers.some(h => h.includes('nome') || h.includes('aluno'));
-          const hasEmail = headers.some(h => h.includes('email') || h.includes('responsavel'));
+          const hasName = headers.some(
+            (h) => h.includes('nome') || h.includes('aluno'),
+          );
+          const hasEmail = headers.some(
+            (h) => h.includes('email') || h.includes('responsavel'),
+          );
 
           if (hasName && hasEmail) {
             this.logger.log('Fast-path: Processando CSV localmente sem IA.');
@@ -66,14 +71,18 @@ export class ImportService {
           }
         }
       } catch (e) {
-        this.logger.warn('Falha no parser CSV local, tentando IA fallback...', e);
+        this.logger.warn(
+          'Falha no parser CSV local, tentando IA fallback...',
+          e,
+        );
       }
     }
 
     // 3. Fallback para IA (se habilitado)
     if (ENABLE_AI_IMPORT) {
-        return this.aiService.extractStudentGuardianData(fileBase64, mimeType)
-            .then(res => res.users);
+      return this.aiService
+        .extractStudentGuardianData(fileBase64, mimeType)
+        .then((res) => res.users);
     }
 
     this.logger.warn('Importação via IA desativada (Cost Saving).');
@@ -88,21 +97,34 @@ export class ImportService {
       guardianDocument?: string;
     }> = [];
     // Mapeamento simples de índices
-    const nameIdx = headers.findIndex(h => h.includes('nome') || h.includes('aluno'));
-    const emailIdx = headers.findIndex(h => h.includes('email') || h.includes('responsavel') || h.includes('mail'));
-    const guardianIdx = headers.findIndex(h => h.includes('pai') || h.includes('mae') || h.includes('responsavel'));
-    const docIdx = headers.findIndex(h => h.includes('cpf') || h.includes('documento'));
+    const nameIdx = headers.findIndex(
+      (h) => h.includes('nome') || h.includes('aluno'),
+    );
+    const emailIdx = headers.findIndex(
+      (h) =>
+        h.includes('email') || h.includes('responsavel') || h.includes('mail'),
+    );
+    const guardianIdx = headers.findIndex(
+      (h) =>
+        h.includes('pai') || h.includes('mae') || h.includes('responsavel'),
+    );
+    const docIdx = headers.findIndex(
+      (h) => h.includes('cpf') || h.includes('documento'),
+    );
 
     for (let i = 1; i < lines.length; i++) {
-        const cols = lines[i].split(/[;,]/).map(c => c.trim().replace(/"/g, ''));
-        if (cols.length < 2) continue;
+      const cols = lines[i]
+        .split(/[;,]/)
+        .map((c) => c.trim().replace(/"/g, ''));
+      if (cols.length < 2) continue;
 
-        users.push({
-            studentName: cols[nameIdx] || 'Aluno Sem Nome',
-            guardianEmail: cols[emailIdx] || `responsavel_${Date.now()}_${i}@temp.com`,
-            guardianName: cols[guardianIdx] || 'Responsável',
-            guardianDocument: cols[docIdx] || undefined
-        });
+      users.push({
+        studentName: cols[nameIdx] || 'Aluno Sem Nome',
+        guardianEmail:
+          cols[emailIdx] || `responsavel_${Date.now()}_${i}@temp.com`,
+        guardianName: cols[guardianIdx] || 'Responsável',
+        guardianDocument: cols[docIdx] || undefined,
+      });
     }
     return users;
   }

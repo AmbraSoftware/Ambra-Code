@@ -14,6 +14,7 @@ import {
 } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { CancelOrderDto } from './dto/cancel-order.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -127,5 +128,21 @@ export class OrdersController {
     @CurrentUser() user: AuthenticatedUserPayload,
   ) {
     return this.ordersService.updateStatus(id, status, user.schoolId!, user.id);
+  }
+
+  @Patch(':id/cancel')
+  @Roles(UserRole.GUARDIAN, UserRole.STUDENT, UserRole.OPERATOR_SALES, UserRole.SCHOOL_ADMIN)
+  @UseInterceptors(AuditInterceptor)
+  @Audit('CANCEL_ORDER', 'Order')
+  @ApiOperation({ summary: 'Cancela um pedido (com estorno de saldo e liberação de estoque).' })
+  @ApiResponse({ status: 200, description: 'Pedido cancelado com sucesso.' })
+  @ApiResponse({ status: 400, description: 'Pedido não pode ser cancelado (já entregue ou cancelado).' })
+  @ApiResponse({ status: 403, description: 'Sem permissão para cancelar este pedido.' })
+  async cancel(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CancelOrderDto,
+    @CurrentUser() user: AuthenticatedUserPayload,
+  ) {
+    return this.ordersService.cancelOrder(id, dto, user);
   }
 }

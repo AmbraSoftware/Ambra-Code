@@ -1,6 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { UpdateCashInFeesDto, CashInFeesResponseDto, PaymentMethodFeeDto } from './dto/cash-in-fees.dto';
+import {
+  UpdateCashInFeesDto,
+  CashInFeesResponseDto,
+  PaymentMethodFeeDto,
+} from './dto/cash-in-fees.dto';
 
 @Injectable()
 export class FeesService {
@@ -16,14 +20,14 @@ export class FeesService {
         data: {
           boletoGatewayCost: 3.49,
           boletoChargeCustomer: true,
-          boletoCustomerFixed: 4.00,
+          boletoCustomerFixed: 4.0,
           boletoCustomerPercent: 0,
           boletoChargeMerchant: false,
           boletoMerchantFixed: 0,
           boletoMerchantPercent: 2.5,
           pixGatewayCost: 0.99,
           pixChargeCustomer: true,
-          pixCustomerFixed: 2.00,
+          pixCustomerFixed: 2.0,
           pixCustomerPercent: 0,
           pixChargeMerchant: true,
           pixMerchantFixed: 0,
@@ -55,7 +59,9 @@ export class FeesService {
     };
   }
 
-  async updateCashInFees(dto: UpdateCashInFeesDto): Promise<CashInFeesResponseDto> {
+  async updateCashInFees(
+    dto: UpdateCashInFeesDto,
+  ): Promise<CashInFeesResponseDto> {
     // Busca o registro existente
     let fees = await this.prisma.cashInFee.findFirst();
 

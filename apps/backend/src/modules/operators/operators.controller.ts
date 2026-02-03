@@ -1,4 +1,15 @@
-import { Controller, Post, Body, Get, UseGuards, Request, BadRequestException, Patch, Delete, Param } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  UseGuards,
+  Request,
+  BadRequestException,
+  Patch,
+  Delete,
+  Param,
+} from '@nestjs/common';
 import { OperatorsService } from './operators.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -45,10 +56,12 @@ export class OperatorsController {
   @Post('link-school')
   @UseGuards(JwtAuthGuard)
   @Roles(UserRole.MERCHANT_ADMIN)
-  @ApiOperation({ summary: 'Vincula o operador a uma escola via código de acesso' })
+  @ApiOperation({
+    summary: 'Vincula o operador a uma escola via código de acesso',
+  })
   async linkSchool(@Request() req, @Body() body: { accessCode: string }) {
     if (!body.accessCode) {
-        throw new BadRequestException('Código de acesso é obrigatório');
+      throw new BadRequestException('Código de acesso é obrigatório');
     }
     // Assume que o usuário logado tem um canteenId ou operatorId vinculado
     return this.operatorsService.linkSchool(req.user, body.accessCode);

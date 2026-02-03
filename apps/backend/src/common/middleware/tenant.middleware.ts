@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Injectable, NestMiddleware } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -12,7 +9,7 @@ export class TenantMiddleware implements NestMiddleware {
   constructor(
     private readonly prisma: PrismaService,
     private readonly cacheService: CacheService,
-  ) { }
+  ) {}
 
   async use(req: Request, res: Response, next: NextFunction) {
     const hostname = req.hostname;

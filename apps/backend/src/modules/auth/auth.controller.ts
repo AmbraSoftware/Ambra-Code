@@ -29,7 +29,7 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) { }
+  constructor(private readonly authService: AuthService) {}
 
   @Public()
   @Post('login')
@@ -82,9 +82,13 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({
     summary: '[v4.5] Troca de senha com refresh de token',
-    description: 'Permite que o usuário troque sua senha e receba um novo JWT atualizado.'
+    description:
+      'Permite que o usuário troque sua senha e receba um novo JWT atualizado.',
   })
-  @ApiResponse({ status: 200, description: 'Senha alterada com sucesso. Novo token retornado.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Senha alterada com sucesso. Novo token retornado.',
+  })
   async changePassword(
     @CurrentUser() user: AuthenticatedUserPayload,
     @Body() dto: ChangePasswordDto,
