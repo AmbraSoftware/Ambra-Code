@@ -48,10 +48,23 @@ jobs:
     - name: Build Ambra Console
       run: npm --workspace apps/ambra-console run build
 
-    # Run Linter
-    # - name: Lint
-    #   run: yarn lint
-
     # Run Tests
     - name: Test REST API (Backend)
       run: npm --workspace apps/backend test
+
+  deploy-backend:
+    name: Deploy Backend to Railway
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Railway CLI
+      run: npm install -g @railway/cli
+    
+    - name: Deploy to Railway
+      run: railway up --service backend
+      env:
+        RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
