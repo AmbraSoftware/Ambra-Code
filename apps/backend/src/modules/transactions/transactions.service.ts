@@ -132,17 +132,17 @@ export class TransactionService {
       payer as unknown as User,
     );
 
-    if (split.totalPaid.lessThanOrEqualTo(0)) {
+    if (split.totalPaid <= 0) {
       throw new BadRequestException('Valor inválido para recarga.');
     }
 
     const pixData = await this.asaasService.createPixCharge(
       {
         customer: payer.document || '00000000000',
-        value: split.totalPaid.toNumber(),
+        value: split.totalPaid,
         walletId: operator.asaasWalletId || operator.asaasId,
         description: `Recarga Ambra - ${school.name}`,
-        splitValue: split.netAmount.toNumber(),
+        splitValue: split.netAmount,
         externalReference: pendingTransactionId,
       },
       { apiKey: operator.asaasApiKey ? this.encryptionService.decrypt(operator.asaasApiKey) : undefined },
@@ -151,12 +151,12 @@ export class TransactionService {
     await this.prisma.transaction.update({
       where: { id: pendingTransactionId },
       data: {
-        platformFee: new Prisma.Decimal(split.platformFee.toNumber()),
-        netAmount: new Prisma.Decimal(split.netAmount.toNumber()),
-        grossAmount: new Prisma.Decimal(split.totalPaid.toNumber()),
+        platformFee: split.platformFee,
+        netAmount: split.netAmount,
+        grossAmount: split.totalPaid,
         metadata: {
           asaasPaymentId: pixData.id,
-          splitRule: { payer: 'CUSTOMER', fee: split.platformFee.toNumber() },
+          splitRule: { payer: 'CUSTOMER', fee: split.platformFee },
         },
       },
     });
@@ -165,7 +165,7 @@ export class TransactionService {
       brCode: pixData.payload,
       encodedImage: pixData.encodedImage,
       netValue: pixData.netValue,
-      totalToPay: split.totalPaid.toNumber(),
+      totalToPay: split.totalPaid,
     };
   }
 
@@ -248,7 +248,7 @@ export class TransactionService {
     );
 
     // Validate Minimum (at least covers fees)
-    if (split.netAmount.isNegative()) {
+    if (split.netAmount < 0) {
       throw new BadRequestException(
         `O valor mínimo para recarga deve cobrir as taxas.`,
       );
@@ -272,10 +272,10 @@ export class TransactionService {
     const pixData = await this.asaasService.createPixCharge(
       {
         customer: user.document || '00000000000', // Payer CPF
-        value: split.totalPaid.toNumber(), // Total Amount (Credit + Convenience)
+        value: split.totalPaid, // Total Amount (Credit + Convenience)
         walletId: operator.asaasWalletId || operator.asaasId,
         description: `Recarga Nodum - ${userSchool.name}`,
-        splitValue: split.netAmount.toNumber(), // Net for Operator
+        splitValue: split.netAmount, // Net for Operator
       },
       { apiKey: operator.asaasApiKey ? this.encryptionService.decrypt(operator.asaasApiKey) : undefined },
     );
@@ -287,7 +287,7 @@ export class TransactionService {
       encodedImage: pixData.encodedImage,
       netValue: pixData.netValue,
       splitRule: `${split.platformFee.toFixed(2)} (Platform) + Remainder`,
-      totalToPay: split.totalPaid.toNumber(), // Notify Frontend of Convenience Fee
+      totalToPay: split.totalPaid, // Notify Frontend of Convenience Fee
     };
   }
 
@@ -376,7 +376,7 @@ export class TransactionService {
         // Adjust Credit: The amount that goes to wallet is NOT the total paid if convenience fee exists.
         // But in `prepareRecharge`, we calculated Total = Credit + Fee.
         // If user paid Total, then Credit = Total - Fee.
-        const convenienceFee = split.breakdown.convenience.toNumber();
+        const convenienceFee = split.breakdown.convenience;
         const creditToWallet = amount - convenienceFee;
 
         // Recalculate split with actual credit amount to be safe?
@@ -396,12 +396,12 @@ export class TransactionService {
         const transaction = await tx.transaction.create({
           data: {
             walletId: wallet.id,
-            amount: new Prisma.Decimal(creditToWallet),
+            amount: creditToWallet,
             platformFee: split.platformFee,
             netAmount: split.netAmount,
             operatorId: operatorId,
             userId: userId,
-            runningBalance: new Prisma.Decimal(newBalance),
+            runningBalance: newBalance,
             type: 'RECHARGE',
             status: 'COMPLETED',
             description: 'Recarga de Saldo - PIX/Cartão',
@@ -427,7 +427,7 @@ export class TransactionService {
           transactionId: transaction.id,
           walletId: wallet.id,
           amount: creditToWallet,
-          platformFee: split.platformFee.toNumber(),
+          platformFee: split.platformFee,
           userId: userId,
           operatorId: operatorId,
         });
@@ -488,10 +488,10 @@ export class TransactionService {
           data: {
             walletId: wallet.id,
             userId: targetUserId,
-            amount: new Prisma.Decimal(amount),
-            platformFee: new Prisma.Decimal(0),
-            netAmount: new Prisma.Decimal(amount),
-            runningBalance: new Prisma.Decimal(newBalance),
+            amount: amount,
+            platformFee: 0,
+            netAmount: amount,
+            runningBalance: newBalance,
             type: TransactionType.RECHARGE,
             status: 'COMPLETED',
             description: `Recarga em ${paymentMethod} - Balcão${notes ? `: ${notes}` : ''}`,
@@ -629,7 +629,7 @@ export class TransactionService {
       where: {
         id: wallet.id,
         version: wallet.version,
-        balance: { gte: new Prisma.Decimal(totalAmount - overdraftLimit) },
+        balance: { gte: totalAmount - overdraftLimit },
       },
       data: {
         balance: newBalance,
@@ -669,7 +669,7 @@ export class TransactionService {
 
     return {
       transactionId: transaction.id,
-      newBalance: new Prisma.Decimal(newBalance),
+      runningBalance: newBalance,
       status: 'SUCCESS',
     };
   }

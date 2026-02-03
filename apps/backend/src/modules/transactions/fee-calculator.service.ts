@@ -13,15 +13,15 @@ export interface FeesConfig {
 }
 
 export interface SplitResult {
-  totalPaid: Prisma.Decimal; // What the parent pays (Credit + Convenience)
-  creditAmount: Prisma.Decimal; // What goes into Wallet
-  platformFee: Prisma.Decimal; // What Nodum keeps (Fixed + Percent + Risk)
-  netAmount: Prisma.Decimal; // What School/Operator gets
+  totalPaid: number; // What the parent pays (Credit + Convenience)
+  creditAmount: number; // What goes into Wallet
+  platformFee: number; // What Nodum keeps (Fixed + Percent + Risk)
+  netAmount: number; // What School/Operator gets
   breakdown: {
-    convenience: Prisma.Decimal;
-    serviceFixed: Prisma.Decimal;
-    servicePercent: Prisma.Decimal;
-    riskFee: Prisma.Decimal;
+    convenience: number;
+    serviceFixed: number;
+    servicePercent: number;
+    riskFee: number;
   };
 }
 
@@ -58,12 +58,12 @@ export class FeeCalculatorService {
    * @param isRecovery Whether this is a debt recovery recharge (triggers risk fees)
    */
   async calculateRechargeSplit(
-    amount: number | Prisma.Decimal,
+    amount: number,
     school: School & { plan: Plan },
     user?: User,
     isRecovery = false,
   ): Promise<SplitResult> {
-    const creditValue = new Prisma.Decimal(amount);
+    const creditValue = amount;
 
     const config = this.resolveFeesConfig(school);
 
@@ -87,17 +87,17 @@ export class FeeCalculatorService {
       }
     }
 
-    const convenienceFee = new Prisma.Decimal(rawConvenience);
+    const convenienceFee = rawConvenience;
 
     // Para o piloto v2.1: a captura de valor é na entrada do recurso (convenienceFee).
     // O crédito que vai para a carteira é exatamente o valor solicitado (creditValue).
-    const serviceFixed = new Prisma.Decimal(0);
-    const servicePercent = new Prisma.Decimal(0);
+    const serviceFixed = 0;
+    const servicePercent = 0;
 
     // Risk fee permanece desativado no piloto, mas mantemos o gancho.
-    const riskFee = isRecovery ? new Prisma.Decimal(0) : new Prisma.Decimal(0);
+    const riskFee = 0;
 
-    const totalPaid = creditValue.plus(convenienceFee);
+    const totalPaid = creditValue + convenienceFee;
     const platformFee = convenienceFee;
     const netAmount = creditValue;
 

@@ -199,7 +199,7 @@ export class OrdersService {
             buyerId,
             studentId,
             totalAmount,
-            status: OrderStatus.PENDING,
+            status: 'PENDING',
             orderHash,
             scheduledFor: scheduledDate,
             schoolId: schoolId,
@@ -246,7 +246,7 @@ export class OrdersService {
           data: {
             operatorId,
             transactionId: debitResult.transactionId,
-            amount: new Prisma.Decimal(totalAmount),
+            amount: totalAmount,
             status: 'PENDING_SALE',
           },
         });
@@ -254,7 +254,7 @@ export class OrdersService {
         // ETAPA 5: Finalização e Confirmação de Reserva (Baixa de Estoque)
         const finalPaidOrder = await tx.order.update({
           where: { id: order.id },
-          data: { status: OrderStatus.PAID },
+          data: { status: 'PAID' },
           include: {
             items: { include: { product: true } },
             student: { select: { name: true } },
@@ -653,10 +653,10 @@ export class OrdersService {
             data: {
               walletId: wallet.id,
               orderId: order.id,
-              amount: new Prisma.Decimal(refundAmount),
-              platformFee: new Prisma.Decimal(0),
-              netAmount: new Prisma.Decimal(refundAmount),
-              runningBalance: new Prisma.Decimal(newBalance),
+              amount: 0,
+              platformFee: 0,
+              netAmount: refundAmount,
+              runningBalance: newBalance,
               type: 'REFUND',
               status: 'COMPLETED',
               description: `Estorno de cancelamento - Pedido ${order.orderHash}`,

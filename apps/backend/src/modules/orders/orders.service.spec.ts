@@ -7,7 +7,6 @@ import { AuditService } from '../audit/audit.service';
 import { NotificationsGateway } from '../notifications/notifications.gateway';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { CreateOrderDto } from '@nodum/shared';
-import { OrderStatus } from '@prisma/client';
 
 describe('OrdersService', () => {
   let service: OrdersService;
@@ -22,6 +21,8 @@ describe('OrdersService', () => {
     fiscalPendingItem: { create: jest.fn() },
     productRestriction: { findMany: jest.fn() },
     categoryRestriction: { findMany: jest.fn() },
+    nutritionalProfile: { findUnique: jest.fn() },
+    school: { findUnique: jest.fn() },
   };
 
   const mockTransactionService = {
@@ -110,6 +111,11 @@ describe('OrdersService', () => {
         closingTime: '23:59',
         operatorId: 'operator-123',
       });
+      (mockPrismaService.school.findUnique as jest.Mock).mockResolvedValue({
+        id: 'school-1',
+        status: 'ACTIVE',
+        name: 'Escola Teste',
+      });
       (
         mockPrismaService.productRestriction.findMany as jest.Mock
       ).mockResolvedValue([]);
@@ -119,7 +125,7 @@ describe('OrdersService', () => {
 
       const createdOrderMock = {
         id: 'order-1',
-        status: OrderStatus.PENDING,
+        status: 'PENDING' as any,
         schoolId: 'school-1',
         orderHash: 'HASH',
       };
@@ -128,7 +134,7 @@ describe('OrdersService', () => {
       );
       (mockPrismaService.order.update as jest.Mock).mockResolvedValue({
         ...createdOrderMock,
-        status: OrderStatus.PAID,
+        status: 'PAID' as any,
       });
 
       // Run

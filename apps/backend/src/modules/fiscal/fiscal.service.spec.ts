@@ -63,7 +63,7 @@ describe('FiscalService', () => {
         data: {
           operatorId: payload.operatorId,
           transactionId: payload.transactionId,
-          amount: new Prisma.Decimal(payload.platformFee),
+          amount: payload.platformFee,
           status: 'PENDING',
         },
       });

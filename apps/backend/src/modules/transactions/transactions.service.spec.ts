@@ -5,6 +5,7 @@ import { Prisma } from '@prisma/client';
 import { NotFoundException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { FeeCalculatorService } from './fee-calculator.service';
+import { EncryptionService } from '../../common/services/encryption.service';
 
 let mockPrismaService: any;
 
@@ -25,6 +26,9 @@ mockPrismaService = {
   sysConfig: {
     findFirst: jest.fn(),
   },
+  cashInFee: {
+    findFirst: jest.fn(),
+  },
   $transaction: jest.fn((cb: any) => cb(mockPrismaService)),
 };
 
@@ -39,6 +43,11 @@ const mockAsaasService = {
   createPixCharge: jest.fn(),
 };
 
+const mockEncryptionService = {
+  encrypt: jest.fn((data: string) => data),
+  decrypt: jest.fn((data: string) => data),
+};
+
 describe('TransactionService', () => {
   let service: TransactionService;
   let prisma: PrismaService;
@@ -50,6 +59,7 @@ describe('TransactionService', () => {
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: EventEmitter2, useValue: mockEventEmitter },
         { provide: AsaasService, useValue: mockAsaasService },
+        { provide: EncryptionService, useValue: mockEncryptionService },
         FeeCalculatorService,
       ],
     }).compile();
@@ -67,7 +77,7 @@ describe('TransactionService', () => {
       // Arrange
       const userId = 'user-123';
       const amount = 50.0;
-      const initialBalance = new Prisma.Decimal(10.0);
+      const initialBalance = 10.0;
 
       (mockPrismaService.wallet.findUnique as jest.Mock).mockResolvedValue({
         id: 'wallet-123',
@@ -88,6 +98,10 @@ describe('TransactionService', () => {
         canteens: [{ operatorId: 'operator-123' }],
       });
 
+      (mockPrismaService.cashInFee.findFirst as jest.Mock).mockResolvedValue({
+        pixCustomerFixed: 2.99,
+      });
+
       (mockPrismaService.transaction.create as jest.Mock).mockImplementation(
         (args) => ({
           id: 'tx-123',
@@ -96,7 +110,7 @@ describe('TransactionService', () => {
       );
 
       (mockPrismaService.wallet.update as jest.Mock).mockResolvedValue({
-        balance: new Prisma.Decimal(60.0),
+        balance: 60.0,
       });
 
       // Act
@@ -106,9 +120,9 @@ describe('TransactionService', () => {
       expect(mockPrismaService.transaction.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
-            amount: new Prisma.Decimal(47.01),
-            platformFee: new Prisma.Decimal(2.99),
-            netAmount: new Prisma.Decimal(amount),
+            amount: 47.01,
+            platformFee: 2.99,
+            netAmount: amount,
             type: 'RECHARGE',
           }),
         }),

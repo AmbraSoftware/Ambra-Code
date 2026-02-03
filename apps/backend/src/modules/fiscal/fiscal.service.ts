@@ -51,7 +51,7 @@ export class FiscalService {
           data: {
             operatorId: payload.operatorId,
             transactionId: payload.transactionId,
-            amount: new Prisma.Decimal(payload.platformFee),
+            amount: payload.platformFee,
             status: 'PENDING',
           },
         });
@@ -64,8 +64,8 @@ export class FiscalService {
           data: {
             transactionId: payload.transactionId,
             schoolId: user.schoolId, // RLS requirement
-            amount: new Prisma.Decimal(payload.platformFee), // R$ 4,00
-            taxBase: new Prisma.Decimal(payload.platformFee), // Base de Cálculo Integrity
+            amount: payload.platformFee,
+            taxBase: payload.platformFee, // Base de Cálculo Integrity
             status: 'PENDING',
             operatorId: payload.operatorId, // v4.0 Link
           },
