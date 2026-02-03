@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  experimental: {
+    externalDir: true,
+  },
+  transpilePackages: ['@nodum/shared'],
   webpack: (config, { isServer }) => {
     if (!isServer) {
       config.resolve.fallback = {

@@ -26,12 +26,12 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
-        cache: 'npm'
+        # cache disabled for clean install
 
-    - name: Install dependencies (allow native optional modules)
+    - name: Clean and install dependencies
       run: |
-        npm ci --unsafe-perm || npm install --unsafe-perm
-        npm rebuild
+        rm -rf node_modules package-lock.json
+        npm install --workspaces
 
     - name: Generate Prisma Client (Backend)
       run: npx prisma generate --schema=apps/backend/prisma/schema.prisma
