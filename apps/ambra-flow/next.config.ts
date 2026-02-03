@@ -13,11 +13,28 @@ const nextConfig: NextConfig = {
         perf_hooks: false,
         child_process: false,
       };
+      // Ignorar todos os módulos do NestJS no client bundle
       config.resolve.alias = {
         ...(config.resolve.alias || {}),
         '@nestjs/core': false,
         '@nestjs/common': false,
+        '@nestjs/swagger': false,
+        '@nestjs/microservices': false,
+        '@nestjs/websockets': false,
+        '@nestjs/mapped-types': false,
+        'class-transformer/storage': false,
       };
+      
+      // Adicionar IgnorePlugin para módulos opcionais do NestJS
+      const { IgnorePlugin } = require('webpack');
+      config.plugins.push(
+        new IgnorePlugin({
+          resourceRegExp: /^@nestjs\/(core|common|swagger|microservices|websockets|mapped-types)$/,
+        }),
+        new IgnorePlugin({
+          resourceRegExp: /^class-transformer\/storage$/,
+        })
+      );
     }
     return config;
   },
