@@ -6,10 +6,23 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Table } from '@/components/ui/Table';
-import { UserRole, CreateUserDto } from '@nodum/shared';
 import { api } from '@/services/api';
 import { toast } from 'sonner';
 import { UserCog, Plus, Trash2, Edit } from 'lucide-react';
+
+type UserRole = 'OPERATOR_SALES' | 'OPERATOR_MEAL';
+
+type CreateUserDto = {
+    name: string;
+    email?: string;
+    password?: string;
+    role: string;
+    roles?: string[];
+};
+
+// Alias para compatibilidade
+const ROLE_OPERATOR_SALES = 'OPERATOR_SALES';
+const ROLE_OPERATOR_MEAL = 'OPERATOR_MEAL';
 
 /**
  * Staff Management Page - Manager Mode
@@ -34,11 +47,11 @@ export default function StaffManagementPage() {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
-    const [formData, setFormData] = useState<CreateStaffDto>({
+    const [formData, setFormData] = useState<CreateUserDto>({
         name: '',
         email: '',
         password: '',
-        role: UserRole.OPERATOR_SALES,
+        role: 'OPERATOR_SALES',
     });
 
     useEffect(() => {
@@ -59,8 +72,6 @@ export default function StaffManagementPage() {
             const operators = response.data.filter((user: any) => {
                 const roles = user.roles || [user.role].filter(Boolean);
                 return roles.some((r: string) => 
-                    r === UserRole.OPERATOR_SALES || 
-                    r === UserRole.OPERATOR_MEAL ||
                     r === 'OPERATOR_SALES' || r === 'OPERATOR_MEAL'
                 );
             });
@@ -137,7 +148,7 @@ export default function StaffManagementPage() {
             name: '',
             email: '',
             password: '',
-            role: UserRole.OPERATOR_SALES,
+            role: 'OPERATOR_SALES',
         });
     };
 
@@ -147,7 +158,7 @@ export default function StaffManagementPage() {
             name: member.name,
             email: member.email || '',
             password: '', // Não preenche senha por segurança
-            role: (member.roles?.[0] as any) || UserRole.OPERATOR_SALES,
+            role: (member.roles?.[0] as any) || 'OPERATOR_SALES',
         });
         setIsEditModalOpen(true);
     };
@@ -174,7 +185,7 @@ export default function StaffManagementPage() {
             }
 
             // Atualiza role se mudou
-            if (formData.role !== (editingStaff.roles?.[0] || editingStaff.role)) {
+            if (formData.role !== (editingStaff.roles?.[0] || '')) {
                 payload.role = formData.role;
             }
 
@@ -257,15 +268,15 @@ export default function StaffManagementPage() {
                             </thead>
                             <tbody>
                                 {staff.map((member) => {
-                                    const roles = member.roles || [member.role].filter(Boolean);
+                                    const roles = member.roles || [];
                                     const roleType = roles.find((r: string) => 
-                                        r === UserRole.OPERATOR_SALES || 
-                                        r === UserRole.OPERATOR_MEAL
+                                        r === ROLE_OPERATOR_SALES || 
+                                        r === ROLE_OPERATOR_MEAL
                                     ) || roles[0] || 'OPERATOR';
                                     
-                                    const roleLabel = roleType === UserRole.OPERATOR_SALES 
+                                    const roleLabel = roleType === ROLE_OPERATOR_SALES 
                                         ? 'Vendas' 
-                                        : roleType === UserRole.OPERATOR_MEAL
+                                        : roleType === ROLE_OPERATOR_MEAL
                                         ? 'Merenda'
                                         : 'Operador';
 
@@ -383,8 +394,8 @@ export default function StaffManagementPage() {
                             onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
                             className="w-full p-3 border border-border-light dark:border-border-dark rounded-lg bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark focus:ring-2 focus:ring-primary outline-none transition-all"
                         >
-                            <option value={UserRole.OPERATOR_SALES}>Operador de Vendas (PDV)</option>
-                            <option value={UserRole.OPERATOR_MEAL}>Operador de Merenda (Check-in)</option>
+                            <option value={ROLE_OPERATOR_SALES}>Operador de Vendas (PDV)</option>
+                            <option value={ROLE_OPERATOR_MEAL}>Operador de Merenda (Check-in)</option>
                         </select>
                         <p className="text-xs text-muted-light dark:text-muted-dark mt-1">
                             Vendas: Acesso ao PDV para vendas. Merenda: Acesso ao check-in nutricional.
@@ -467,8 +478,8 @@ export default function StaffManagementPage() {
                             onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
                             className="w-full p-3 border border-border-light dark:border-border-dark rounded-lg bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark focus:ring-2 focus:ring-primary outline-none transition-all"
                         >
-                            <option value={UserRole.OPERATOR_SALES}>Operador de Vendas (PDV)</option>
-                            <option value={UserRole.OPERATOR_MEAL}>Operador de Merenda (Check-in)</option>
+                            <option value={ROLE_OPERATOR_SALES}>Operador de Vendas (PDV)</option>
+                            <option value={ROLE_OPERATOR_MEAL}>Operador de Merenda (Check-in)</option>
                         </select>
                     </div>
 
