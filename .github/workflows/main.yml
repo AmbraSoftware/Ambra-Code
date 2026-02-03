@@ -68,3 +68,9 @@ jobs:
       run: railway up --service backend
       env:
         RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+    
+    - name: Run Prisma Migrations
+      run: |
+        railway run --service backend "npx prisma migrate deploy --schema=apps/backend/prisma/schema.prisma"
+      env:
+        RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
