@@ -44,7 +44,6 @@
     "@nestjs/typeorm": "^11.0.0",
     "@nestjs/websockets": "^11.1.9",
     "@nodum/shared": "*",
-    "@prisma/adapter-pg": "^5.22.1",
     "@prisma/client": "^5.22.1",
     "@vercel/blob": "^2.0.0",
     "axios": "^1.13.2",
