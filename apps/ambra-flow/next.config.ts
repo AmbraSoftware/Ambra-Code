@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   experimental: {
     externalDir: true,
   },
-  transpilePackages: ['@nodum/shared'],
+  transpilePackages: [],
   webpack: (config, { isServer }) => {
     // Ignorar módulos do NestJS em ambos os lados (server e client)
     if (!isServer) {
