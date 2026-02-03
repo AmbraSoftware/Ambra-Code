@@ -5,7 +5,6 @@ import Logo from '@/components/ui/Logo';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { authService } from '@/services/auth.service';
-import { UserRole } from '@nodum/shared';
 import { setAuthToken, removeAuthToken } from '@/lib/auth-utils';
 
 /**
@@ -47,16 +46,18 @@ export default function LoginPage() {
             const userRoles = response.user.roles || [response.user.role].filter(Boolean);
             
             // Verifica se tem role de ADMIN (Manager Mode)
-            const isManager = userRoles.some(role => 
-                role === UserRole.MERCHANT_ADMIN || 
-                role === UserRole.SCHOOL_ADMIN ||
-                role === UserRole.SUPER_ADMIN
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const isManager = userRoles.some((role: any) => 
+                role === 'MERCHANT_ADMIN' || 
+                role === 'SCHOOL_ADMIN' ||
+                role === 'SUPER_ADMIN'
             );
 
             // Verifica se tem role de OPERATOR (Operator Mode)
-            const isOperator = userRoles.some(role => 
-                role === UserRole.OPERATOR_SALES || 
-                role === UserRole.OPERATOR_MEAL
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const isOperator = userRoles.some((role: any) => 
+                role === 'OPERATOR_SALES' || 
+                role === 'OPERATOR_MEAL'
             );
 
             // Redireciona baseado na prioridade: Manager > Operator
