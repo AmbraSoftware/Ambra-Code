@@ -48,6 +48,10 @@ jobs:
     - name: Build Ambra Console
       run: npm --workspace apps/ambra-console run build
 
+    # Build Ambra Food Web (Frontend)
+    - name: Build Ambra Food Web
+      run: npm --workspace apps/ambra-food-web run build
+
     # Run Tests
     - name: Test REST API (Backend)
       run: npm --workspace apps/backend test
