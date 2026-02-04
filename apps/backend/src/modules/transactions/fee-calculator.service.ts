@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Plan, Prisma, School, User } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
 // Interfaces for JSON Configuration
@@ -35,10 +34,7 @@ export class FeeCalculatorService {
   constructor(private readonly prisma: PrismaService) {}
 
   private isPremium(
-    user?: Pick<
-      User,
-      'subscriptionStatus' | 'subscriptionPlanId' | 'subscriptionExpiresAt'
-    >,
+    user?: any,
   ): boolean {
     if (!user?.subscriptionPlanId) return false;
     if (user.subscriptionStatus !== 'ACTIVE') return false;
@@ -59,8 +55,8 @@ export class FeeCalculatorService {
    */
   async calculateRechargeSplit(
     amount: number,
-    school: School & { plan: Plan },
-    user?: User,
+    school: any,
+    user?: any,
     isRecovery = false,
   ): Promise<SplitResult> {
     const creditValue = amount;
@@ -115,7 +111,7 @@ export class FeeCalculatorService {
     };
   }
 
-  private resolveFeesConfig(school: School & { plan: Plan }): FeesConfig {
+  private resolveFeesConfig(school: any): FeesConfig {
     // 1. School Override (Highest Priority)
     if (school.customFeesConfig) {
       return school.customFeesConfig as unknown as FeesConfig;

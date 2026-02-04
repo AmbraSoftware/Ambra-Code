@@ -9,7 +9,6 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateRechargeDto } from './dto/create-recharge.dto';
-import { Plan, Prisma, School, User, TransactionType } from '@prisma/client';
 import { TransactionService } from '../transactions/transactions.service';
 import { FeeCalculatorService } from '../transactions/fee-calculator.service';
 import { RequestRefundDto } from './dto/request-refund.dto';
@@ -39,7 +38,7 @@ export class PaymentService {
    * @throws {ForbiddenException} Se o aluno não tiver permissão
    */
   private async validateRechargeEligibility(
-    tx: Prisma.TransactionClient,
+    tx: any,
     userId: string,
     dependentId: string,
   ) {
@@ -196,15 +195,15 @@ export class PaymentService {
       }
 
       // 3. Ledger PENDING (fonte da verdade para o webhook)
-      const amountDecimal = new Prisma.Decimal(amount);
+      const amountDecimal = amount;
 
       const split = await this.feeCalculator.calculateRechargeSplit(
         amount,
-        school as School & { plan: Plan },
-        payer as unknown as User,
+        school as any,
+        payer as unknown as any,
       );
 
-      if (split.totalPaid.lessThan(split.creditAmount)) {
+      if (split.totalPaid < split.creditAmount) {
         throw new InternalServerErrorException(
           'Invariante violada: grossAmount < amount (net).',
         );
@@ -214,10 +213,10 @@ export class PaymentService {
         data: {
           walletId: dependent.wallet.id,
           amount: amountDecimal,
-          platformFee: new Prisma.Decimal(split.platformFee.toNumber()),
-          grossAmount: new Prisma.Decimal(split.totalPaid.toNumber()),
+          platformFee: split.platformFee,
+          grossAmount: split.totalPaid,
           metadata: {
-            splitRule: { payer: 'CUSTOMER', fee: split.platformFee.toNumber() },
+            splitRule: { payer: 'CUSTOMER', fee: split.platformFee },
           },
           netAmount: amountDecimal,
           runningBalance: 0,
@@ -270,7 +269,7 @@ export class PaymentService {
     const { transactionId, pixKey, pixKeyType } = dto;
 
     return this.prisma.$transaction(
-      async (tx: Prisma.TransactionClient) => {
+      async (tx: any) => {
         // 1) Carregar transação original (recarga) + wallet
         const original = await tx.transaction.findUnique({
           where: { id: transactionId },
@@ -299,7 +298,7 @@ export class PaymentService {
           throw new NotFoundException('Transação não encontrada.');
         }
 
-        if (original.type !== TransactionType.RECHARGE) {
+        if (original.type !== 'RECHARGE') {
           throw new BadRequestException(
             'Apenas recargas podem ser reembolsadas.',
           );
@@ -369,11 +368,11 @@ export class PaymentService {
           data: {
             walletId: original.wallet.id,
             userId: original.wallet.userId,
-            amount: new Prisma.Decimal(-lockAmount),
-            platformFee: new Prisma.Decimal(0),
-            netAmount: new Prisma.Decimal(-lockAmount),
-            runningBalance: new Prisma.Decimal(newBalance),
-            type: TransactionType.REFUND_LOCK,
+            amount: -lockAmount,
+            platformFee: 0,
+            netAmount: -lockAmount,
+            runningBalance: newBalance,
+            type: 'REFUND_LOCK',
             status: 'COMPLETED',
             description: 'Refund Lock (solicitação de reembolso)',
             metadata: {
@@ -393,8 +392,8 @@ export class PaymentService {
             walletId: original.wallet.id,
             originalTransactionId: original.id,
             lockTransactionId: lockTx.id,
-            amount: new Prisma.Decimal(refundAmount),
-            lockedAmount: new Prisma.Decimal(lockAmount),
+            amount: refundAmount,
+            lockedAmount: lockAmount,
             feeReversed,
             pixKey,
             pixKeyType,

@@ -8,7 +8,6 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { UserRole } from '@prisma/client';
 
 @ApiTags('Finance (Operational Costs)')
 @ApiBearerAuth()
@@ -16,7 +15,7 @@ import { UserRole } from '@prisma/client';
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class FinanceController {
   @Get('costs')
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles('SUPER_ADMIN')
   @ApiOperation({ summary: 'Lista custos operacionais da plataforma.' })
   async getCosts() {
     return [

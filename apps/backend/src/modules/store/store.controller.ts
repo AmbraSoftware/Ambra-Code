@@ -17,7 +17,6 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/users.decorator';
 import { AuthenticatedUserPayload } from '../auth/dto/user-payload.dto';
-import { UserRole } from '@prisma/client';
 import { StoreService } from './store.service';
 
 @ApiTags('Store')
@@ -29,12 +28,12 @@ export class StoreController {
 
   @Get('favorites')
   @Roles(
-    UserRole.GUARDIAN,
-    UserRole.STUDENT,
-    UserRole.SCHOOL_ADMIN,
-    UserRole.MERCHANT_ADMIN,
-    UserRole.OPERATOR_SALES,
-    UserRole.OPERATOR_MEAL,
+    'GUARDIAN',
+    'STUDENT',
+    'SCHOOL_ADMIN',
+    'MERCHANT_ADMIN',
+    'OPERATOR_SALES',
+    'OPERATOR_MEAL',
   )
   @ApiOperation({
     summary: 'Lista IDs de produtos favoritados pelo usuário atual.',
@@ -52,12 +51,12 @@ export class StoreController {
 
   @Post('favorites/:productId/toggle')
   @Roles(
-    UserRole.GUARDIAN,
-    UserRole.STUDENT,
-    UserRole.SCHOOL_ADMIN,
-    UserRole.MERCHANT_ADMIN,
-    UserRole.OPERATOR_SALES,
-    UserRole.OPERATOR_MEAL,
+    'GUARDIAN',
+    'STUDENT',
+    'SCHOOL_ADMIN',
+    'MERCHANT_ADMIN',
+    'OPERATOR_SALES',
+    'OPERATOR_MEAL',
   )
   @ApiOperation({ summary: 'Favorita/desfavorita um produto (toggle).' })
   @ApiResponse({

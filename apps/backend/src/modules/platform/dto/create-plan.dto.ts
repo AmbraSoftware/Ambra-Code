@@ -7,7 +7,6 @@ import {
   Min,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { PlanTarget, PlanStatus } from '@prisma/client';
 
 export class CreatePlanDto {
   @ApiProperty({ example: 'Ambra Premium', description: 'Nome do Plano' })
@@ -27,10 +26,10 @@ export class CreatePlanDto {
   @Min(0)
   price: number;
 
-  @ApiPropertyOptional({ enum: PlanTarget, default: PlanTarget.SCHOOL_SAAS })
+  @ApiPropertyOptional({ default: 'SCHOOL_SAAS' })
   @IsOptional()
-  @IsEnum(PlanTarget)
-  target?: PlanTarget;
+  @IsString()
+  target?: string;
 
   @ApiPropertyOptional({ example: 500, description: 'Máximo de Alunos' })
   @IsOptional()

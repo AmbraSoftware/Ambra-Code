@@ -5,15 +5,15 @@ import {
   InternalServerErrorException,
   NotFoundException,
   BadRequestException, // [FIX] Added missing import
+  SetMetadata, // [FIX] Added missing import
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
-import { UserRole, SchoolStatus } from '@prisma/client';
 import { UserProfileDto } from './dto/user-payload.dto';
 import { RegisterDto } from './dto/register.dto';
-import { AsaasService } from '../asaas/asaas.service'; // [FIX] Import AsaasService
+import { AsaasService } from '../asaas/asaas.service';
 
 @Injectable()
 export class AuthService {
@@ -56,14 +56,14 @@ export class AuthService {
     }
 
     this.validateTenantAccess(
-      user.roles as unknown as UserRole[],
-      user.school?.status as SchoolStatus,
+      user.roles as unknown as string[],
+      user.school?.status as string,
     );
 
     const payload = {
       sub: user.id,
       email: user.email,
-      roles: user.roles as unknown as UserRole[],
+      roles: user.roles as unknown as string[],
       schoolId: user.schoolId,
       mustChangePassword: user.mustChangePassword, // [v4.5] Security flag
     };
@@ -76,7 +76,7 @@ export class AuthService {
           name: user.name,
           email: user.email,
           role: user.role,
-          roles: user.roles as unknown as UserRole[],
+          roles: user.roles as unknown as string[],
           schoolId: user.schoolId,
           mustChangePassword: user.mustChangePassword,
         },
@@ -119,11 +119,11 @@ export class AuthService {
    * @param roles As roles do usuário.
    * @param schoolStatus O status da escola associada.
    */
-  private validateTenantAccess(roles: UserRole[], schoolStatus?: SchoolStatus) {
+  private validateTenantAccess(roles: string[], schoolStatus?: string) {
     // [v5.0] Multi-Role Support
-    if (roles.includes('SUPER_ADMIN' as UserRole)) return;
+    if (roles.includes('SUPER_ADMIN')) return;
 
-    if (!schoolStatus || schoolStatus !== SchoolStatus.ACTIVE) {
+    if (!schoolStatus || schoolStatus !== 'ACTIVE') {
       throw new ForbiddenException(
         'Acesso bloqueado. A unidade escolar não está ativa.',
       );
@@ -275,7 +275,7 @@ export class AuthService {
               ] as any,
               role:
                 profileType === 'school'
-                  ? UserRole.SCHOOL_ADMIN
+                  ? 'SCHOOL_ADMIN'
                   : ('MERCHANT_ADMIN' as any), // Legacy
               schoolId: schoolId,
               termsAccepted: true,
@@ -393,7 +393,7 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       role: user.role, // Manter para compatibilidade
-      roles: user.roles as unknown as UserRole[], // ✅ Adicionar array de roles
+      roles: user.roles as unknown as string[], // ✅ Adicionar array de roles
       schoolId: user.schoolId,
       mustChangePassword: user.mustChangePassword, // Now false
     };
@@ -404,7 +404,7 @@ export class AuthService {
         id: user.id,
         name: user.name,
         role: user.role,
-        roles: user.roles as unknown as UserRole[], // ✅ Adicionar array de roles
+        roles: user.roles as unknown as string[], // ✅ Adicionar array de roles
         schoolId: user.schoolId,
         mustChangePassword: user.mustChangePassword,
       },

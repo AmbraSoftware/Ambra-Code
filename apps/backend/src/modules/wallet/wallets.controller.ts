@@ -15,7 +15,6 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { UserRole } from '@prisma/client';
 import { Audit } from '../../common/decorators/audit.decorator';
 import { AuditInterceptor } from '../../common/interceptors/audit.interceptor';
 import { CurrentUser } from '../auth/decorators/users.decorator';
@@ -34,7 +33,7 @@ export class WalletsController {
   constructor(private readonly walletService: WalletService) {}
 
   @Patch(':walletId/limits')
-  @Roles(UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN)
+  @Roles('SUPER_ADMIN', 'SCHOOL_ADMIN')
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(AuditInterceptor)
   @Audit('WALLET_LIMITS_UPDATED', 'Wallet')

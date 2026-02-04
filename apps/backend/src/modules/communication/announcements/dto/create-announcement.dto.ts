@@ -1,5 +1,4 @@
-import { IsEnum, IsNotEmpty, IsString, IsOptional } from 'class-validator';
-import { UserRole } from '@prisma/client';
+import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
 
 export class CreateAnnouncementDto {
   @IsString()
@@ -10,8 +9,9 @@ export class CreateAnnouncementDto {
   @IsNotEmpty()
   message: string;
 
-  @IsEnum(UserRole)
-  targetRole: UserRole;
+  @IsString()
+  @IsNotEmpty()
+  targetRole: string;
 
   // Use string type for enum to avoid import cycles, validated by service/db
   @IsNotEmpty()

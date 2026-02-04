@@ -8,7 +8,6 @@ import {
 import { DashboardService, StockAlert } from './dashboard.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { UserRole } from '@prisma/client';
 
 @ApiTags('Dashboard')
 @Controller('dashboard')
@@ -18,7 +17,7 @@ export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
 
   @Get('metrics')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.OPERATOR_SALES, UserRole.OPERATOR_MEAL)
+  @Roles('SCHOOL_ADMIN', 'OPERATOR_SALES', 'OPERATOR_MEAL')
   @ApiOperation({
     summary: 'Retorna métricas do dashboard (vendas, pedidos, alunos)',
   })
@@ -27,7 +26,7 @@ export class DashboardController {
   }
 
   @Get('stock-alerts')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.OPERATOR_SALES, UserRole.OPERATOR_MEAL)
+  @Roles('SCHOOL_ADMIN', 'OPERATOR_SALES', 'OPERATOR_MEAL')
   @ApiOperation({
     summary: '[v4.5] Alertas de ruptura de estoque',
     description:
@@ -39,10 +38,10 @@ export class DashboardController {
 
   @Get('sales-chart')
   @Roles(
-    UserRole.SCHOOL_ADMIN,
-    UserRole.OPERATOR_SALES,
-    UserRole.OPERATOR_MEAL,
-    UserRole.MERCHANT_ADMIN,
+    'SCHOOL_ADMIN',
+    'OPERATOR_SALES',
+    'OPERATOR_MEAL',
+    'MERCHANT_ADMIN',
   )
   @ApiOperation({ summary: 'Dados do gráfico de vendas' })
   @ApiQuery({ name: 'period', required: false, enum: ['day', 'week', 'month'] })

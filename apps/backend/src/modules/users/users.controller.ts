@@ -28,7 +28,6 @@ import { BulkCreateUserDto } from './dto/bulk-create-user.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { UserRole } from '@prisma/client';
 import { CurrentUser } from '../auth/decorators/users.decorator';
 import { AuthenticatedUserPayload } from '../auth/dto/user-payload.dto';
 import { AuditInterceptor } from '../../common/interceptors/audit.interceptor';
@@ -46,7 +45,7 @@ export class UsersController {
   ) {}
 
   @Post()
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles('SCHOOL_ADMIN', 'SUPER_ADMIN', 'MERCHANT_ADMIN')
   @UseInterceptors(AuditInterceptor)
   @Audit('CREATE_USER', 'User')
   @ApiOperation({
@@ -62,7 +61,7 @@ export class UsersController {
     this.cacheService.del(cacheKey);
 
     // Operator validation
-    if (user.role === UserRole.MERCHANT_ADMIN && !user.canteenId) {
+    if (user.role === 'MERCHANT_ADMIN' && !user.canteenId) {
       throw new BadRequestException(
         'Operador sem cantina vinculada não pode criar usuários.',
       );
@@ -73,7 +72,7 @@ export class UsersController {
   }
 
   @Post('bulk')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN)
+  @Roles('SUPER_ADMIN', 'SCHOOL_ADMIN')
   @UseInterceptors(AuditInterceptor)
   @Audit('BULK_CREATE_USERS', 'User')
   @ApiOperation({
@@ -90,11 +89,11 @@ export class UsersController {
 
   @Get()
   @Roles(
-    UserRole.SCHOOL_ADMIN,
-    UserRole.SUPER_ADMIN,
-    UserRole.MERCHANT_ADMIN,
-    UserRole.OPERATOR_SALES,
-    UserRole.OPERATOR_MEAL,
+    'SCHOOL_ADMIN',
+    'SUPER_ADMIN',
+    'MERCHANT_ADMIN',
+    'OPERATOR_SALES',
+    'OPERATOR_MEAL',
   )
   @ApiOperation({
     summary: 'Lista todos os utilizadores da escola (Isolamento RLS ativo).',
@@ -131,7 +130,7 @@ export class UsersController {
 
     // Se for Global Admin, vê tudo (schoolId undefined), se não, vê só da escola
     const withDeleted = deleted === 'true';
-    const roles = role ? (role.split(',') as UserRole[]) : undefined;
+    const roles = role ? (role.split(',') as string[]) : undefined;
     return this.usersService.findAll(
       user.schoolId || undefined,
       roles,
@@ -143,7 +142,7 @@ export class UsersController {
   }
 
   @Post(':userId/nfc')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles('SCHOOL_ADMIN', 'SUPER_ADMIN', 'MERCHANT_ADMIN')
   @UseInterceptors(AuditInterceptor)
   @Audit('BIND_NFC', 'User')
   @ApiOperation({
@@ -182,7 +181,7 @@ export class UsersController {
   }
 
   @Get('stats')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles('SCHOOL_ADMIN', 'SUPER_ADMIN', 'MERCHANT_ADMIN')
   @ApiOperation({
     summary:
       '[v4.5] Retorna estatísticas de alunos para contadores de filtros.',
@@ -226,7 +225,7 @@ export class UsersController {
   }
 
   @Get('export-csv')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles('SCHOOL_ADMIN', 'SUPER_ADMIN', 'MERCHANT_ADMIN')
   @ApiOperation({
     summary:
       '[v4.5] Exporta relatório financeiro em CSV com conformidade brasileira.',
@@ -264,7 +263,7 @@ export class UsersController {
   }
 
   @Patch(':id')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles('SCHOOL_ADMIN', 'SUPER_ADMIN', 'MERCHANT_ADMIN')
   @UseInterceptors(AuditInterceptor)
   @Audit('UPDATE_USER', 'User')
   @ApiOperation({ summary: 'Atualiza dados de um utilizador.' })
@@ -276,7 +275,7 @@ export class UsersController {
   }
 
   @Delete(':id')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles('SCHOOL_ADMIN', 'SUPER_ADMIN', 'MERCHANT_ADMIN')
   @UseInterceptors(AuditInterceptor)
   @Audit('DELETE_USER', 'User')
   @ApiOperation({
@@ -292,7 +291,7 @@ export class UsersController {
   }
 
   @Delete(':id/permanent')
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles('SUPER_ADMIN')
   @ApiOperation({
     summary: 'Exclusão Permanente (Hard Delete). CUIDADO!',
   })
@@ -301,7 +300,7 @@ export class UsersController {
   }
 
   @Patch(':id/restore')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles('SCHOOL_ADMIN', 'SUPER_ADMIN', 'MERCHANT_ADMIN')
   @UseInterceptors(AuditInterceptor)
   @Audit('RESTORE_USER', 'User')
   async restore(
@@ -314,7 +313,7 @@ export class UsersController {
   }
 
   @Post('invitations')
-  @Roles(UserRole.GUARDIAN)
+  @Roles('GUARDIAN')
   @UseInterceptors(AuditInterceptor)
   @Audit('SEND_INVITATION', 'GuardianInvitation')
   @ApiOperation({
@@ -328,7 +327,7 @@ export class UsersController {
   }
 
   @Get('dependents')
-  @Roles(UserRole.GUARDIAN)
+  @Roles('GUARDIAN')
   @ApiOperation({ summary: 'Lista os dependentes do responsável logado.' })
   async getDependents(@CurrentUser() user: AuthenticatedUserPayload) {
     return this.usersService.findDependents(user.id);

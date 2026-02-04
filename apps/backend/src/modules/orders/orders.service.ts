@@ -12,7 +12,6 @@ import { CreateOrderDto, CreateOrderItemDto } from './dto/create-order.dto';
 import { randomBytes } from 'crypto';
 import { AuditService } from '../audit/audit.service';
 import { NotificationsGateway } from '../notifications/notifications.gateway';
-import { OrderStatus, Prisma, Product, UserRole } from '@prisma/client';
 
 /**
  * ORDERS SERVICE v3.8.5 - MASTER INDUSTRIAL (RIZO & AMBRA)
@@ -64,7 +63,7 @@ export class OrdersService {
 
     // A transação Serializable impede "Double Spending" e erros de estoque concorrente.
     const paidOrder = await this.prisma.$transaction(
-      async (tx: Prisma.TransactionClient) => {
+      async (tx: any) => {
         // ETAPA 1: Busca e Validação de Produtos
         const productIds = items.map((item) => item.productId);
         const products = await tx.product.findMany({
@@ -301,10 +300,10 @@ export class OrdersService {
    * Inclui: ProductRestriction, CategoryRestriction e NutritionalProfile (alergias)
    */
   private async checkRestrictions(
-    tx: Prisma.TransactionClient,
+    tx: any,
     studentId: string,
     items: CreateOrderItemDto[],
-    products: Product[],
+    products: any[],
   ) {
     const [prodRest, catRest, nutritionalProfile] = await Promise.all([
       tx.productRestriction.findMany({ where: { userId: studentId } }),
@@ -372,13 +371,13 @@ export class OrdersService {
     filters?: {
       studentId?: string;
       buyerId?: string;
-      status?: OrderStatus;
+      status?: string;
       startDate?: Date;
       endDate?: Date;
       canteenId?: string; // Para Canteen Operators filtrarem apenas sua cantina
     },
   ) {
-    const where: Prisma.OrderWhereInput = {
+    const where: any = {
       schoolId, // RLS Mandatório
     };
 
@@ -427,7 +426,7 @@ export class OrdersService {
    * Busca detalhada de um pedido
    */
   async findOne(id: string, schoolId?: string, userId?: string) {
-    const baseWhere: Prisma.OrderWhereInput = { id };
+    const baseWhere: any = { id };
     if (schoolId) baseWhere.schoolId = schoolId;
 
     if (userId) {
@@ -477,7 +476,7 @@ export class OrdersService {
    */
   async updateStatus(
     id: string,
-    status: OrderStatus,
+    status: string,
     schoolId: string,
     userId: string,
   ) {
@@ -485,15 +484,15 @@ export class OrdersService {
     const order = await this.findOne(id, schoolId);
 
     // Regras de Transição de Estado
-    if (order.status === OrderStatus.CANCELLED) {
+    if (order.status === 'CANCELLED') {
       throw new BadRequestException(
         'Não é possível alterar pedidos cancelados.',
       );
     }
 
     if (
-      order.status === OrderStatus.DELIVERED &&
-      status !== OrderStatus.DELIVERED
+      order.status === 'DELIVERED' &&
+      status !== 'DELIVERED'
     ) {
       throw new BadRequestException(
         'Pedidos entregues não podem regressar de status.',
@@ -501,7 +500,7 @@ export class OrdersService {
     }
 
     // FIX v4.0.4: Executa baixa física de estoque na entrega
-    if (status === OrderStatus.DELIVERED && order.status !== OrderStatus.DELIVERED) {
+    if (status === 'DELIVERED' && order.status !== 'DELIVERED') {
       await this.prisma.$transaction(async (tx) => {
         // Obtém canteenId do primeiro item do pedido
         const orderWithItems = await tx.order.findUnique({
@@ -540,7 +539,7 @@ export class OrdersService {
         where: { id },
         data: {
           status,
-          deliveredAt: status === OrderStatus.DELIVERED ? new Date() : undefined,
+          deliveredAt: status === 'DELIVERED' ? new Date() : undefined,
         },
       });
     }
@@ -598,10 +597,10 @@ export class OrdersService {
 
         // 2. Validação de permissões
         const isAdminOrOperator =
-          user.role === UserRole.SCHOOL_ADMIN ||
-          user.role === UserRole.OPERATOR_SALES ||
-          user.role === UserRole.OPERATOR_MEAL ||
-          user.role === UserRole.SUPER_ADMIN;
+          user.role === 'SCHOOL_ADMIN' ||
+          user.role === 'OPERATOR_SALES' ||
+          user.role === 'OPERATOR_MEAL' ||
+          user.role === 'SUPER_ADMIN';
 
         const isOwner =
           order.buyerId === user.id || order.studentId === user.id;
@@ -620,11 +619,11 @@ export class OrdersService {
         }
 
         // 3. Validação de estado
-        if (order.status === OrderStatus.CANCELLED) {
+        if (order.status === 'CANCELLED') {
           throw new BadRequestException('Este pedido já está cancelado.');
         }
 
-        if (order.status === OrderStatus.DELIVERED) {
+        if (order.status === 'DELIVERED') {
           throw new BadRequestException(
             'Pedidos já entregues não podem ser cancelados.',
           );
@@ -717,7 +716,7 @@ export class OrdersService {
         const updatedOrder = await tx.order.update({
           where: { id: orderId },
           data: {
-            status: OrderStatus.CANCELLED,
+            status: 'CANCELLED',
           },
         });
 

@@ -9,7 +9,6 @@ import { CashInDto } from './dto/cash-in.dto';
 import { UpdateWalletLimitsDto } from './dto/update-wallet-limits.dto';
 import { AuditService } from '../audit/audit.service';
 import { AuthenticatedUserPayload } from '../auth/dto/user-payload.dto';
-import { UserRole, Prisma } from '@prisma/client';
 import { TransactionService } from '../transactions/transactions.service';
 
 /**
@@ -31,8 +30,8 @@ export class WalletService {
   ) {
     const userRoles = user.roles || (user.role ? [user.role] : []);
     const isAdmin =
-      userRoles.includes(UserRole.SUPER_ADMIN) ||
-      userRoles.includes(UserRole.SCHOOL_ADMIN);
+      userRoles.includes('SUPER_ADMIN') ||
+      userRoles.includes('SCHOOL_ADMIN');
 
     if (!isAdmin) {
       throw new ForbiddenException('Acesso negado.');
@@ -46,7 +45,7 @@ export class WalletService {
     }
 
     return this.prisma.$transaction(
-      async (tx: Prisma.TransactionClient) => {
+      async (tx: any) => {
         const wallet = await tx.wallet.findUnique({
           where: { id: walletId },
           select: {
@@ -65,7 +64,7 @@ export class WalletService {
           throw new NotFoundException('Carteira não encontrada.');
         }
 
-        const isSuperAdmin = userRoles.includes(UserRole.SUPER_ADMIN);
+        const isSuperAdmin = userRoles.includes('SUPER_ADMIN');
         if (!isSuperAdmin) {
           if (!user.schoolId || wallet.user.schoolId !== user.schoolId) {
             throw new ForbiddenException('Acesso negado.');
@@ -100,10 +99,10 @@ export class WalletService {
           where: { id: walletId },
           data: {
             ...(dto.overdraftLimit !== undefined
-              ? { overdraftLimit: new Prisma.Decimal(dto.overdraftLimit) }
+              ? { overdraftLimit: dto.overdraftLimit }
               : {}),
             ...(dto.dailySpendLimit !== undefined
-              ? { dailySpendLimit: new Prisma.Decimal(dto.dailySpendLimit) }
+              ? { dailySpendLimit: dto.dailySpendLimit }
               : {}),
             isDebtBlocked: nextIsDebtBlocked,
             negativeSince: nextNegativeSince,
@@ -190,17 +189,17 @@ export class WalletService {
     const { dependentId, amount } = dto;
 
     const isAdmin =
-      user.role === UserRole.SCHOOL_ADMIN || user.role === UserRole.SUPER_ADMIN;
+      user.role === 'SCHOOL_ADMIN' || user.role === 'SUPER_ADMIN';
     const isOperator =
-      user.role === UserRole.OPERATOR_SALES ||
-      user.role === UserRole.OPERATOR_MEAL;
+      user.role === 'OPERATOR_SALES' ||
+      user.role === 'OPERATOR_MEAL';
 
     if (!isAdmin && !isOperator) {
       throw new ForbiddenException('Acesso negado.');
     }
 
     return this.prisma.$transaction(
-      async (tx: Prisma.TransactionClient) => {
+      async (tx: any) => {
         const dependent = await tx.user.findUnique({
           where: { id: dependentId },
           select: {
@@ -224,7 +223,7 @@ export class WalletService {
           );
         }
 
-        if (user.role !== UserRole.SUPER_ADMIN) {
+        if (user.role !== 'SUPER_ADMIN') {
           if (
             !user.schoolId ||
             !dependent.schoolId ||
@@ -254,7 +253,7 @@ export class WalletService {
           );
         }
 
-        const cashInAmount = new Prisma.Decimal(amount);
+        const cashInAmount = amount;
 
         const transaction = await tx.transaction.create({
           data: {
@@ -262,9 +261,9 @@ export class WalletService {
             userId: dependent.id,
             amount: cashInAmount,
             grossAmount: cashInAmount,
-            platformFee: new Prisma.Decimal(0),
+            platformFee: 0,
             netAmount: cashInAmount,
-            runningBalance: new Prisma.Decimal(newBalance),
+            runningBalance: newBalance,
             type: 'RECHARGE',
             status: 'COMPLETED',
             description: 'Recarga de balcão (cash-in)',
@@ -309,7 +308,7 @@ export class WalletService {
     const canPurchase = !isLocked;
 
     return this.prisma.$transaction(
-      async (tx: Prisma.TransactionClient) => {
+      async (tx: any) => {
         // 1. Validação de vínculo parental ou administrativo
         const dependent = await tx.user.findFirst({
           where: { id: dependentId },
@@ -331,8 +330,8 @@ export class WalletService {
 
         // Validação de acesso (Admins ou Responsável vinculado)
         const isAdmin =
-          user.role === UserRole.SCHOOL_ADMIN ||
-          user.role === UserRole.SUPER_ADMIN;
+          user.role === 'SCHOOL_ADMIN' ||
+          user.role === 'SUPER_ADMIN';
 
         const isLinkedGuardian =
           dependent.guardianRelations && dependent.guardianRelations.length > 0;
@@ -376,16 +375,17 @@ export class WalletService {
    * Método privado para validar o acesso Multi-tenant em transações.
    */
   private async validateAccess(
-    tx: Prisma.TransactionClient,
+    tx: any,
     user: AuthenticatedUserPayload,
     dependentId: string,
   ) {
     // 1. Administradores têm passe livre (dentro da escola via RLS)
     if (
-      user.role === UserRole.SCHOOL_ADMIN ||
-      user.role === UserRole.SUPER_ADMIN
-    )
+      user.role === 'SCHOOL_ADMIN' ||
+      user.role === 'SUPER_ADMIN'
+    ) {
       return;
+    }
 
     // 2. Responsáveis precisam de vínculo explícito
 

@@ -7,7 +7,6 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { AsaasService } from '../asaas/asaas.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { Prisma, TransactionType, School, Plan, User, TransactionStatus } from '@prisma/client';
 import { EncryptionService } from '../../common/services/encryption.service';
 import { FeeCalculatorService } from './fee-calculator.service';
 
@@ -128,8 +127,8 @@ export class TransactionService {
 
     const split = await this.feeCalculator.calculateRechargeSplit(
       creditAmount,
-      school as School & { plan: Plan },
-      payer as unknown as User,
+      school as any,
+      payer as any,
     );
 
     if (split.totalPaid <= 0) {
@@ -244,7 +243,7 @@ export class TransactionService {
     const split = await this.feeCalculator.calculateRechargeSplit(
       amount,
       userSchool,
-      user as User,
+      user as any,
     );
 
     // Validate Minimum (at least covers fees)
@@ -492,7 +491,7 @@ export class TransactionService {
             platformFee: 0,
             netAmount: amount,
             runningBalance: newBalance,
-            type: TransactionType.RECHARGE,
+            type: 'RECHARGE',
             status: 'COMPLETED',
             description: `Recarga em ${paymentMethod} - Balcão${notes ? `: ${notes}` : ''}`,
             metadata: {
@@ -563,7 +562,7 @@ export class TransactionService {
    * Handles Credit Logic, Shielding, and Daily Limits.
    */
   async debitFromWalletForOrderInTransaction(
-    tx: Prisma.TransactionClient, // Corrected Type
+    tx: any, // Corrected Type
     data: DebitForOrderData,
   ) {
     const { buyerId, studentId, totalAmount, orderId } = data;
@@ -649,8 +648,8 @@ export class TransactionService {
     }
 
     // Ledger Record
-    const amountDecimal = new Prisma.Decimal(-totalAmount);
-    const fee = new Prisma.Decimal(0);
+    const amountDecimal = -totalAmount;
+    const fee = 0;
     const net = amountDecimal;
 
     const transaction = await tx.transaction.create({
@@ -661,7 +660,7 @@ export class TransactionService {
         platformFee: fee,
         netAmount: net,
         runningBalance: newBalance,
-        type: TransactionType.PURCHASE,
+        type: 'PURCHASE',
         status: 'COMPLETED',
         description: `Compra CantApp para beneficiário ${studentId}`,
       },
@@ -682,12 +681,12 @@ export class TransactionService {
     filters?: {
       startDate?: Date;
       endDate?: Date;
-      type?: TransactionType;
+      type?: string;
       take?: number;
       skip?: number;
     },
   ) {
-    const where: Prisma.TransactionWhereInput = {
+    const where: any = {
       wallet: { userId },
     };
 
@@ -730,12 +729,12 @@ export class TransactionService {
    * criando uma cadeia imutável de auditoria.
    */
   private async calculateAuditHash(
-    tx: Prisma.TransactionClient,
+    tx: any,
     walletId: string,
     transactionData: {
       amount: number;
-      type: TransactionType;
-      status: TransactionStatus;
+      type: string;
+      status: string;
       createdAt: Date;
     },
   ): Promise<string> {

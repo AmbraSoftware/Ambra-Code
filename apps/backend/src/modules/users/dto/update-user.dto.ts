@@ -6,7 +6,6 @@ import {
   MinLength,
   IsArray,
 } from 'class-validator';
-import { UserRole } from '@prisma/client';
 
 export class UpdateUserDto {
   @IsOptional()
@@ -23,8 +22,8 @@ export class UpdateUserDto {
   password?: string;
 
   @IsOptional()
-  @IsEnum(UserRole)
-  role?: UserRole;
+  @IsString()
+  role?: string;
 
   @IsOptional()
   @IsString()
@@ -40,6 +39,6 @@ export class UpdateUserDto {
 
   @IsOptional()
   @IsArray()
-  @IsEnum(UserRole, { each: true })
-  roles?: UserRole[];
+  @IsString({ each: true })
+  roles?: string[];
 }

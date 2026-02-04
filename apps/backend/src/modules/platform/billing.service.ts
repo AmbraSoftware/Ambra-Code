@@ -5,7 +5,6 @@ import {
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { SchoolStatus, PlanStatus } from '@prisma/client';
 
 /**
  * RIZO CORE - BILLING ENGINE v3.8.5
@@ -31,7 +30,7 @@ export class BillingService {
       if (!school) throw new NotFoundException('Instituição não localizada.');
 
       const plan = await tx.plan.findUnique({ where: { id: planId } });
-      if (!plan || plan.status !== PlanStatus.ACTIVE) {
+      if (!plan || plan.status !== 'ACTIVE') {
         throw new BadRequestException('Plano inexistente ou descontinuado.');
       }
 
@@ -44,7 +43,7 @@ export class BillingService {
         where: { id: schoolId },
         data: {
           planId: plan.id,
-          status: SchoolStatus.ACTIVE,
+          status: 'ACTIVE',
           updatedAt: now,
         },
       });
@@ -78,7 +77,7 @@ export class BillingService {
     const expiredHistories = await this.prisma.schoolPlanHistory.findMany({
       where: {
         endedAt: { lt: now },
-        school: { status: SchoolStatus.ACTIVE },
+        school: { status: 'ACTIVE' },
       },
       include: { school: true },
     });
@@ -86,7 +85,7 @@ export class BillingService {
     for (const history of expiredHistories) {
       await this.prisma.school.update({
         where: { id: history.schoolId },
-        data: { status: SchoolStatus.SUSPENDED },
+        data: { status: 'SUSPENDED' },
       });
       this.logger.warn(
         `SaaS Alert: Escola ${history.school.name} suspensa por expiração de plano.`,

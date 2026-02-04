@@ -66,7 +66,7 @@ export class OfflineSyncService {
       }
 
       const currentBalance = Number(wallet.balance);
-      const amountDecimal = new Prisma.Decimal(amount);
+      const amountDecimal = amount;
       if (!amount || amount <= 0) {
         throw new Error('Valor inválido para débito offline.');
       }
@@ -79,7 +79,7 @@ export class OfflineSyncService {
       const { count } = await tx.wallet.updateMany({
         where: {
           id: walletId,
-          balance: { gte: amountDecimal },
+          balance: { gte: amount },
         },
         data: { balance: newBalance, version: { increment: 1 } },
       });
@@ -92,9 +92,9 @@ export class OfflineSyncService {
       const transaction = await tx.transaction.create({
         data: {
           walletId,
-          amount: amountDecimal.negated(), // Debit
+          amount: -amount, // Debit
           platformFee: 0,
-          netAmount: amountDecimal.negated(),
+          netAmount: -amount,
           runningBalance: newBalance,
           type: type as any,
           status: 'COMPLETED',

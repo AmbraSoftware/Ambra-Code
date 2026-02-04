@@ -27,7 +27,6 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
-import { UserRole } from '@prisma/client';
 import { AuditInterceptor } from '../../common/interceptors/audit.interceptor';
 import { Audit } from '../../common/decorators/audit.decorator';
 
@@ -47,7 +46,7 @@ export class WalletController {
   ) {}
 
   @Post('recharge')
-  @Roles(UserRole.GUARDIAN, UserRole.SCHOOL_ADMIN)
+  @Roles('GUARDIAN', 'SCHOOL_ADMIN')
   @Throttle({ default: { limit: 10, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(AuditInterceptor)
@@ -66,10 +65,10 @@ export class WalletController {
 
   @Post('cash-in')
   @Roles(
-    UserRole.OPERATOR_SALES,
-    UserRole.OPERATOR_MEAL,
-    UserRole.SCHOOL_ADMIN,
-    UserRole.SUPER_ADMIN,
+    'OPERATOR_SALES',
+    'OPERATOR_MEAL',
+    'SCHOOL_ADMIN',
+    'SUPER_ADMIN',
   )
   @Throttle({ default: { limit: 30, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
@@ -88,7 +87,7 @@ export class WalletController {
   }
 
   @Post('dependent/:dependentId/lock')
-  @Roles(UserRole.GUARDIAN, UserRole.SCHOOL_ADMIN)
+  @Roles('GUARDIAN', 'SCHOOL_ADMIN')
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(AuditInterceptor)
   @Audit('WALLET_LOCK', 'Wallet')
@@ -102,7 +101,7 @@ export class WalletController {
   }
 
   @Post('dependent/:dependentId/unlock')
-  @Roles(UserRole.GUARDIAN, UserRole.SCHOOL_ADMIN)
+  @Roles('GUARDIAN', 'SCHOOL_ADMIN')
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(AuditInterceptor)
   @Audit('WALLET_UNLOCK', 'Wallet')

@@ -20,9 +20,7 @@ import {
 } from '@nestjs/swagger';
 import { CanteenService } from './canteen.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { UserRole } from '@prisma/client';
 import { CurrentUser } from '../auth/decorators/users.decorator';
 import { AuthenticatedUserPayload } from '../auth/dto/user-payload.dto';
 import { OrderQueryDto } from './dto/order-query.dto';
@@ -31,13 +29,13 @@ import { Audit } from '../../common/decorators/audit.decorator';
 
 @ApiTags('Canteen Operations')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard)
 @Controller('canteen')
 export class CanteenController {
   constructor(private readonly canteenService: CanteenService) {}
 
   @Get('pos/student/nfc/:nfcId')
-  @Roles(UserRole.OPERATOR_SALES, UserRole.OPERATOR_MEAL)
+  @Roles('OPERATOR_SALES', 'OPERATOR_MEAL')
   @ApiOperation({
     summary: '[P0] Lookup de aluno por NFC (Leitor USB/Teclado).',
   })
@@ -59,7 +57,7 @@ export class CanteenController {
   }
 
   @Get('pos/students/search')
-  @Roles(UserRole.OPERATOR_SALES, UserRole.OPERATOR_MEAL)
+  @Roles('OPERATOR_SALES', 'OPERATOR_MEAL')
   @ApiOperation({
     summary: '[P0] Busca textual otimizada de alunos para PDV (Nome/Turma).',
   })
@@ -78,7 +76,7 @@ export class CanteenController {
   }
 
   @Get('order/scan/:hash')
-  @Roles(UserRole.OPERATOR_SALES, UserRole.OPERATOR_MEAL)
+  @Roles('OPERATOR_SALES', 'OPERATOR_MEAL')
   @ApiOperation({
     summary: 'Valida QR Code e busca detalhes do pedido para entrega.',
   })
@@ -92,7 +90,7 @@ export class CanteenController {
   }
 
   @Get('orders')
-  @Roles(UserRole.OPERATOR_SALES, UserRole.OPERATOR_MEAL, UserRole.SCHOOL_ADMIN)
+  @Roles('OPERATOR_SALES', 'OPERATOR_MEAL', 'SCHOOL_ADMIN')
   @ApiOperation({
     summary: 'Lista a fila de pedidos da cantina (Padrão: PAID).',
   })
@@ -105,7 +103,7 @@ export class CanteenController {
 
   @Post('orders/:orderId/deliver')
   @HttpCode(HttpStatus.OK)
-  @Roles(UserRole.OPERATOR_SALES, UserRole.OPERATOR_MEAL)
+  @Roles('OPERATOR_SALES', 'OPERATOR_MEAL')
   @UseInterceptors(AuditInterceptor)
   @Audit('DELIVER_ORDER', 'Order')
   @ApiOperation({
@@ -125,7 +123,7 @@ export class CanteenController {
   // --- Management Endpoints ---
 
   @Get()
-  @Roles(UserRole.SCHOOL_ADMIN)
+  @Roles('SCHOOL_ADMIN')
   @ApiOperation({ summary: 'Lista todas as cantinas da escola.' })
   async findAll(@CurrentUser() user: AuthenticatedUserPayload) {
     if (!user.schoolId) throw new Error('User not attached to a school');
@@ -133,7 +131,7 @@ export class CanteenController {
   }
 
   @Post()
-  @Roles(UserRole.SCHOOL_ADMIN)
+  @Roles('SCHOOL_ADMIN')
   @ApiOperation({ summary: 'Cria uma nova cantina.' })
   async create(
     @CurrentUser() user: AuthenticatedUserPayload,
@@ -144,7 +142,7 @@ export class CanteenController {
   }
 
   @Get(':id')
-  @Roles(UserRole.SCHOOL_ADMIN)
+  @Roles('SCHOOL_ADMIN')
   @ApiOperation({ summary: 'Detalhes da cantina e seus operadores.' })
   async findOne(
     @Param('id', ParseUUIDPipe) id: string,
@@ -155,7 +153,7 @@ export class CanteenController {
   }
 
   @Post(':id/operators')
-  @Roles(UserRole.SCHOOL_ADMIN)
+  @Roles('SCHOOL_ADMIN')
   @ApiOperation({ summary: 'Adiciona um operador à cantina.' })
   async addOperator(
     @Param('id', ParseUUIDPipe) id: string,
@@ -167,7 +165,7 @@ export class CanteenController {
   }
 
   @Delete(':id/operators/:operatorId')
-  @Roles(UserRole.SCHOOL_ADMIN)
+  @Roles('SCHOOL_ADMIN')
   @ApiOperation({ summary: 'Remove um operador da cantina.' })
   async removeOperator(
     @Param('id', ParseUUIDPipe) id: string,
@@ -181,7 +179,7 @@ export class CanteenController {
   // --- MERENDA IQ Endpoints ---
 
   @Post(':id/menu')
-  @Roles(UserRole.SCHOOL_ADMIN)
+  @Roles('SCHOOL_ADMIN')
   @ApiOperation({ summary: 'Define o cardápio do dia (Merenda).' })
   async setDailyMenu(
     @Param('id', ParseUUIDPipe) id: string,
@@ -196,7 +194,7 @@ export class CanteenController {
   }
 
   @Get(':id/menu')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.GUARDIAN, UserRole.STUDENT)
+  @Roles('SCHOOL_ADMIN', 'GUARDIAN', 'STUDENT')
   @ApiOperation({ summary: 'Obtém o cardápio da semana.' })
   async getWeeklyMenu(
     @Param('id', ParseUUIDPipe) id: string,

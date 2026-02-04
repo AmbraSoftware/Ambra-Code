@@ -7,7 +7,6 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { InvitationStatus, UserRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -153,7 +152,7 @@ export class UsersService {
    */
   async findAll(
     schoolId?: string,
-    role?: UserRole | UserRole[],
+    role?: string | string[],
     withDeleted: boolean = false,
     filter?: 'negative_balance' | 'inactive_30d',
     search?: string,
@@ -527,7 +526,7 @@ export class UsersService {
         senderId,
         receiverId: receiver.id,
         schoolId: (await this.findOne(senderId)).schoolId!,
-        status: InvitationStatus.PENDING,
+        status: 'PENDING',
       },
     });
   }
@@ -545,7 +544,7 @@ export class UsersService {
 
       await tx.guardianInvitation.update({
         where: { id: invitationId },
-        data: { status: InvitationStatus.ACCEPTED },
+        data: { status: 'ACCEPTED' },
       });
 
       const sender = await tx.user.findUnique({

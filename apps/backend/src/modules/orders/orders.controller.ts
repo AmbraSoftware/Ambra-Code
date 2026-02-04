@@ -22,7 +22,6 @@ import { CurrentUser } from '../auth/decorators/users.decorator';
 import { AuthenticatedUserPayload } from '../auth/dto/user-payload.dto';
 import { AuditInterceptor } from '../../common/interceptors/audit.interceptor';
 import { Audit } from '../../common/decorators/audit.decorator';
-import { UserRole, OrderStatus } from '@prisma/client';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -71,18 +70,18 @@ export class OrdersController {
   async findAll(
     @CurrentUser() user: AuthenticatedUserPayload,
     @Query('studentId') studentId?: string,
-    @Query('status') status?: OrderStatus,
+    @Query('status') status?: string,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
   ) {
     const filters = {
       studentId:
-        user.role === UserRole.GUARDIAN || user.role === UserRole.STUDENT
+        user.role === 'GUARDIAN' || user.role === 'STUDENT'
           ? undefined
           : studentId, // Guardians só veem os seus via RLS implícito ou filtro explícito validado? O service usa RLS por schoolId. Mas guardians precisam ver apenas os deles.
       // FIX: Preciso ajustar o findAll do service para filtrar por buyerId se for GUARDIAN/STUDENT.
-      buyerId: user.role === UserRole.GUARDIAN ? user.id : undefined,
-      studentIdSelf: user.role === UserRole.STUDENT ? user.id : undefined,
+      buyerId: user.role === 'GUARDIAN' ? user.id : undefined,
+      studentIdSelf: user.role === 'STUDENT' ? user.id : undefined,
       status,
       startDate: startDate ? new Date(startDate) : undefined,
       endDate: endDate ? new Date(endDate) : undefined,
@@ -106,7 +105,7 @@ export class OrdersController {
     // Passamos schoolId para garantir RLS e userId para Deep Check SQL
     // Se for Admin, não passamos userId para liberar visão global da escola.
     const isRegularUser =
-      user.role === UserRole.GUARDIAN || user.role === UserRole.STUDENT;
+      user.role === 'GUARDIAN' || user.role === 'STUDENT';
 
     const order = await this.ordersService.findOne(
       id,
@@ -118,20 +117,20 @@ export class OrdersController {
   }
 
   @Patch(':id/status')
-  @Roles(UserRole.OPERATOR_SALES, UserRole.OPERATOR_MEAL, UserRole.SCHOOL_ADMIN)
+  @Roles('OPERATOR_SALES', 'OPERATOR_MEAL', 'SCHOOL_ADMIN')
   @UseInterceptors(AuditInterceptor)
   @Audit('UPDATE_ORDER_STATUS', 'Order')
   @ApiOperation({ summary: 'Atualiza o status do pedido (Canteen Flow).' })
   async updateStatus(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body('status') status: OrderStatus,
+    @Body('status') status: string,
     @CurrentUser() user: AuthenticatedUserPayload,
   ) {
     return this.ordersService.updateStatus(id, status, user.schoolId!, user.id);
   }
 
   @Patch(':id/cancel')
-  @Roles(UserRole.GUARDIAN, UserRole.STUDENT, UserRole.OPERATOR_SALES, UserRole.SCHOOL_ADMIN)
+  @Roles('GUARDIAN', 'STUDENT', 'OPERATOR_SALES', 'SCHOOL_ADMIN')
   @UseInterceptors(AuditInterceptor)
   @Audit('CANCEL_ORDER', 'Order')
   @ApiOperation({ summary: 'Cancela um pedido (com estorno de saldo e liberação de estoque).' })

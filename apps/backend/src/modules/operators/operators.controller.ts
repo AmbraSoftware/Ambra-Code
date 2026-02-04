@@ -13,7 +13,6 @@ import {
 import { OperatorsService } from './operators.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { UserRole } from '@prisma/client';
 import { ApiOperation, ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 
 @ApiTags('Operators')
@@ -24,7 +23,7 @@ export class OperatorsController {
 
   @Post()
   @UseGuards(JwtAuthGuard)
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles('SUPER_ADMIN')
   async create(@Body() data: any) {
     // Validation should be added (DTO)
     return this.operatorsService.createOperator(data);
@@ -32,14 +31,14 @@ export class OperatorsController {
 
   @Get()
   @UseGuards(JwtAuthGuard)
-  @Roles(UserRole.SUPER_ADMIN, UserRole.MERCHANT_ADMIN)
+  @Roles('SUPER_ADMIN', 'MERCHANT_ADMIN')
   async findAll() {
     return this.operatorsService.findAll();
   }
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard)
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles('SUPER_ADMIN')
   @ApiOperation({ summary: 'Atualiza dados de um operador (Global Admin)' })
   async update(@Param('id') id: string, @Body() data: any) {
     return this.operatorsService.update(id, data);
@@ -47,7 +46,7 @@ export class OperatorsController {
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles('SUPER_ADMIN')
   @ApiOperation({ summary: 'Remove um operador (Global Admin)' })
   async remove(@Param('id') id: string) {
     return this.operatorsService.remove(id);
@@ -55,7 +54,7 @@ export class OperatorsController {
 
   @Post('link-school')
   @UseGuards(JwtAuthGuard)
-  @Roles(UserRole.MERCHANT_ADMIN)
+  @Roles('MERCHANT_ADMIN')
   @ApiOperation({
     summary: 'Vincula o operador a uma escola via código de acesso',
   })

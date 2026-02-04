@@ -18,7 +18,6 @@ import { TenantCacheInterceptor } from '../../common/interceptors/tenant-cache.i
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { UserRole } from '@prisma/client';
 import { CurrentUser } from '../auth/decorators/users.decorator';
 import { MetricsService } from './metrics.service';
 
@@ -36,7 +35,7 @@ export class MetricsController {
   constructor(private readonly metricsService: MetricsService) {}
 
   @Get('dashboard')
-  @Roles(UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN)
+  @Roles('SUPER_ADMIN', 'SCHOOL_ADMIN')
   @ApiOperation({
     summary: 'Retorna métricas completas para o dashboard administrativo',
     description:
@@ -84,7 +83,7 @@ export class MetricsController {
   }
 
   @Get('revenue')
-  @Roles(UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN)
+  @Roles('SUPER_ADMIN', 'SCHOOL_ADMIN')
   @ApiOperation({
     summary: 'Retorna métricas de receita por dia',
   })
@@ -106,10 +105,10 @@ export class MetricsController {
 
   @Get('top-products')
   @Roles(
-    UserRole.SUPER_ADMIN,
-    UserRole.SCHOOL_ADMIN,
-    UserRole.OPERATOR_SALES,
-    UserRole.OPERATOR_MEAL,
+    'SUPER_ADMIN',
+    'SCHOOL_ADMIN',
+    'OPERATOR_SALES',
+    'OPERATOR_MEAL',
   )
   @ApiOperation({
     summary: 'Retorna os produtos mais vendidos (últimos 7 dias)',

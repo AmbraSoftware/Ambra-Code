@@ -11,12 +11,12 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Public } from '../../auth/decorators/public.decorator';
+import { AuditInterceptor } from '../../../common/interceptors/audit.interceptor';
 import { AnnouncementsService } from './announcements.service';
 import { CreateAnnouncementDto } from './dto/create-announcement.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../auth/decorators/roles.decorator';
-import { UserRole } from '@prisma/client';
 
 @Controller('announcements')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -34,7 +34,7 @@ export class AnnouncementsController {
   }
 
   @Post()
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN, UserRole.GOV_ADMIN)
+  @Roles('SCHOOL_ADMIN', 'SUPER_ADMIN', 'GOV_ADMIN')
   async create(@Request() req, @Body() dto: CreateAnnouncementDto) {
     // Enforce RLS: Authenticated user's schoolId
     const schoolId = req.user.schoolId;
@@ -43,7 +43,7 @@ export class AnnouncementsController {
   }
 
   @Get()
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN, UserRole.GOV_ADMIN)
+  @Roles('SCHOOL_ADMIN', 'SUPER_ADMIN', 'GOV_ADMIN')
   async findAll(@Request() req) {
     const schoolId = req.user.schoolId;
     const userId = req.user.id;
@@ -51,19 +51,19 @@ export class AnnouncementsController {
   }
 
   @Patch(':id/deactivate')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN)
+  @Roles('SCHOOL_ADMIN', 'SUPER_ADMIN')
   async deactivate(@Request() req, @Param('id') id: string) {
     return this.announcementsService.deactivate(req.user.schoolId, id);
   }
 
   @Patch(':id/restore')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN)
+  @Roles('SCHOOL_ADMIN', 'SUPER_ADMIN')
   async restore(@Request() req, @Param('id') id: string) {
     return this.announcementsService.restore(req.user.schoolId, id);
   }
 
   @Delete(':id')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN)
+  @Roles('SCHOOL_ADMIN', 'SUPER_ADMIN')
   async remove(@Request() req, @Param('id') id: string) {
     return this.announcementsService.remove(req.user.schoolId, id);
   }

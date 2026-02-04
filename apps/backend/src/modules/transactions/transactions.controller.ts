@@ -21,7 +21,6 @@ import { CreateCashInDto } from './dto/create-cash-in.dto';
 
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { UserRole } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @ApiTags('Transactions')
@@ -50,7 +49,7 @@ export class TransactionsController {
    */
   @Post('admin/cash-in')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN, UserRole.OPERATOR_SALES)
+  @Roles('SCHOOL_ADMIN', 'SUPER_ADMIN', 'OPERATOR_SALES')
   @ApiOperation({
     summary: 'Recarga de Balcão - Credita saldo manualmente (dinheiro físico).',
     description: 'Usado por operadores para creditar saldo quando o pagamento é feito em dinheiro no balcão.',
@@ -70,7 +69,7 @@ export class TransactionsController {
     }
 
     // SUPER_ADMIN pode recarregar qualquer um, outros só da mesma escola
-    if (user.role !== UserRole.SUPER_ADMIN && targetUser.schoolId !== user.schoolId) {
+    if (user.role !== 'SUPER_ADMIN' && targetUser.schoolId !== user.schoolId) {
       throw new ForbiddenException('Você só pode recarregar usuários da sua escola.');
     }
 

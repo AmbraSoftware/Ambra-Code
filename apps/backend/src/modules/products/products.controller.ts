@@ -23,7 +23,6 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { UserRole } from '@prisma/client';
 import { CurrentUser } from '../auth/decorators/users.decorator';
 import { AuthenticatedUserPayload } from '../auth/dto/user-payload.dto';
 import { AuditInterceptor } from '../../common/interceptors/audit.interceptor';
@@ -39,7 +38,7 @@ export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Post()
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.OPERATOR_SALES, UserRole.OPERATOR_MEAL)
+  @Roles('SCHOOL_ADMIN', 'SUPER_ADMIN', 'OPERATOR_SALES', 'OPERATOR_MEAL', 'MERCHANT_ADMIN')
   @UseInterceptors(AuditInterceptor)
   @Audit('CREATE_PRODUCT', 'Product')
   @ApiOperation({
@@ -59,11 +58,11 @@ export class ProductsController {
 
   @Get()
   @Roles(
-    UserRole.SCHOOL_ADMIN,
-    UserRole.MERCHANT_ADMIN,
-    UserRole.OPERATOR_SALES,
-    UserRole.GUARDIAN,
-    UserRole.STUDENT,
+    'SCHOOL_ADMIN',
+    'MERCHANT_ADMIN',
+    'OPERATOR_SALES',
+    'GUARDIAN',
+    'STUDENT',
   )
   @ApiOperation({
     summary:
@@ -75,7 +74,7 @@ export class ProductsController {
   }
 
   @Get('stock-alerts')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.OPERATOR_SALES, UserRole.OPERATOR_MEAL)
+  @Roles('SCHOOL_ADMIN', 'OPERATOR_SALES', 'OPERATOR_MEAL')
   @ApiOperation({
     summary: '[v4.5] Retorna produtos com estoque crítico ou baixo.',
     description:
@@ -104,7 +103,7 @@ export class ProductsController {
   }
 
   @Patch(':id')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.OPERATOR_SALES, UserRole.OPERATOR_MEAL)
+  @Roles('SCHOOL_ADMIN', 'SUPER_ADMIN', 'OPERATOR_SALES', 'OPERATOR_MEAL', 'MERCHANT_ADMIN')
   @UseInterceptors(AuditInterceptor)
   @Audit('UPDATE_PRODUCT', 'Product')
   @ApiOperation({ summary: 'Atualiza dados ou preço do produto.' })
@@ -116,7 +115,7 @@ export class ProductsController {
   }
 
   @Patch(':id/stock')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.OPERATOR_SALES, UserRole.OPERATOR_MEAL)
+  @Roles('SCHOOL_ADMIN', 'SUPER_ADMIN', 'OPERATOR_SALES', 'OPERATOR_MEAL', 'MERCHANT_ADMIN')
   @UseInterceptors(AuditInterceptor)
   @Audit('UPDATE_STOCK', 'Product')
   @ApiOperation({ summary: 'Ajuste rápido de stock físico.' })
@@ -129,7 +128,7 @@ export class ProductsController {
   }
 
   @Delete(':id')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.OPERATOR_SALES, UserRole.OPERATOR_MEAL)
+  @Roles('SCHOOL_ADMIN', 'SUPER_ADMIN', 'OPERATOR_SALES', 'OPERATOR_MEAL', 'MERCHANT_ADMIN')
   @UseInterceptors(AuditInterceptor)
   @Audit('DELETE_PRODUCT', 'Product')
   @ApiOperation({ summary: 'Remove produto (Soft Delete).' })

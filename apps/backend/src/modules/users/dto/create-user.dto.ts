@@ -10,7 +10,6 @@ import {
   IsObject,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { UserRole } from '@prisma/client';
 
 export class CreateStudentProfileDto {
   @IsOptional()
@@ -40,9 +39,9 @@ export class CreateUserDto {
   @IsOptional()
   password?: string;
 
-  @IsEnum(UserRole)
+  @IsString()
   @IsNotEmpty()
-  role!: UserRole;
+  role!: string;
 
   @IsOptional()
   @IsString()
@@ -63,6 +62,6 @@ export class CreateUserDto {
 
   @IsOptional()
   @IsArray()
-  @IsEnum(UserRole, { each: true })
-  roles?: UserRole[];
+  @IsString({ each: true })
+  roles?: string[];
 }

@@ -81,8 +81,8 @@ export class FiscalBatchService {
           data: {
             schoolId: schoolId,
             operatorId: operatorId,
-            amount: new Prisma.Decimal(totalAmount),
-            taxBase: new Prisma.Decimal(totalAmount),
+            amount: totalAmount,
+            taxBase: totalAmount,
             status: 'PENDING', // Vai para fila de emissão (PlugNotas)
             // transactionId é opcional no Schema v4.1 para Invoices de Lote
           },

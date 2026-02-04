@@ -17,7 +17,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { AuditService } from './audit.service';
 import { PaginationQueryDto } from './dto/pagination-query.dto';
-import { UserRole } from '@prisma/client';
+import { AuditInterceptor } from '../../common/interceptors/audit.interceptor';
 import { CurrentUser } from '../auth/decorators/users.decorator';
 import { AuthenticatedUserPayload } from '../auth/dto/user-payload.dto';
 
@@ -29,7 +29,7 @@ export class AuditController {
   constructor(private readonly auditService: AuditService) {}
 
   @Get('logs')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN)
+  @Roles('SCHOOL_ADMIN', 'SUPER_ADMIN')
   @ApiOperation({
     summary: 'Busca os logs de auditoria da escola com paginação.',
   })
@@ -43,14 +43,14 @@ export class AuditController {
   }
 
   @Get('global-recent')
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles('SUPER_ADMIN')
   @ApiOperation({ summary: 'Stream de auditoria global (últimos 50 eventos).' })
   async getGlobalRecentLogs() {
     return this.auditService.getGlobalRecentLogs();
   }
 
   @Get('verify-integrity')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN)
+  @Roles('SCHOOL_ADMIN', 'SUPER_ADMIN')
   @ApiOperation({
     summary:
       'Verifica a integridade da blockchain-style chain de logs de auditoria.',
@@ -85,7 +85,7 @@ export class AuditController {
   }
 
   @Get('verify-integrity/:schoolId')
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles('SUPER_ADMIN')
   @ApiOperation({
     summary: '[SUPER ADMIN] Verifica integridade de logs de qualquer escola.',
   })

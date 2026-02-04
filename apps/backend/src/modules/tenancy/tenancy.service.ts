@@ -7,13 +7,6 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateSchoolDto } from './dto/create-school.dto';
 import { UpdateSchoolDto } from './dto/update-school.dto';
-import {
-  UserRole,
-  SchoolStatus,
-  Prisma,
-  PlanStatus,
-  CanteenType,
-} from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 /**
@@ -52,7 +45,7 @@ export class TenancyService {
         const plan = await tx.plan.findUnique({
           where: { id: dto.planId },
         });
-        if (!plan || plan.status !== PlanStatus.ACTIVE) {
+        if (!plan || plan.status !== 'ACTIVE') {
           throw new NotFoundException(
             'Plano comercial não encontrado ou descontinuado.',
           );
@@ -84,7 +77,7 @@ export class TenancyService {
             slug: dto.slug,
             systemId: system.id,
             planId: plan.id,
-            status: SchoolStatus.ACTIVE,
+            status: 'ACTIVE',
             config: schoolConfig,
           } as any,
         });
@@ -105,8 +98,8 @@ export class TenancyService {
             name: dto.adminName,
             email: dto.adminEmail,
             passwordHash: hashedPassword,
-            role: UserRole.SCHOOL_ADMIN,
-            roles: [UserRole.SCHOOL_ADMIN],
+            role: 'SCHOOL_ADMIN',
+            roles: ['SCHOOL_ADMIN'],
             schoolId: school.id,
             wallet: {
               create: {
@@ -126,7 +119,7 @@ export class TenancyService {
           const commercialCanteen = await tx.canteen.create({
             data: {
               name: `Cantina - ${school.name}`,
-              type: CanteenType.COMMERCIAL,
+              type: 'COMMERCIAL',
               schoolId: school.id,
               status: 'ACTIVE',
               openingTime: '07:00',
@@ -141,7 +134,7 @@ export class TenancyService {
           const governmentalCanteen = await tx.canteen.create({
             data: {
               name: `Refeitório Merenda - ${school.name}`,
-              type: CanteenType.GOVERNMENTAL,
+              type: 'GOVERNMENTAL',
               schoolId: school.id,
               operatorId: null, // Merenda não requer operador (governo)
               status: 'ACTIVE',
@@ -165,7 +158,7 @@ export class TenancyService {
           })),
         };
       },
-      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+      { isolationLevel: 'Serializable' },
     );
 
     // [v4.1] SaaS Monetization (Post-Hook)
@@ -248,7 +241,7 @@ export class TenancyService {
             where: { id: dto.planId },
           });
 
-          if (!newPlan || newPlan.status !== PlanStatus.ACTIVE) {
+          if (!newPlan || newPlan.status !== 'ACTIVE') {
             throw new NotFoundException('Plano não encontrado ou inativo.');
           }
 
@@ -282,7 +275,7 @@ export class TenancyService {
           } as any,
         });
       },
-      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+      { isolationLevel: 'Serializable' },
     );
   }
 
@@ -342,8 +335,8 @@ export class TenancyService {
    * Listagem de todas as escolas (Visão Gabriel SuperAdmin)
    */
   async listAllSchools(status?: string) {
-    const where: Prisma.SchoolWhereInput = status
-      ? { status: status as SchoolStatus }
+    const where: any = status
+      ? { status: status }
       : {};
 
     return this.prisma.school.findMany({

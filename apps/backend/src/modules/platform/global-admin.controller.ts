@@ -19,7 +19,6 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { UserRole } from '@prisma/client';
 import { FeesService } from './fees.service';
 import { CouponsService } from './coupons.service';
 import { UpdateCashInFeesDto } from './dto/cash-in-fees.dto';
@@ -43,7 +42,7 @@ export class GlobalAdminController {
   ) {}
 
   @Get('metrics')
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles('SUPER_ADMIN')
   @ApiOperation({
     summary: 'Métricas de saúde e faturamento consolidado do ecossistema.',
   })
@@ -54,7 +53,7 @@ export class GlobalAdminController {
     const [schools, students, revenue, systems] = await Promise.all([
       this.prisma.school.count(),
       this.prisma.user.count({
-        where: { role: UserRole.STUDENT, deletedAt: null },
+        where: { role: 'STUDENT', deletedAt: null },
       }),
       this.prisma.transaction.aggregate({
         where: { type: 'RECHARGE', status: 'COMPLETED' },
@@ -76,7 +75,7 @@ export class GlobalAdminController {
   }
 
   @Get('systems')
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles('SUPER_ADMIN')
   @ApiOperation({ summary: 'Lista todas as verticais de negócio (Systems).' })
   async listSystems() {
     return (this.prisma as any).platformSystem.findMany({
@@ -89,7 +88,7 @@ export class GlobalAdminController {
   // ==========================================
 
   @Get('cash-in-fees')
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles('SUPER_ADMIN')
   @ApiOperation({ summary: 'Obter configuração de taxas de recarga' })
   @ApiResponse({ status: 200, description: 'Taxas recuperadas com sucesso' })
   async getCashInFees() {
@@ -98,7 +97,7 @@ export class GlobalAdminController {
   }
 
   @Put('cash-in-fees')
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles('SUPER_ADMIN')
   @ApiOperation({ summary: 'Atualizar configuração de taxas de recarga' })
   @ApiResponse({ status: 200, description: 'Taxas atualizadas com sucesso' })
   async updateCashInFees(@Body() dto: UpdateCashInFeesDto) {
@@ -107,7 +106,7 @@ export class GlobalAdminController {
   }
 
   @Post('cash-in-fees/calculate')
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles('SUPER_ADMIN')
   @ApiOperation({ summary: 'Calcular taxas para uma transação simulada' })
   @ApiResponse({ status: 200, description: 'Cálculo realizado com sucesso' })
   async calculateFees(
@@ -124,7 +123,7 @@ export class GlobalAdminController {
   // ==========================================
 
   @Get('coupons')
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles('SUPER_ADMIN')
   @ApiOperation({ summary: 'Listar todos os cupons de desconto' })
   @ApiResponse({ status: 200, description: 'Cupons recuperados com sucesso' })
   async getAllCoupons() {
@@ -133,7 +132,7 @@ export class GlobalAdminController {
   }
 
   @Get('coupons/:id')
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles('SUPER_ADMIN')
   @ApiOperation({ summary: 'Obter detalhes de um cupom específico' })
   @ApiResponse({ status: 200, description: 'Cupom recuperado com sucesso' })
   @ApiResponse({ status: 404, description: 'Cupom não encontrado' })
@@ -143,7 +142,7 @@ export class GlobalAdminController {
   }
 
   @Post('coupons')
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles('SUPER_ADMIN')
   @ApiOperation({ summary: 'Criar novo cupom de desconto' })
   @ApiResponse({ status: 201, description: 'Cupom criado com sucesso' })
   @ApiResponse({ status: 400, description: 'Dados inválidos' })
@@ -154,7 +153,7 @@ export class GlobalAdminController {
   }
 
   @Put('coupons/:id')
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles('SUPER_ADMIN')
   @ApiOperation({ summary: 'Atualizar cupom existente' })
   @ApiResponse({ status: 200, description: 'Cupom atualizado com sucesso' })
   @ApiResponse({ status: 404, description: 'Cupom não encontrado' })
@@ -164,7 +163,7 @@ export class GlobalAdminController {
   }
 
   @Delete('coupons/:id')
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles('SUPER_ADMIN')
   @ApiOperation({ summary: 'Remover cupom' })
   @ApiResponse({ status: 204, description: 'Cupom removido com sucesso' })
   @ApiResponse({ status: 404, description: 'Cupom não encontrado' })
@@ -175,7 +174,7 @@ export class GlobalAdminController {
   }
 
   @Post('coupons/validate')
-  @Roles(UserRole.SUPER_ADMIN, UserRole.MERCHANT_ADMIN, UserRole.GUARDIAN)
+  @Roles('SUPER_ADMIN', 'MERCHANT_ADMIN', 'GUARDIAN')
   @ApiOperation({ summary: 'Validar e aplicar cupom a uma compra' })
   @ApiResponse({
     status: 200,

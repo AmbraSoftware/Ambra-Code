@@ -254,7 +254,7 @@ export class ImportService {
                 },
               });
               guardianId = newGuardian.id;
-              guardianCache.set(entry.guardianEmail, guardianId);
+              guardianCache.set(entry.guardianEmail, guardianId!);
               createdGuardians++;
             }
 

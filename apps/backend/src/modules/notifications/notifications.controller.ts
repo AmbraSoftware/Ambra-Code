@@ -16,7 +16,6 @@ import { NotificationService } from './notifications.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { UserRole } from '@prisma/client';
 import { CurrentUser } from '../auth/decorators/users.decorator';
 import { AuthenticatedUserPayload } from '../auth/dto/user-payload.dto';
 import { AuditInterceptor } from '../../common/interceptors/audit.interceptor';
@@ -25,7 +24,7 @@ import { Audit } from '../../common/decorators/audit.decorator';
 class BroadcastDto {
   title: string;
   message: string;
-  targetRole?: UserRole; // Opcional: Se null, envia para todos da escola
+  targetRole?: string; // Opcional: Se null, envia para todos da escola
 }
 
 @ApiTags('Notifications & Announcements')
@@ -36,7 +35,7 @@ export class NotificationsController {
   constructor(private readonly notificationService: NotificationService) {}
 
   @Post('broadcast')
-  @Roles(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN)
+  @Roles('SCHOOL_ADMIN', 'SUPER_ADMIN')
   @UseInterceptors(AuditInterceptor)
   @Audit('SEND_BROADCAST', 'Notification')
   @ApiOperation({

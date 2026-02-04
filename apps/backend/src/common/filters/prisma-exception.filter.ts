@@ -5,18 +5,17 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { Request, Response } from 'express';
 
 /**
  * PRISMA EXCEPTION FILTER v3.8.1 - MASTER INDUSTRIAL
  * Ajustado para Prisma 7: Captura erros via namespace Prisma para evitar erros de importação.
  */
-@Catch(Prisma.PrismaClientKnownRequestError)
+@Catch()
 export class PrismaExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(PrismaExceptionFilter.name);
 
-  catch(exception: Prisma.PrismaClientKnownRequestError, host: ArgumentsHost) {
+  catch(exception: any, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
