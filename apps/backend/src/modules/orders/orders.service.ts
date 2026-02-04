@@ -538,7 +538,7 @@ export class OrdersService {
       await this.prisma.order.update({
         where: { id },
         data: {
-          status,
+          status: status as any,
           deliveredAt: status === 'DELIVERED' ? new Date() : undefined,
         },
       });

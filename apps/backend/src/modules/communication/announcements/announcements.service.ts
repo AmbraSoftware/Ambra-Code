@@ -17,7 +17,7 @@ export class AnnouncementsService {
         authorId,
         title: dto.title,
         message: dto.message,
-        targetRole: dto.targetRole,
+        targetRole: dto.targetRole as any,
         scope: dto.scope as any, // Cast to Prisma Enum
         targetIds: dto.targetIds || [],
         status: dto.status || 'SENT',
