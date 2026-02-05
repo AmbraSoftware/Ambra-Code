@@ -41,6 +41,9 @@ jobs:
       run: npm --workspace apps/backend run build
 
     # Build Ambra Flow (Frontend)
+    - name: Clean Ambra Flow Cache
+      run: rm -rf apps/ambra-flow/.next
+
     - name: Build Ambra Flow
       run: npm --workspace apps/ambra-flow run build
 
