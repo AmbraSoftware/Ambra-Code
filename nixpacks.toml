@@ -1,0 +1,11 @@
+[phases.setup]
+nixPkgs = ['nodejs_20', 'npm']
+
+[phases.install]
+cmds = ['npm ci']
+
+[phases.build]
+cmds = ['npx prisma generate --schema=apps/backend/prisma/schema.prisma', 'npm run build -w apps/backend']
+
+[start]
+cmd = 'npx prisma migrate deploy --schema=apps/backend/prisma/schema.prisma && node apps/backend/dist/main.js'
