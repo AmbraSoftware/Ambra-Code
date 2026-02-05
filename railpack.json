@@ -13,7 +13,6 @@
         },
         "build": {
           "cmds": [
-            "npm install prisma@5.21.1 --save-exact",
             "npx prisma generate --schema=apps/backend/prisma/schema.prisma",
             "npm run build -w apps/backend"
           ]
