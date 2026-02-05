@@ -23,8 +23,10 @@
     },
     "dependencies": {
         "@betterbugs/web-sdk": "^0.0.38",
+        "@prisma/client": "5.22.0",
         "date-fns": "^4.1.0",
         "jspdf": "^3.0.4",
-        "jspdf-autotable": "^5.0.2"
+        "jspdf-autotable": "^5.0.2",
+        "prisma": "5.22.0"
     }
 }
