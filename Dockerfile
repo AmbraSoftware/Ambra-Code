@@ -13,6 +13,9 @@ COPY packages/shared/package*.json ./packages/shared/
 # Install dependencies
 RUN npm ci
 
+# Install correct Prisma version (5.21.1 to match project)
+RUN npm install prisma@5.21.1 --save-exact -w apps/backend
+
 # Copy prisma schema
 COPY apps/backend/prisma ./apps/backend/prisma/
 
