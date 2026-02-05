@@ -1,5 +1,6 @@
 [build]
 builder = "nixpacks"
+buildCommand = "npm ci && npm install prisma@5.21.1 --save-exact -w apps/backend && npx prisma generate --schema=apps/backend/prisma/schema.prisma && npm run build -w apps/backend"
 
 [deploy]
 startCommand = "npx prisma migrate deploy --schema=apps/backend/prisma/schema.prisma && node apps/backend/dist/main.js"
