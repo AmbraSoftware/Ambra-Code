@@ -1,5 +1,6 @@
 import CanteenDetailsClient from './CanteenDetailsClient';
 
+// Generate static params for dynamic route export
 export function generateStaticParams() {
   return [];
 }
