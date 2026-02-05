@@ -8,6 +8,12 @@ import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { canteenService, Canteen, Operator } from '@/services/canteen.service';
 
+// Generate static params for export mode
+export function generateStaticParams() {
+  // Return empty array - this page will be rendered on client with actual data
+  return [];
+}
+
 export default function CanteenDetailsPage() {
     const params = useParams(); // params.id
     const router = useRouter();
