@@ -1,13 +1,33 @@
 import 'dotenv/config'; // DEVE SER A PRIMEIRA LINHA
+import * as Sentry from '@sentry/nestjs';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
+import { SentryInterceptor } from './common/interceptors/sentry.interceptor';
 import helmet from 'helmet';
 
 import compression from 'compression';
 
+// Initialize Sentry BEFORE creating the NestJS application
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.NODE_ENV || 'development',
+    release: process.env.npm_package_version || '3.8.25',
+    // Performance monitoring
+    tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+    // Profiles sample rate
+    profilesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+    // Enable debug in development
+    debug: process.env.NODE_ENV !== 'production',
+    // Integrations
+    integrations: [
+      Sentry.httpIntegration(),
+    ],
+  });
+}
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     // Habilita o rawBody para que possamos validar assinaturas de webhooks.
@@ -50,6 +70,9 @@ async function bootstrap() {
 
   // Aplica filtros de exceção globais
   app.useGlobalFilters(new PrismaExceptionFilter());
+
+  // Aplica interceptor Sentry global para contexto multi-tenant
+  app.useGlobalInterceptors(new SentryInterceptor());
 
   // Configuração do Swagger
   const config = new DocumentBuilder()

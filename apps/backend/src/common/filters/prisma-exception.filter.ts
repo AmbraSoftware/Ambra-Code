@@ -6,10 +6,11 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import * as Sentry from '@sentry/node';
 
 /**
- * PRISMA EXCEPTION FILTER v3.8.1 - MASTER INDUSTRIAL
- * Ajustado para Prisma 7: Captura erros via namespace Prisma para evitar erros de importação.
+ * PRISMA EXCEPTION FILTER v3.8.2 - SENTRY ENHANCED
+ * Captura erros via namespace Prisma e reporta automaticamente ao Sentry.
  */
 @Catch()
 export class PrismaExceptionFilter implements ExceptionFilter {
@@ -29,6 +30,28 @@ export class PrismaExceptionFilter implements ExceptionFilter {
       exception.stack,
       `${request.method} ${request.url}`,
     );
+
+    // Report error to Sentry with context
+    if (process.env.SENTRY_DSN) {
+      Sentry.withScope((scope) => {
+        scope.setTag('error_type', 'prisma');
+        scope.setTag('prisma_code', exception.code || 'unknown');
+        scope.setTag('http_method', request.method);
+        scope.setTag('url', request.url);
+        scope.setContext('request', {
+          method: request.method,
+          url: request.url,
+          headers: request.headers,
+          body: request.body,
+        });
+        scope.setContext('error', {
+          code: exception.code,
+          message: exception.message,
+          stack: exception.stack,
+        });
+        Sentry.captureException(exception);
+      });
+    }
 
     switch (exception.code) {
       case 'P2002':

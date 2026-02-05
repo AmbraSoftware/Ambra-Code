@@ -45,6 +45,8 @@
     "@nestjs/websockets": "^11.1.9",
     "@nodum/shared": "*",
     "@prisma/client": "5.22.0",
+    "@sentry/nestjs": "10.38.0",
+    "@sentry/node": "10.38.0",
     "@vercel/blob": "^2.0.0",
     "axios": "^1.13.2",
     "bcrypt": "^6.0.0",
