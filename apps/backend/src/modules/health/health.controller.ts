@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards, Injectable } from '@nestjs/common';
+import { Controller, Get, UseGuards, Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import {
   HealthCheckService,
   HttpHealthIndicator,
@@ -111,5 +111,16 @@ export class HealthController {
     return {
       message: 'Evento de falha simulado enviado. Verifique o Discord.',
     };
+  }
+
+  @Get('test-sentry')
+  @Public()
+  @ApiOperation({
+    summary: 'TESTE: Gera um erro proposital para testar Sentry',
+    description: 'Este endpoint gera um erro de teste que deve aparecer no Sentry.',
+  })
+  @ApiResponse({ status: 500, description: 'Erro proposital gerado para teste' })
+  async testSentry() {
+    throw new HttpException('Test Sentry Error - This is intentional', HttpStatus.INTERNAL_SERVER_ERROR);
   }
 }
