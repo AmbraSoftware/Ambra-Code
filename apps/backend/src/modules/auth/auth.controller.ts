@@ -25,6 +25,7 @@ import {
   UserProfileDto,
 } from './dto/user-payload.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { VerifiedRoute, MockRoute } from '../../common/decorators/swagger-badges.decorator';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -34,15 +35,14 @@ export class AuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({
-    summary: 'Autentica um utilizador e retorna um token JWT',
+  @VerifiedRoute('Autentica um utilizador e retorna um token JWT', {
     description:
       'Para contas vinculadas a escolas, o cabeçalho x-tenant-slug é obrigatório em ambiente de desenvolvimento ou domínios partilhados.',
   })
   @ApiHeader({
     name: 'x-tenant-slug',
     description: 'Identificador da escola (Slug)',
-    required: false, // Opcional para Global Admin, obrigatório para os restantes
+    required: false,
   })
   @ApiResponse({ status: 200, description: 'Login realizado com sucesso.' })
   @ApiResponse({
@@ -79,8 +79,7 @@ export class AuthController {
   @Public()
   @Post('recovery/request')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({
-    summary: 'Solicita recuperação de senha (MOCK para apresentação)',
+  @MockRoute('Solicita recuperação de senha (MOCK para apresentação)', {
     description: 'TODO: Implementar envio real de email. Retorna sucesso fake para não quebrar o frontend.',
   })
   async requestPasswordRecovery(@Body() body: { email: string }) {

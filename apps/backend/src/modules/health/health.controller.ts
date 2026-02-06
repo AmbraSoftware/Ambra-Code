@@ -17,7 +17,8 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { Public } from '../auth/decorators/public.decorator'; // ✅ Import do decorator
+import { Public } from '../auth/decorators/public.decorator'; // Import do decorator
+import { VerifiedRoute } from '../../common/decorators/swagger-badges.decorator';
 
 @ApiTags('Health')
 @Controller('health')
@@ -32,8 +33,8 @@ export class HealthController {
   ) {}
 
   @Get()
-  @Public() // ✅ Permitir acesso sem autenticação
-  @ApiOperation({ summary: 'Verifica a saúde dos serviços críticos' })
+  @Public()
+  @VerifiedRoute('Verifica a saúde dos serviços críticos')
   @ApiResponse({ status: 200, description: 'Sistema operando normalmente' })
   @ApiResponse({
     status: 503,
