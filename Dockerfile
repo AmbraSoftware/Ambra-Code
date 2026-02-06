@@ -38,5 +38,14 @@ COPY . .
 # Build the application
 RUN npm run build -w apps/backend
 
-# Start command
-CMD ["sh", "-c", "echo '[STARTUP] Beginning startup...' && npx prisma migrate deploy --schema=apps/backend/prisma/schema.prisma && echo '[STARTUP] Migrations done, starting app...' && exec node apps/backend/dist/main.js"]
+# Make start.sh executable
+RUN chmod +x apps/backend/start.sh
+
+# Cache bust - force rebuild
+ENV DEPLOY_TIMESTAMP=2026-02-06-02-57
+
+# Expose port
+EXPOSE 3333
+
+# Start command usando start.sh
+CMD ["sh", "apps/backend/start.sh"]
