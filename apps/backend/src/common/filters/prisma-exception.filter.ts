@@ -79,7 +79,31 @@ export class PrismaExceptionFilter implements ExceptionFilter {
         message =
           'O registro que você tentou acessar ou modificar não foi encontrado no sistema.';
         break;
+      // 🔥 Erros de conexão com o banco (P1000-P1017)
+      case 'P1000':
+      case 'P1001':
+      case 'P1002':
+      case 'P1003':
+        status = HttpStatus.SERVICE_UNAVAILABLE;
+        message = 'Serviço temporariamente indisponível. Não foi possível conectar ao banco de dados.';
+        this.logger.error(`Database connection error: ${exception.message}`);
+        break;
+      case 'P1008':
+        status = HttpStatus.REQUEST_TIMEOUT;
+        message = 'A operação demorou muito tempo. Tente novamente em instantes.';
+        break;
+      case 'P1017':
+        status = HttpStatus.SERVICE_UNAVAILABLE;
+        message = 'Conexão com o banco de dados foi encerrada. Tente novamente.';
+        break;
+      // 🔥 Erros de schema/fallback
       default:
+        // Se não tem código, não é erro Prisma - deixar outro filtro tratar
+        if (!exception.code) {
+          this.logger.warn(`Erro sem código Prisma em ${request.url}: ${exception.message}`);
+          // Não tratar aqui - deixar o NestJS tratar com o filtro padrão
+          throw exception;
+        }
         status = HttpStatus.BAD_REQUEST;
         message =
           'Ocorreu um erro de integridade ao processar sua solicitação no banco de dados.';
