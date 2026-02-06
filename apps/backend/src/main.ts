@@ -29,84 +29,103 @@ if (process.env.SENTRY_DSN) {
   });
 }
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
-    // Habilita o rawBody para que possamos validar assinaturas de webhooks.
-    rawBody: true,
-  });
   const logger = new Logger('Bootstrap');
+  
+  try {
+    logger.log('========================================');
+    logger.log('STARTING AMBRA BACKEND');
+    logger.log('========================================');
+    logger.log(`PORT: ${process.env.PORT || 3333}`);
+    logger.log(`NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
+    logger.log(`SENTRY_DSN exists: ${!!process.env.SENTRY_DSN}`);
+    logger.log('========================================');
 
-  // Adiciona o Helmet para configurar cabeçalhos de segurança HTTP.
-  // Esta é uma primeira linha de defesa crucial contra vários ataques comuns.
-  app.use(helmet());
+    logger.log('[1/7] Creating NestJS application...');
+    const app = await NestFactory.create(AppModule, {
+      rawBody: true,
+      logger: ['error', 'warn', 'log', 'debug', 'verbose'],
+    });
+    logger.log('[1/7] ✓ NestJS application created');
 
-  // Habilita compressão Gzip globalmente
-  // Reduz significativamente o tamanho do payload JSON (Speed Boost)
-  app.use(compression());
+    logger.log('[2/7] Applying Helmet...');
+    app.use(helmet());
+    logger.log('[2/7] ✓ Helmet applied');
 
-  // Configuração de CORS rigorosa para produção.
-  const allowedOrigins = [
-    'http://localhost:3000',
-    'http://localhost:3001',
-    'http://localhost:3002',
-    'http://localhost:3008',
-    'https://ambra-console.pages.dev',
-    'https://ambra-flow.pages.dev',
-    'https://ambra-food.pages.dev',
-  ];
+    logger.log('[3/7] Applying Compression...');
+    app.use(compression());
+    logger.log('[3/7] ✓ Compression applied');
 
-  app.enableCors({
-    origin: (origin, callback) => {
-      // Permitir requests sem origin (mobile apps, Postman, etc)
-      if (!origin) return callback(null, true);
+    logger.log('[4/7] Configuring CORS...');
+    app.enableCors({
+      origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+        const allowedOrigins = [
+          'http://localhost:3000',
+          'http://localhost:3001',
+          'http://localhost:3002',
+          'http://localhost:3008',
+          'https://ambra-console.pages.dev',
+          'https://ambra-flow.pages.dev',
+          'https://ambra-food.pages.dev',
+        ];
+        if (allowedOrigins.includes(origin)) {
+          return callback(null, true);
+        }
+        if (origin.match(/^https:\/\/.*\.pages\.dev$/)) {
+          return callback(null, true);
+        }
+        callback(new Error(`CORS: Origin ${origin} not allowed`), false);
+      },
+      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+      credentials: true,
+    });
+    logger.log('[4/7] ✓ CORS configured');
 
-      // Verificar se origin está na lista explícita
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
+    logger.log('[5/7] Applying global pipes...');
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        transform: true,
+        forbidNonWhitelisted: true,
+      }),
+    );
+    logger.log('[5/7] ✓ Global pipes applied');
 
-      // Permitir todos subdomínios .pages.dev
-      if (origin.match(/^https:\/\/.*\.pages\.dev$/)) {
-        return callback(null, true);
-      }
+    logger.log('[6/7] Applying exception filters and interceptors...');
+    app.useGlobalFilters(new PrismaExceptionFilter());
+    app.useGlobalInterceptors(new SentryInterceptor());
+    logger.log('[6/7] ✓ Filters and interceptors applied');
 
-      callback(new Error(`CORS: Origin ${origin} not allowed`), false);
-    },
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    credentials: true,
-  });
+    logger.log('[7/7] Setting up Swagger...');
+    const config = new DocumentBuilder()
+      .setTitle('Nodum Kernel API')
+      .setDescription('Documentação da API para o Ecossistema Nodum')
+      .setVersion('3.8.25-bank-grade')
+      .addBearerAuth()
+      .build();
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('api/docs', app, document);
+    logger.log('[7/7] ✓ Swagger configured');
 
-  // Aplica validação global para todos os DTOs
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true, // Remove propriedades que não estão no DTO
-      transform: true, // Transforma o payload para a instância do DTO
-      forbidNonWhitelisted: true, // Lança erro se propriedades extras forem enviadas
-    }),
-  );
-
-  // Aplica filtros de exceção globais
-  app.useGlobalFilters(new PrismaExceptionFilter());
-
-  // Aplica interceptor Sentry global para contexto multi-tenant
-  app.useGlobalInterceptors(new SentryInterceptor());
-
-  // Configuração do Swagger
-  const config = new DocumentBuilder()
-    .setTitle('Nodum Kernel API')
-    .setDescription(
-      'Documentação da API para o Ecossistema Nodum (Control Plane & Ambra Vertical)',
-    )
-    .setVersion('3.8.25-bank-grade')
-    .addBearerAuth()
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
-
-  const port = process.env.PORT || 3333;
-  const host = '0.0.0.0';
-  await app.listen(port, host);
-  logger.log(`Application is running on: http://${host}:${port}`);
-  logger.log(`Swagger UI is available at: http://${host}:${port}/api/docs`);
+    const port = process.env.PORT || 3333;
+    const host = '0.0.0.0';
+    
+    logger.log(`Starting server on ${host}:${port}...`);
+    await app.listen(port, host);
+    
+    logger.log('========================================');
+    logger.log(`✅ APPLICATION RUNNING: http://${host}:${port}`);
+    logger.log(`✅ SWAGGER UI: http://${host}:${port}/api/docs`);
+    logger.log('========================================');
+  } catch (error) {
+    logger.error('========================================');
+    logger.error('❌ FATAL ERROR DURING STARTUP');
+    logger.error('========================================');
+    logger.error(`Error: ${error.message}`);
+    logger.error(`Stack: ${error.stack}`);
+    logger.error('========================================');
+    process.exit(1);
+  }
 }
 
 bootstrap();
