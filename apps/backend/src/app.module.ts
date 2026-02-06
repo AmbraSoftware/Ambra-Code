@@ -49,7 +49,6 @@ import { InvitationsModule } from './modules/invitations/invitations.module';
 import { CommunicationModule } from './modules/communication/communication.module';
 import { AnnouncementsModule } from './modules/communication/announcements/announcements.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
-import { SeedModule } from './modules/seed/seed.module';
 
 // --- 3. MIDDLEWARE & GUARDS ---
 import { RequestContextMiddleware } from './common/middleware/request-context.middleware';
@@ -118,7 +117,6 @@ import { TenantThrottlerGuard } from './common/guards/tenant-throttler.guard';
     CommunicationModule,
     AnnouncementsModule,
     DashboardModule,
-    SeedModule,
   ],
   providers: [
     // 1. Tenant Throttling (Rate Limit per School)
@@ -145,7 +143,6 @@ export class AppModule implements NestModule {
         { path: 'health', method: RequestMethod.GET },
         { path: 'health/(.*)', method: RequestMethod.ALL },
         { path: 'asaas/webhook', method: RequestMethod.POST },
-        { path: 'setup/seed', method: RequestMethod.POST },
       )
       .forRoutes('*');
   }
