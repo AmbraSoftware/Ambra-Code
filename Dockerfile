@@ -42,7 +42,7 @@ RUN npm run build -w apps/backend
 RUN chmod +x apps/backend/start.sh
 
 # Cache bust - force rebuild
-ENV DEPLOY_TIMESTAMP=2026-02-06-02-57
+ENV DEPLOY_TIMESTAMP=2026-02-06-15-45
 
 # Expose port
 EXPOSE 3333
