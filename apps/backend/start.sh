@@ -5,6 +5,9 @@ set -e
 echo "[START.SH] Script started at $(date)"
 echo "[START.SH] Current directory: $(pwd)"
 echo "[START.SH] User: $(whoami)"
+echo ""
+echo "🔍 PROCURANDO MAIN.JS..."
+find /app -name "main.js" -type f 2>/dev/null || echo "🔍 main.js não encontrado em /app"
 
 echo "=========================================="
 echo "STARTING AMBRA BACKEND"
@@ -28,8 +31,8 @@ fi
 echo "[1/3] ✓ Build artifacts verified"
 
 # Wait for DB to be fully ready after migrations
-echo "[2/3] Waiting for database to stabilize..."
-sleep 2
+echo "[2/3] Waiting for database to stabilize (5s)..."
+sleep 5
 echo "[2/3] ✓ Database ready"
 
 # Start app with explicit error handling
