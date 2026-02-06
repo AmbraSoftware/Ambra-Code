@@ -44,19 +44,33 @@ async function bootstrap() {
   app.use(compression());
 
   // Configuração de CORS rigorosa para produção.
+  const allowedOrigins = [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:3002',
+    'http://localhost:3008',
+    'https://ambra-console.pages.dev',
+    'https://ambra-flow.pages.dev',
+    'https://ambra-food.pages.dev',
+  ];
+
   app.enableCors({
-    origin: [
-      'http://localhost:3000', // Frontend Local 1
-      'http://localhost:3001', // Frontend Local 2
-      'http://localhost:3002', // Ambra Food Web (PWA)
-      'http://localhost:3008', // Ambra Flow Local
-      // Cloudflare Pages - Frontends Ambra
-      'https://ambra-console.pages.dev',
-      'https://ambra-flow.pages.dev',
-      'https://ambra-food.pages.dev',
-      // Regex para permitir todos os subdomínios .pages.dev
-      /^https:\/\/.*\.pages\.dev$/,
-    ],
+    origin: (origin, callback) => {
+      // Permitir requests sem origin (mobile apps, Postman, etc)
+      if (!origin) return callback(null, true);
+
+      // Verificar se origin está na lista explícita
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      // Permitir todos subdomínios .pages.dev
+      if (origin.match(/^https:\/\/.*\.pages\.dev$/)) {
+        return callback(null, true);
+      }
+
+      callback(new Error(`CORS: Origin ${origin} not allowed`), false);
+    },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
