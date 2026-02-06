@@ -38,11 +38,5 @@ COPY . .
 # Build the application
 RUN npm run build -w apps/backend
 
-# Make entrypoint executable
-RUN chmod +x apps/backend/entrypoint.sh
-
-# Expose port (must match process.env.PORT || 3333 in main.ts)
-EXPOSE 3333
-
-# Start command with proper entrypoint
-CMD ["sh", "apps/backend/entrypoint.sh"]
+# Start command
+CMD ["sh", "-c", "echo '[STARTUP] Beginning startup...' && npx prisma migrate deploy --schema=apps/backend/prisma/schema.prisma && echo '[STARTUP] Migrations done, starting app...' && exec node apps/backend/dist/main.js"]
