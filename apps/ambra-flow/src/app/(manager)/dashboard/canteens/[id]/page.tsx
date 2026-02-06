@@ -1,7 +1,7 @@
 import CanteenDetailsClient from './CanteenDetailsClient';
 
 // Generate static params for dynamic route export
-export function generateStaticParams() {
+export async function generateStaticParams(): Promise<{ id: string }[]> {
   return [];
 }
 
