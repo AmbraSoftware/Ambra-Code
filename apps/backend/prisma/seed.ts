@@ -2,35 +2,12 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { PrismaClient, PlanStatus, UserRole } from '@prisma/client';
-import { PrismaPg } from '@prisma/adapter-pg';
-import { Pool } from 'pg';
 import * as dotenv from 'dotenv';
 import * as bcrypt from 'bcrypt';
 
 dotenv.config();
 
-/**
- * SEED MASTER v4.0.3 - FINAL GENESIS
- * Cenários:
- * A) Colégio Elite (Escola = Operador)
- * B) ETEC São Vicente (MEI Seu João)
- * C) Escola Municipal (Merenda Híbrida)
- */
-
-const connectionString = process.env.DATABASE_URL;
-
-if (!connectionString) {
-  throw new Error('DATABASE_URL não encontrada no arquivo .env');
-}
-console.log('DB URL found:', connectionString.replace(/:[^:]*@/, ':****@'));
-
-const pool = new Pool({
-  connectionString,
-  ssl: { rejectUnauthorized: false },
-});
-
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
+const prisma = new PrismaClient();
 
 async function main() {
   console.log('🏗️  Iniciando Sincronização SOBERANIA v4.0 (GENESIS)...');
@@ -338,14 +315,5 @@ main()
     process.exit(1);
   })
   .finally(async () => {
-    // Force close connections to prevent hanging
-    try {
-      await prisma.$disconnect();
-      await pool.end();
-      console.log('🔌 Conexões encerradas com sucesso.');
-    } catch (err) {
-      console.error('Erro ao encerrar conexões:', err);
-      process.exit(1);
-    }
     process.exit(0);
   });
