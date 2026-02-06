@@ -50,10 +50,12 @@ async function bootstrap() {
       'http://localhost:3001', // Frontend Local 2
       'http://localhost:3002', // Ambra Food Web (PWA)
       'http://localhost:3008', // Ambra Flow Local
-      'https://nodum-platform-nodum-console.vercel.app', // Vercel Console
-      'https://trilingually-unmurmurous-maurita.ngrok-free.dev', // Tunnel Ngrok
-      'https://app.seunome.com', // Produção Cliente
-      'https://admin.seunome.com', // Produção Admin
+      // Cloudflare Pages - Frontends Ambra
+      'https://ambra-console.pages.dev',
+      'https://ambra-flow.pages.dev',
+      'https://ambra-food.pages.dev',
+      // Regex para permitir todos os subdomínios .pages.dev
+      /^https:\/\/.*\.pages\.dev$/,
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
@@ -87,9 +89,10 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document);
 
   const port = process.env.PORT || 3333;
-  await app.listen(port);
-  logger.log(`Application is running on: http://localhost:${port}`);
-  logger.log(`Swagger UI is available at: http://localhost:${port}/api/docs`);
+  const host = '0.0.0.0';
+  await app.listen(port, host);
+  logger.log(`Application is running on: http://${host}:${port}`);
+  logger.log(`Swagger UI is available at: http://${host}:${port}/api/docs`);
 }
 
 bootstrap();
