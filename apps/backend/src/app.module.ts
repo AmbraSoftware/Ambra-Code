@@ -1,4 +1,4 @@
-import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { EventEmitterModule } from '@nestjs/event-emitter';
@@ -137,6 +137,13 @@ export class AppModule implements NestModule {
    * Applies Tenant Context to all routes globally.
    */
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(RequestContextMiddleware, TenantMiddleware).forRoutes('*');
+    consumer
+      .apply(RequestContextMiddleware, TenantMiddleware)
+      .exclude(
+        { path: 'health', method: RequestMethod.GET },
+        { path: 'health/(.*)', method: RequestMethod.ALL },
+        { path: 'asaas/webhook', method: RequestMethod.POST },
+      )
+      .forRoutes('*');
   }
 }

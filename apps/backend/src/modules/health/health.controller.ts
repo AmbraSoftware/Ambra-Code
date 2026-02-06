@@ -2,7 +2,6 @@ import { Controller, Get, UseGuards, Injectable, HttpException, HttpStatus } fro
 import {
   HealthCheckService,
   HttpHealthIndicator,
-  TypeOrmHealthIndicator,
   MemoryHealthIndicator,
   HealthIndicatorResult,
 } from '@nestjs/terminus';
@@ -26,7 +25,6 @@ export class HealthController {
   constructor(
     private health: HealthCheckService,
     private http: HttpHealthIndicator,
-    private db: TypeOrmHealthIndicator,
     private memory: MemoryHealthIndicator,
     private prisma: PrismaService,
     private redisCache: RedisCacheService,

@@ -76,6 +76,24 @@ export class AuthController {
     return this.authService.getProfile(user.id);
   }
 
+  @Public()
+  @Post('recovery/request')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Solicita recuperação de senha (MOCK para apresentação)',
+    description: 'TODO: Implementar envio real de email. Retorna sucesso fake para não quebrar o frontend.',
+  })
+  async requestPasswordRecovery(@Body() body: { email: string }) {
+    // TODO: Implementar envio real de e-mail (SendGrid/Resend)
+    console.log(`[MOCK] Solicitação de recuperação de senha para: ${body.email}`);
+    
+    // Retorna sucesso fake para o frontend exibir "Email enviado!"
+    return {
+      message: 'Se o e-mail existir, você receberá instruções em breve.',
+      success: true,
+    };
+  }
+
   @UseGuards(JwtAuthGuard)
   @Post('change-password')
   @HttpCode(HttpStatus.OK)
