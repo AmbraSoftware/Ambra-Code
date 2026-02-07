@@ -155,6 +155,127 @@ export class OperatorsService {
     return operator;
   }
 
+  /**
+   * [v4.8] Configura subconta Asaas para operador existente (seed/demo)
+   * 
+   * Esta função permite que SUPER_ADMIN configure subcontas reais do Asaas Sandbox
+   * para operadores que foram criados via seed com dados fake.
+   * 
+   * É idempotente - se a subconta já existe, retorna os dados atuais.
+   * 
+   * @param operatorId ID do operador
+   * @param data Dados necessários para criar a subconta Asaas
+   * @returns Operador com credenciais Asaas configuradas
+   */
+  async setupAsaasSubaccount(
+    operatorId: string,
+    data: {
+      mobilePhone: string;
+      postalCode: string;
+      address: string;
+      addressNumber: string;
+      birthDate?: string;
+      incomeValue?: number;
+    },
+  ) {
+    this.logger.log(`[SetupAsaas] Iniciando setup para operador ${operatorId}`);
+
+    // 1. Buscar operador
+    const operator = await this.prisma.operator.findUnique({
+      where: { id: operatorId },
+    });
+
+    if (!operator) {
+      throw new NotFoundException('Operador não encontrado');
+    }
+
+    // 2. Verificar se já tem subconta válida (não fake)
+    const hasValidSubaccount =
+      operator.asaasId &&
+      !operator.asaasId.startsWith('wall_') &&
+      operator.asaasApiKey;
+
+    if (hasValidSubaccount) {
+      this.logger.log(
+        `[SetupAsaas] Operador ${operatorId} já possui subconta válida: ${operator.asaasId}`,
+      );
+      return {
+        success: true,
+        message: 'Operador já possui subconta Asaas configurada',
+        operator: await this.findByIdSecure(operatorId),
+        alreadyConfigured: true,
+      };
+    }
+
+    // 3. Validar dados obrigatórios
+    if (!operator.taxId) {
+      throw new BadRequestException(
+        'Operador não possui CPF/CNPJ (taxId) cadastrado',
+      );
+    }
+
+    // 4. Criar subconta no Asaas
+    this.logger.log(
+      `[SetupAsaas] Criando subconta Asaas para ${operator.name} (${operator.taxId})`,
+    );
+
+    let asaasAccount;
+    try {
+      const isCompany = operator.taxId.length > 11;
+      
+      asaasAccount = await this.asaasService.createSubAccount({
+        name: operator.name,
+        email: `financeiro+${operatorId}@demo.ambra.io`, // Email único por operador
+        cpfCnpj: operator.taxId,
+        mobilePhone: data.mobilePhone,
+        postalCode: data.postalCode,
+        address: data.address,
+        addressNumber: data.addressNumber,
+        companyType: isCompany ? 'LIMITED' : 'INDIVIDUAL',
+        birthDate: !isCompany ? data.birthDate : undefined,
+        incomeValue: !isCompany ? (data.incomeValue || 3000) : undefined,
+      });
+    } catch (error: any) {
+      this.logger.error(
+        `[SetupAsaas] Falha ao criar subconta Asaas:`,
+        error.message,
+      );
+      throw new BadRequestException(
+        `Falha ao criar subconta Asaas: ${error.message}`,
+      );
+    }
+
+    // 5. Atualizar operador com credenciais reais
+    const updatedOperator = await this.prisma.operator.update({
+      where: { id: operatorId },
+      data: {
+        mobilePhone: data.mobilePhone,
+        postalCode: data.postalCode,
+        address: data.address,
+        addressNumber: data.addressNumber,
+        asaasId: asaasAccount.id,
+        asaasApiKey: this.encryptionService.encrypt(asaasAccount.apiKey),
+        asaasWalletId: asaasAccount.walletId,
+      },
+    });
+
+    this.logger.log(
+      `[SetupAsaas] ✓ Subconta criada com sucesso: ${asaasAccount.id}`,
+    );
+
+    return {
+      success: true,
+      message: 'Subconta Asaas configurada com sucesso',
+      operator: await this.findByIdSecure(operatorId),
+      asaasAccount: {
+        id: asaasAccount.id,
+        walletId: asaasAccount.walletId,
+        // Não retorna apiKey por segurança
+      },
+      alreadyConfigured: false,
+    };
+  }
+
   async linkSchool(user: any, accessCode: string) {
     // 1. Encontrar a escola pelo "código" (slug ou taxId)
     const school = await this.prisma.school.findFirst({

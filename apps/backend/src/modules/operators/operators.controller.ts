@@ -9,11 +9,14 @@ import {
   Patch,
   Delete,
   Param,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { OperatorsService } from './operators.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { ApiOperation, ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiOperation, ApiTags, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
+import { SetupAsaasSubaccountDto } from './dto/setup-asaas-subaccount.dto';
 
 @ApiTags('Operators')
 @ApiBearerAuth()
@@ -64,5 +67,49 @@ export class OperatorsController {
     }
     // Assume que o usuário logado tem um canteenId ou operatorId vinculado
     return this.operatorsService.linkSchool(req.user, body.accessCode);
+  }
+
+  /**
+   * [v4.8] Endpoint para configurar subconta Asaas em operador existente
+   * 
+   * Permite SUPER_ADMIN configurar subcontas reais do Asaas Sandbox para
+   * operadores criados via seed com dados fake.
+   * 
+   * É idempotente - pode ser chamado múltiplas vezes.
+   */
+  @Post(':id/setup-asaas')
+  @UseGuards(JwtAuthGuard)
+  @Roles('SUPER_ADMIN')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '[v4.8] Configura subconta Asaas para operador existente (DEMO)',
+    description: `
+Permite configurar subconta Asaas Sandbox para operadores criados via seed.
+
+Requisitos:
+- Usuário deve ser SUPER_ADMIN
+- Operador deve ter taxId (CPF/CNPJ) válido cadastrado
+- Dados de endereço e telefone são obrigatórios
+
+Idempotente: se subconta já existe, retorna dados atuais.
+    `,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Subconta configurada com sucesso ou já existente',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Dados inválidos ou falha na criação da subconta',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Operador não encontrado',
+  })
+  async setupAsaasSubaccount(
+    @Param('id') operatorId: string,
+    @Body() dto: SetupAsaasSubaccountDto,
+  ) {
+    return this.operatorsService.setupAsaasSubaccount(operatorId, dto);
   }
 }
