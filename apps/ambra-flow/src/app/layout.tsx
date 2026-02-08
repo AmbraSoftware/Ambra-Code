@@ -19,6 +19,11 @@ const manrope = Manrope({
 export const metadata: Metadata = {
   title: "Ambra Flow - Gestão de Cantina",
   description: "Sistema de Gestão de Cantina e Frente de Caixa",
+  icons: {
+    icon: '/ambra-icon.svg',
+    shortcut: '/ambra-icon.svg',
+    apple: '/ambra-icon.svg',
+  },
 };
 
 export default function RootLayout({
@@ -27,7 +32,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" className={`${inter.variable} ${manrope.variable}`} suppressHydrationWarning>
+    <html lang="pt-BR" className={`${inter.variable} ${manrope.variable} light`} suppressHydrationWarning>
       <head>
         {/* Fallback for legacy icons until full migration */}
         <link

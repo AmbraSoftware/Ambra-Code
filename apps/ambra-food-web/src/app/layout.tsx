@@ -24,6 +24,11 @@ export const metadata: Metadata = {
     statusBarStyle: 'default',
     title: 'Ambra Food',
   },
+  icons: {
+    icon: '/ambra-icon.svg',
+    shortcut: '/ambra-icon.svg',
+    apple: '/ambra-icon.svg',
+  },
 };
 
 export const viewport: Viewport = {
@@ -41,10 +46,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" className={`${inter.variable} ${jakarta.variable}`}>
+    <html lang="pt-BR" className={`${inter.variable} ${jakarta.variable} light`}>
       <head>
-        <link rel="icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" href="/icon-192.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
       </head>
       <body className="overscroll-none">

@@ -9,21 +9,24 @@ export default function OperatorSettingsPage() {
     const router = useRouter();
 
     // Local State
-    const [darkMode, setDarkMode] = useState(false);
+    // NOTA: Dark mode desativado temporariamente para o MVP - sempre usando Light Mode
+    // const [darkMode, setDarkMode] = useState(false);
     const [soundEnabled, setSoundEnabled] = useState(true);
     const [dataSaver, setDataSaver] = useState(false);
 
     useEffect(() => {
         // Load from localStorage on mount
-        const savedDark = localStorage.getItem('theme') === 'dark';
+        // NOTA: Dark mode desativado temporariamente
+        // const savedDark = localStorage.getItem('theme') === 'dark';
         const savedSound = localStorage.getItem('ambra_sound_enabled') !== 'false'; // Default true
         const savedData = localStorage.getItem('ambra_data_saver') === 'true'; // Default false
 
-        setDarkMode(savedDark);
+        // setDarkMode(savedDark);
         setSoundEnabled(savedSound);
         setDataSaver(savedData);
     }, []);
 
+    /* NOTA: Toggle de dark mode desativado temporariamente para o MVP
     const toggleDarkMode = () => {
         const newVal = !darkMode;
         setDarkMode(newVal);
@@ -31,6 +34,7 @@ export default function OperatorSettingsPage() {
         if (newVal) document.documentElement.classList.add('dark');
         else document.documentElement.classList.remove('dark');
     };
+    */
 
     const toggleSound = () => {
         const newVal = !soundEnabled;
@@ -47,18 +51,19 @@ export default function OperatorSettingsPage() {
     return (
         <div className="space-y-6 max-w-2xl mx-auto p-4">
             <div className="flex items-center gap-4 mb-6">
-                <button onClick={() => router.back()} className="p-2 hover:bg-gray-100 rounded-full dark:hover:bg-zinc-800 transition-colors">
+                <button onClick={() => router.back()} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
                     <span className="material-symbols-outlined">arrow_back</span>
                 </button>
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Preferências do PDV</h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Ajustes locais para este dispositivo.</p>
+                    <h1 className="text-2xl font-bold text-gray-900">Preferências do PDV</h1>
+                    <p className="text-sm text-gray-500">Ajustes locais para este dispositivo.</p>
                 </div>
             </div>
 
             {/* Acessibilidade */}
             <Card title="Ambiente & Acessibilidade">
-                <div className="divide-y divide-gray-100 dark:divide-zinc-800">
+                <div className="divide-y divide-gray-100">
+                    {/* NOTA: Toggle de dark mode oculto temporariamente para o MVP
                     <div className="flex items-center justify-between py-4">
                         <div className="flex items-center gap-3">
                             <span className="material-symbols-outlined text-gray-400">dark_mode</span>
@@ -69,9 +74,10 @@ export default function OperatorSettingsPage() {
                         </div>
                         <label className="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" className="sr-only peer" checked={darkMode} onChange={toggleDarkMode} />
-                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                         </label>
                     </div>
+                    */}
 
                     <div className="flex items-center justify-between py-4">
                         <div className="flex items-center gap-3">
@@ -83,7 +89,7 @@ export default function OperatorSettingsPage() {
                         </div>
                         <label className="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" className="sr-only peer" checked={soundEnabled} onChange={toggleSound} />
-                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                         </label>
                     </div>
                 </div>
@@ -91,7 +97,7 @@ export default function OperatorSettingsPage() {
 
             {/* Performance */}
             <Card title="Performance & Dados">
-                <div className="divide-y divide-gray-100 dark:divide-zinc-800">
+                <div className="divide-y divide-gray-100">
                     <div className="flex items-center justify-between py-4">
                         <div className="flex items-center gap-3">
                             <span className="material-symbols-outlined text-gray-400">wifi_off</span>
@@ -102,7 +108,7 @@ export default function OperatorSettingsPage() {
                         </div>
                         <label className="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" className="sr-only peer" checked={dataSaver} onChange={toggleDataSaver} />
-                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                         </label>
                     </div>
                 </div>

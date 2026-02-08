@@ -28,6 +28,6 @@
 
 /* Custom Base Styles */
 body {
-  @apply bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark min-h-screen flex flex-col transition-colors duration-300 overflow-x-hidden;
+  @apply bg-background-light text-text-light min-h-screen flex flex-col overflow-x-hidden;
 }
 

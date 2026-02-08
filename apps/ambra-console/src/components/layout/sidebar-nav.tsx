@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import React from "react";
 import { ClientOnly } from "../client-only";
+import Image from "next/image";
 
 const navItems = [
   { href: "/dashboard", icon: <LayoutDashboard />, label: "Visão Geral" },
@@ -62,12 +63,31 @@ export function SidebarNav() {
   return (
     <>
       <SidebarHeader>
-        <div className={cn(
-          "flex items-center gap-2 p-2",
+        <Link href="/dashboard" className={cn(
+          "flex items-center gap-2 p-2 hover:opacity-90 transition-opacity",
           state === 'collapsed' && "justify-center"
         )}>
-          <h1 className={cn("text-xl font-semibold font-headline", state === 'collapsed' && "hidden")}>Ambra Console</h1>
-        </div>
+          <div className={cn("relative w-8 h-8", state !== 'collapsed' && "hidden")}>
+            <Image
+              src="/ambra-icon.svg"
+              alt="Ambra"
+              width={32}
+              height={32}
+              priority
+              className="object-contain"
+            />
+          </div>
+          <div className={cn("relative w-32 h-10", state === 'collapsed' && "hidden")}>
+            <Image
+              src="/ambra-logo-horizontal.svg"
+              alt="Ambra Console"
+              width={128}
+              height={40}
+              priority
+              className="object-contain"
+            />
+          </div>
+        </Link>
       </SidebarHeader>
       <SidebarContent className="p-2 flex-1">
         <SidebarGroup>

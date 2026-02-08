@@ -2,11 +2,12 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { authAPI } from '@/lib/api';
 import { Button } from '@/components/ui/atoms/Button';
 import { Input } from '@/components/ui/atoms/Input';
 import { UserRole } from '@/types';
-import { Mail, Lock, UtensilsCrossed } from 'lucide-react';
+import { Mail, Lock } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -45,8 +46,15 @@ export default function LoginPage() {
       <div className="flex flex-col items-center px-6 pt-4 pb-8">
         {/* Logo & Brand */}
         <div className="flex flex-col items-center gap-4 mb-8">
-          <div className="bg-brand-primary rounded-full size-20 flex items-center justify-center shadow-lg shadow-primary-sm">
-            <UtensilsCrossed className="text-white" size={40} />
+          <div className="relative w-20 h-20 flex items-center justify-center">
+            <Image
+              src="/ambra-icon.svg"
+              alt="Ambra"
+              width={80}
+              height={80}
+              priority
+              className="object-contain drop-shadow-lg"
+            />
           </div>
           <h1 className="text-text-primary dark:text-white text-2xl font-bold leading-tight tracking-tight">
             Ambra Food

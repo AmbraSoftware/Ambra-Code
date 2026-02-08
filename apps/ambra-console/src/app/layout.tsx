@@ -10,6 +10,11 @@ import { CensorshipProvider } from '@/contexts/censorship-context';
 export const metadata: Metadata = {
   title: 'Ambra Console',
   description: 'Centro de comando privado do ecossistema Ambra.',
+  icons: {
+    icon: '/ambra-icon.svg',
+    shortcut: '/ambra-icon.svg',
+    apple: '/ambra-icon.svg',
+  },
 };
 
 import { AuthProvider } from '@/contexts/auth-context';
@@ -21,7 +26,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" className="dark" suppressHydrationWarning>
+    <html lang="pt-BR" className="light" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

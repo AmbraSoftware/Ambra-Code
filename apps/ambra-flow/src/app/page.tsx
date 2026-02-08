@@ -78,7 +78,7 @@ export default function LandingPage() {
         <>
             <header className="w-full px-6 py-6 md:px-12 flex justify-between items-center absolute top-0 left-0 z-10">
                 <div className="select-none">
-                    <Logo textSize="text-xl" />
+                    <Logo variant="horizontal" width={120} height={40} />
                 </div>
             </header>
 

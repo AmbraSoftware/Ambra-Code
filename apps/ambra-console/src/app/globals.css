@@ -55,48 +55,47 @@
   --sidebar: 220 13% 16%;
 }
 
+/* NOTA: Tema escuro desativado temporariamente para o MVP
+   Como o html tem class="light", as regras .dark nunca serão aplicadas
+   mas mantemos aqui para referência futura quando reativarmos o dark mode.
 .dark {
-  /* VSCode Dark Soft Theme with Orange Accent */
-  --background: 220 13% 18%;        /* #252526 - VSCode dark bg */
-  --foreground: 0 0% 83%;            /* #D4D4D4 - VSCode light text */
+  --background: 220 13% 18%;
+  --foreground: 0 0% 83%;
   
-  --card: 220 13% 20%;               /* Slightly lighter than bg */
+  --card: 220 13% 20%;
   --card-foreground: 0 0% 83%;
   
   --popover: 220 13% 18%;
   --popover-foreground: 0 0% 83%;
   
-  /* Primary: Vibrant Orange */
-  --primary: 24.6 95% 53.1%;         /* #FF8800 - Orange accent */
+  --primary: 24.6 95% 53.1%;
   --primary-foreground: 0 0% 100%;
   
-  --secondary: 220 13% 25%;          /* #3E3E42 - VSCode selection */
+  --secondary: 220 13% 25%;
   --secondary-foreground: 0 0% 83%;
   
-  --muted: 220 13% 25%;              /* Muted elements */
-  --muted-foreground: 0 0% 60%;      /* #999999 - Muted text */
+  --muted: 220 13% 25%;
+  --muted-foreground: 0 0% 60%;
   
-  --accent: 220 13% 30%;             /* Hover states */
+  --accent: 220 13% 30%;
   --accent-foreground: 0 0% 90%;
   
-  --destructive: 0 72% 51%;          /* Red for errors */
+  --destructive: 0 72% 51%;
   --destructive-foreground: 0 0% 100%;
   
-  --border: 220 13% 28%;             /* #3E3E42 - Subtle borders */
+  --border: 220 13% 28%;
   --input: 220 13% 25%;
-  --ring: 24.6 95% 53.1%;            /* Orange focus ring */
+  --ring: 24.6 95% 53.1%;
   
-  /* Charts - Colorful palette for dark bg */
-  --chart-1: 24.6 95% 53.1%;         /* Orange */
-  --chart-2: 173 58% 50%;            /* Teal */
-  --chart-3: 217 91% 60%;            /* Blue */
-  --chart-4: 43 96% 56%;             /* Yellow */
-  --chart-5: 340 82% 52%;            /* Pink */
+  --chart-1: 24.6 95% 53.1%;
+  --chart-2: 173 58% 50%;
+  --chart-3: 217 91% 60%;
+  --chart-4: 43 96% 56%;
+  --chart-5: 340 82% 52%;
   
-  /* Sidebar - VSCode sidebar colors */
-  --sidebar-background: 220 13% 16%; /* #1E1E1E - Darker sidebar */
+  --sidebar-background: 220 13% 16%;
   --sidebar-foreground: 0 0% 83%;
-  --sidebar-primary: 24.6 95% 53.1%; /* Orange */
+  --sidebar-primary: 24.6 95% 53.1%;
   --sidebar-primary-foreground: 0 0% 100%;
   --sidebar-accent: 220 13% 25%;
   --sidebar-accent-foreground: 0 0% 83%;
@@ -104,6 +103,7 @@
   --sidebar-ring: 24.6 95% 53.1%;
   --sidebar: 220 13% 16%;
 }
+*/
 
 @theme {
   --color-background: hsl(var(--background));

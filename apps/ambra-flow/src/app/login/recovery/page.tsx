@@ -58,7 +58,7 @@ export default function RecoveryPage() {
                 <div className="flex flex-col w-full max-w-[440px]">
                     {/* Brand Header */}
                     <div className="flex items-center justify-center mb-8">
-                        <Link href="/"><Logo textSize="text-xl" /></Link>
+                        <Link href="/"><Logo variant="horizontal" width={140} height={48} /></Link>
                     </div>
 
                     {/* Main Card */}
