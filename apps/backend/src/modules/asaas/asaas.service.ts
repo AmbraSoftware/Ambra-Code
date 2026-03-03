@@ -72,7 +72,13 @@ export class AsaasService {
   }
 
   private getHttp(apiKey?: string): AxiosInstance {
-    if (!apiKey || apiKey === this.masterApiKey) {
+    // [v4.9] Fintech Fallback: Se a chave for placeholder ($aact_...) ou vazia, usa a MASTER_KEY do .env
+    const isPlaceholder = apiKey?.startsWith('$') || apiKey?.includes('key') || (apiKey && apiKey.length < 30);
+
+    if (!apiKey || isPlaceholder || apiKey === this.masterApiKey) {
+      if (isPlaceholder && apiKey) {
+        this.logger.debug(`API Key do Operador parece ser um placeholder (${apiKey}). Usando Master Key.`);
+      }
       return this.http;
     }
 
