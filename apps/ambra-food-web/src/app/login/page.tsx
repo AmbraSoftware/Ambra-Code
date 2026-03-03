@@ -45,21 +45,11 @@ export default function LoginPage() {
 
       <div className="flex flex-col items-center px-6 pt-4 pb-8">
         {/* Logo & Brand */}
-        <div className="flex flex-col items-center gap-4 mb-8">
-          <div className="relative w-20 h-20 flex items-center justify-center">
-            <Image
-              src="/ambra-icon.svg"
-              alt="Ambra"
-              width={80}
-              height={80}
-              priority
-              className="object-contain drop-shadow-lg"
-            />
+        <div className="flex flex-col items-center mb-10">
+          <div className="text-4xl font-black tracking-tighter text-brand-primary">
+            AMBRA<span className="text-text-primary dark:text-white font-light text-3xl ml-1">FOOD</span>
           </div>
-          <h1 className="text-text-primary dark:text-white text-2xl font-bold leading-tight tracking-tight">
-            Ambra Food
-          </h1>
-          <p className="text-brand-primary text-sm font-semibold uppercase tracking-wide">
+          <p className="text-brand-primary/80 text-xs font-bold uppercase tracking-[0.2em] mt-1">
             Cantina Digital
           </p>
         </div>
