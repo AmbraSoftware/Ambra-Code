@@ -1,9 +1,17 @@
 import axios from 'axios';
 
 // API Base URL - usar variável de ambiente ou fallback para localhost
-const rawBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
+const rawBaseUrl = process.env.NEXT_PUBLIC_API_URL || '';
 
 const normalizeBaseUrl = (value: string) => {
+  if (!value) {
+    if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
+      console.error('[API CRITICAL] NEXT_PUBLIC_API_URL is NOT defined in production! Requests will fail.');
+    }
+    return '';
+  }
+
+  // Remove slashes extras e garante UM no final
   let trimmed = value.replace(/\/+$/, '');
 
   // Garantir HTTPS em produção para evitar redirect de POST -> GET
@@ -12,12 +20,15 @@ const normalizeBaseUrl = (value: string) => {
   }
 
   if (trimmed.toLowerCase().endsWith('/api')) {
-    return trimmed.slice(0, -4);
+    trimmed = trimmed.slice(0, -4);
   }
-  return trimmed;
+
+  // O padrão ouro para axios baseURL é terminar com /
+  return `${trimmed}/`;
 };
 
 const API_BASE_URL = normalizeBaseUrl(rawBaseUrl);
+console.log('[API] Initialized with Base URL:', API_BASE_URL || '(relative)');
 
 export { API_BASE_URL };
 
@@ -44,11 +55,12 @@ api.interceptors.request.use(
         : 'colegio-elite';
     (config.headers as any)['x-tenant-slug'] = tenantSlug;
 
-    if (process.env.NODE_ENV === 'development') {
-      const baseURL = config.baseURL || '';
-      const url = config.url || '';
-      console.debug('[API]', config.method?.toUpperCase(), `${baseURL}${url}`);
-    }
+    // Telemetria Industrial (Sempre visível para depuração de produção)
+    const fullUrl = `${config.baseURL || ''}${config.url || ''}`;
+    console.info(`[API Request] ${config.method?.toUpperCase()} ${fullUrl}`, {
+      slug: tenantSlug,
+      hasToken: !!token
+    });
 
     return config;
   },
@@ -148,29 +160,29 @@ export interface ApiProduct {
   isAvailable: boolean;
 }
 
-// API Methods
+// API Methods - Removendo slashes iniciais para usar padrão base/path
 export const authAPI = {
-  login: (data: LoginDto) => api.post<AuthResponse>('/auth/login', data),
-  logout: () => api.post('/auth/logout'),
-  getProfile: () => api.get<UserProfile>('/auth/profile'),
+  login: (data: LoginDto) => api.post<AuthResponse>('auth/login', data),
+  logout: () => api.post('auth/logout'),
+  getProfile: () => api.get<UserProfile>('auth/profile'),
 };
 
 export const walletAPI = {
-  getWallet: () => api.get<Wallet>('/wallet/me'),
-  getTransactions: (limit = 10) => api.get<Transaction[]>(`/wallet/transactions?limit=${limit}`),
+  getWallet: () => api.get<Wallet>('wallet/me'),
+  getTransactions: (limit = 10) => api.get<Transaction[]>(`wallet/transactions?limit=${limit}`),
 };
 
 export const productsAPI = {
-  getProducts: () => api.get<ApiProduct[]>('/products'),
+  getProducts: () => api.get<ApiProduct[]>('products'),
 };
 
 export const paymentAPI = {
-  createPixRecharge: (data: RechargeDto) => api.post<PixRechargeResponse>('/payment/recharge-request', data),
-  getFees: () => api.get<CashInFees>('/global-admin/cash-in-fees'),
+  createPixRecharge: (data: RechargeDto) => api.post<PixRechargeResponse>('payment/recharge-request', data),
+  getFees: () => api.get<CashInFees>('global-admin/cash-in-fees'),
 };
 
 export const storeAPI = {
-  getFavorites: () => api.get<string[]>('/store/favorites'),
+  getFavorites: () => api.get<string[]>('store/favorites'),
   toggleFavorite: (productId: string) =>
-    api.post<StoreFavoriteToggleResponse>(`/store/favorites/${productId}/toggle`),
+    api.post<StoreFavoriteToggleResponse>(`store/favorites/${productId}/toggle`),
 };

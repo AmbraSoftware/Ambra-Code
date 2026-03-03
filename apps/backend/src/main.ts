@@ -30,7 +30,7 @@ if (process.env.SENTRY_DSN) {
 }
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
-  
+
   try {
     logger.log('========================================');
     logger.log('STARTING AMBRA BACKEND');
@@ -45,6 +45,13 @@ async function bootstrap() {
       rawBody: true,
       logger: ['error', 'warn', 'log', 'debug', 'verbose'],
     });
+
+    // DEBUG: RAW REQUEST LOGGING (Nível Industrial)
+    app.use((req, res, next) => {
+      logger.debug(`[RAW REQUEST] ${req.method} ${req.url} (Original: ${req.originalUrl})`);
+      next();
+    });
+
     logger.log('[1/7] ✓ NestJS application created');
 
     logger.log('[2/7] Applying Helmet...');
@@ -109,10 +116,10 @@ async function bootstrap() {
 
     const port = process.env.PORT || 3333;
     const host = '0.0.0.0';
-    
+
     logger.log(`Starting server on ${host}:${port}...`);
     await app.listen(port, host);
-    
+
     logger.log('========================================');
     logger.log(`✅ APPLICATION RUNNING: http://${host}:${port}`);
     logger.log(`✅ SWAGGER UI: http://${host}:${port}/api/docs`);
