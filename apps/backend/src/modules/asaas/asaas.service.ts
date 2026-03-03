@@ -1,6 +1,7 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios, { AxiosInstance } from 'axios';
+import { EncryptionService } from '../../common/services/encryption.service';
 
 /**
  * Interface for SubAccount Creation Payload
@@ -42,11 +43,13 @@ export interface AsaasSubscriptionData {
 @Injectable()
 export class AsaasService {
   private readonly logger = new Logger(AsaasService.name);
-  private readonly http: AxiosInstance;
   private readonly baseURL: string;
   private readonly masterApiKey: string;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly encryptionService: EncryptionService,
+  ) {
     const asaasEnv = this.configService.get('ASAAS_ENV', 'sandbox');
     const apiKey = this.configService.getOrThrow<string>('ASAAS_API_KEY');
 
@@ -58,34 +61,31 @@ export class AsaasService {
     this.baseURL = baseURL;
     this.masterApiKey = apiKey;
 
-    this.http = axios.create({
-      baseURL,
-      headers: {
-        access_token: apiKey,
-        'Content-Type': 'application/json',
-      },
-    });
-
     this.logger.log(
       `AsaasService initialized in ${asaasEnv.toUpperCase()} mode.`,
     );
   }
 
-  private getHttp(apiKey?: string): AxiosInstance {
-    // [v4.9] Fintech Fallback: Se a chave for placeholder ($aact_...) ou vazia, usa a MASTER_KEY do .env
-    const isPlaceholder = apiKey?.startsWith('$') || apiKey?.includes('key') || (apiKey && apiKey.length < 30);
-
-    if (!apiKey || isPlaceholder || apiKey === this.masterApiKey) {
-      if (isPlaceholder && apiKey) {
-        this.logger.debug(`API Key do Operador parece ser um placeholder (${apiKey}). Usando Master Key.`);
-      }
-      return this.http;
+  private getHttp(options?: { apiKey?: string }): AxiosInstance {
+    // Fallback: Se a key fornecida for placeholder, usar Master
+    let apiKey = options?.apiKey;
+    if (
+      apiKey &&
+      (apiKey.startsWith('$') || apiKey.includes('key') || apiKey.length < 20)
+    ) {
+      this.logger.debug(
+        `API Key do Operador parece ser um placeholder (${apiKey}). Usando Master Key.`,
+      );
+      apiKey = undefined;
     }
+
+    // Decrypt if necessary (Master or Operator Key)
+    const finalKey = this.encryptionService.decrypt(apiKey || this.masterApiKey);
 
     return axios.create({
       baseURL: this.baseURL,
       headers: {
-        access_token: apiKey,
+        access_token: finalKey,
         'Content-Type': 'application/json',
       },
     });
@@ -122,7 +122,7 @@ export class AsaasService {
         payload.incomeValue = operatorData.incomeValue;
       }
 
-      const response = await this.http.post('/accounts', payload);
+      const response = await this.getHttp().post('/accounts', payload);
 
       this.logger.log(`Subaccount created: ${response.data.id}`);
 
@@ -143,7 +143,7 @@ export class AsaasService {
     this.logger.log(`Updating Subaccount ${id} (Annual Confirmation)...`);
     try {
       // Asaas V3 Update Pattern
-      const updateResponse = await this.http.post(`/accounts/${id}`, data);
+      const updateResponse = await this.getHttp().post(`/accounts/${id}`, data);
       return updateResponse.data;
     } catch (error: any) {
       this.handleAsaasError(`updating account ${id}`, error);
@@ -162,7 +162,7 @@ export class AsaasService {
       `Creating PIX Charge of R$ ${splitData.value} for Wallet ${splitData.walletId} with Split...`,
     );
 
-    const http = this.getHttp(opts?.apiKey);
+    const http = this.getHttp(opts);
 
     if (process.env.NODE_ENV === 'test') {
       const operatorSplitValue = splitData.splitValue ?? splitData.value;
@@ -256,7 +256,7 @@ export class AsaasService {
     // Clean Tax ID
     const cleanTaxId = data.cpfCnpj.replace(/[^\d]/g, '');
 
-    const http = this.getHttp(opts?.apiKey);
+    const http = this.getHttp(opts);
 
     // 1. Search
     const search = await http.get('/customers', {
@@ -292,7 +292,7 @@ export class AsaasService {
     );
 
     try {
-      const response = await this.http.post('/subscriptions', data);
+      const response = await this.getHttp().post('/subscriptions', data);
       this.logger.log(`Subscription created: ${response.data.id}`);
       return response.data;
     } catch (error: any) {
@@ -306,7 +306,7 @@ export class AsaasService {
   async updateSubscription(id: string, data: { value: number }) {
     this.logger.log(`Updating Subscription ${id} to Value R$ ${data.value}`);
     try {
-      const response = await this.http.post(`/subscriptions/${id}`, {
+      const response = await this.getHttp().post(`/subscriptions/${id}`, {
         value: data.value,
         updatePendingPayments: true,
       });

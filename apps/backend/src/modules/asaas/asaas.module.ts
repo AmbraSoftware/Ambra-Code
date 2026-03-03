@@ -4,6 +4,7 @@ import { AsaasController } from './asaas.controller';
 import { AsaasWebhookService } from './asaas.webhook.service';
 import { TransactionsModule } from '../transactions/transactions.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { EncryptionService } from '../../common/services/encryption.service';
 
 @Module({
   imports: [
@@ -11,7 +12,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     forwardRef(() => NotificationsModule),
   ],
   controllers: [AsaasController],
-  providers: [AsaasService, AsaasWebhookService],
+  providers: [AsaasService, AsaasWebhookService, EncryptionService],
   exports: [AsaasService],
 })
-export class AsaasModule {}
+export class AsaasModule { }
