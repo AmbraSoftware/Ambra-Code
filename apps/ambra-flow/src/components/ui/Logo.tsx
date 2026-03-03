@@ -46,14 +46,11 @@ export default function Logo({
 
     return (
         <div className={`flex items-center hover:opacity-90 transition-opacity ${className}`}>
-            <Image
-                src={config.src}
-                alt={config.alt}
-                width={width || config.defaultWidth}
-                height={height || config.defaultHeight}
-                priority
-                className="object-contain"
-            />
+            <div className="flex flex-col items-center">
+                <div className="text-2xl font-black tracking-tighter text-brand-primary leading-none">
+                    AMBRA<span className="text-text-primary dark:text-white font-light text-xl ml-0.5">FLOW</span>
+                </div>
+            </div>
         </div>
     );
 }

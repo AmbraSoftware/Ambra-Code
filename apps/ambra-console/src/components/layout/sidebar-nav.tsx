@@ -67,25 +67,13 @@ export function SidebarNav() {
           "flex items-center gap-2 p-2 hover:opacity-90 transition-opacity",
           state === 'collapsed' && "justify-center"
         )}>
-          <div className={cn("relative w-8 h-8", state !== 'collapsed' && "hidden")}>
-            <Image
-              src="/ambra-icon.svg"
-              alt="Ambra"
-              width={32}
-              height={32}
-              priority
-              className="object-contain"
-            />
+          <div className={cn("relative flex items-center h-8", state !== 'collapsed' && "hidden")}>
+            <div className="text-xl font-black text-brand-primary">A</div>
           </div>
-          <div className={cn("relative w-32 h-10", state === 'collapsed' && "hidden")}>
-            <Image
-              src="/ambra-logo-horizontal.svg"
-              alt="Ambra Console"
-              width={128}
-              height={40}
-              priority
-              className="object-contain"
-            />
+          <div className={cn("relative flex items-center h-10", state === 'collapsed' && "hidden")}>
+            <div className="text-2xl font-black tracking-tighter text-brand-primary leading-none">
+              AMBRA<span className="text-text-primary dark:text-white font-light text-xl ml-0.5">CONSOLE</span>
+            </div>
           </div>
         </Link>
       </SidebarHeader>

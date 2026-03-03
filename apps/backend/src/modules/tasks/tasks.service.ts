@@ -10,7 +10,7 @@ export class TasksService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly asaasService: AsaasService,
-  ) {}
+  ) { }
 
   /**
    * Executa uma tarefa agendada (Cron Job) para limpar reservas de estoque expiradas.
@@ -83,8 +83,8 @@ export class TasksService {
       const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       const { count: deletedCount } = await this.prisma.stockReservation.deleteMany({
         where: {
-          status: { in: ['EXPIRED', 'CANCELLED'] },
-          updatedAt: {
+          // status: { in: ['EXPIRED', 'CANCELLED'] },
+          createdAt: {
             lt: sevenDaysAgo,
           },
         },

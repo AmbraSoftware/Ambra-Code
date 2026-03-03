@@ -48,7 +48,7 @@ export class TransactionService {
     private readonly eventEmitter: EventEmitter2,
     private readonly feeCalculator: FeeCalculatorService,
     private readonly encryptionService: EncryptionService,
-  ) {}
+  ) { }
 
   async prepareRechargeFromPending(
     pendingTransactionId: string,
@@ -135,17 +135,27 @@ export class TransactionService {
       throw new BadRequestException('Valor inválido para recarga.');
     }
 
-    const pixData = await this.asaasService.createPixCharge(
-      {
-        customer: payer.document || '00000000000',
-        value: split.totalPaid,
-        walletId: operator.asaasWalletId || operator.asaasId,
-        description: `Recarga Ambra - ${school.name}`,
-        splitValue: split.netAmount,
-        externalReference: pendingTransactionId,
-      },
-      { apiKey: operator.asaasApiKey ? this.encryptionService.decrypt(operator.asaasApiKey) : undefined },
-    );
+    let pixData: any;
+    try {
+      pixData = await this.asaasService.createPixCharge(
+        {
+          customer: payer.document || '00000000000',
+          value: split.totalPaid,
+          walletId: operator.asaasWalletId || operator.asaasId,
+          description: `Recarga Ambra - ${school.name}`,
+          splitValue: split.netAmount,
+          externalReference: pendingTransactionId,
+        },
+        { apiKey: operator.asaasApiKey ? this.encryptionService.decrypt(operator.asaasApiKey) : undefined },
+      );
+    } catch (error: any) {
+      this.logger.error(`[PIX ERROR] Falha na API do Asaas para Operador ${operator.id}: ${error.message}`, {
+        asaasResponse: error.response?.data,
+        operatorAsaasId: operator.asaasId,
+        split: split,
+      });
+      throw error;
+    }
 
     await this.prisma.transaction.update({
       where: { id: pendingTransactionId },
