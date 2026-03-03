@@ -139,10 +139,13 @@ export class TransactionService {
     }
 
     if (!payer.document || payer.document.replace(/[^\d]/g, '').length < 11) {
+      this.logger.warn(`[PIX ERROR] Documento do Pagador ${payerUserId} inválido ou ausente: "${payer.document}"`);
       throw new BadRequestException(
         'Documento (CPF/CNPJ) do pagador não informado ou incompleto. Por favor, atualize seu cadastro.',
       );
     }
+
+    this.logger.log(`[PIX PROCESS] Payer Document cleaned: ${payer.document.replace(/[^\d]/g, '')}`);
 
     let pixData: any;
     try {

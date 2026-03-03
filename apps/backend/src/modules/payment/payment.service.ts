@@ -21,7 +21,7 @@ export class PaymentService {
     private readonly prisma: PrismaService,
     private readonly transactionsService: TransactionService,
     private readonly feeCalculator: FeeCalculatorService,
-  ) {}
+  ) { }
 
   /**
    * Valida se o usuário tem permissão para criar uma recarga.
@@ -131,6 +131,10 @@ export class PaymentService {
     createRechargeDto: CreateRechargeDto,
   ) {
     const { dependentId, amount } = createRechargeDto;
+
+    this.logger.log(
+      `[PIX REQUEST] Iniciando geração de PIX para Usuário ${userId} (Dependente: ${dependentId}) - Valor: R$${amount.toFixed(2)}`,
+    );
 
     const pendingTransactionId = await this.prisma.$transaction(async (tx) => {
       // 1. ✅ Valida se o usuário tem permissão para criar recargas
@@ -331,7 +335,7 @@ export class PaymentService {
         const now = new Date();
         const daysSince = Math.floor(
           (now.getTime() - original.createdAt.getTime()) /
-            (1000 * 60 * 60 * 24),
+          (1000 * 60 * 60 * 24),
         );
         const withinCdc = daysSince <= 7;
 

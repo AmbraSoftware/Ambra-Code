@@ -267,9 +267,15 @@ export class AsaasService {
       });
       return create.data.id;
     } catch (error: any) {
+      this.logger.error(`[ASAAS CUSTOMER ERROR] Falha ao resolver cliente (${data.cpfCnpj}): ${error.message}`, {
+        asaasResponse: error.response?.data,
+        status: error.response?.status,
+      });
       if (error.response?.status === 400) {
+        const asaasErrors = error.response?.data?.errors;
+        const details = Array.isArray(asaasErrors) ? asaasErrors.map((e: any) => e.description).join(', ') : '';
         throw new BadRequestException(
-          `CPF/CNPJ Inválido ou Inexistente na base da Receita Federal (${data.cpfCnpj}).`,
+          `Erro de Validação Asaas: CPF/CNPJ Inválido ou Inexistente (${data.cpfCnpj}). Detalhes: ${details || error.message}`,
         );
       }
       throw error;
@@ -326,6 +332,10 @@ export class AsaasService {
     const firstCode = Array.isArray(asaasErrors)
       ? asaasErrors?.[0]?.code
       : undefined;
+    const details = Array.isArray(asaasErrors)
+      ? asaasErrors.map((e: any) => `${e.code}: ${e.description}`).join(' | ')
+      : error.message;
+
     if (firstCode === 'access_token_not_found') {
       throw new BadRequestException(
         'Asaas Error: access_token_not_found (verifique ASAAS_API_KEY / credenciais da subconta e ambiente sandbox/production).',
@@ -333,7 +343,7 @@ export class AsaasService {
     }
 
     throw new BadRequestException(
-      `Asaas Error: ${JSON.stringify(error.response?.data?.errors || error.message)}`,
+      `Asaas Error [${context}]: ${details}`,
     );
   }
 }
