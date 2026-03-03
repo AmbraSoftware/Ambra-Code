@@ -138,11 +138,17 @@ export class TransactionService {
       throw new BadRequestException('Valor inválido para recarga.');
     }
 
+    if (!payer.document || payer.document.replace(/[^\d]/g, '').length < 11) {
+      throw new BadRequestException(
+        'Documento (CPF/CNPJ) do pagador não informado ou incompleto. Por favor, atualize seu cadastro.',
+      );
+    }
+
     let pixData: any;
     try {
       pixData = await this.asaasService.createPixCharge(
         {
-          customer: payer.document || '00000000000',
+          customer: payer.document,
           value: split.totalPaid,
           walletId: operator.asaasWalletId || operator.asaasId,
           description: `Recarga Ambra - ${school.name}`,

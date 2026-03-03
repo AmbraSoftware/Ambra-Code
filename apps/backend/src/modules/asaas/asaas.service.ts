@@ -179,20 +179,13 @@ export class AsaasService {
 
     // Resolve Customer ID if CPF passed
     if (splitData.customer.length <= 14) {
-      try {
-        customerId = await this.ensureCustomer(
-          {
-            name: 'Cliente Nodum',
-            cpfCnpj: splitData.customer,
-          },
-          opts,
-        );
-      } catch (e) {
-        this.logger.warn(
-          'Failed to resolve customer by CPF. Trying raw value.',
-          e.message,
-        );
-      }
+      customerId = await this.ensureCustomer(
+        {
+          name: 'Cliente Ambra',
+          cpfCnpj: splitData.customer,
+        },
+        opts,
+      );
     }
 
     const operatorSplitValue = splitData.splitValue ?? splitData.value;
