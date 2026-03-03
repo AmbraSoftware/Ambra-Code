@@ -4,7 +4,13 @@ import axios from 'axios';
 const rawBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
 
 const normalizeBaseUrl = (value: string) => {
-  const trimmed = value.replace(/\/+$/, '');
+  let trimmed = value.replace(/\/+$/, '');
+
+  // Garantir HTTPS em produção para evitar redirect de POST -> GET
+  if (trimmed.startsWith('http://') && !trimmed.includes('localhost') && !trimmed.includes('127.0.0.1')) {
+    trimmed = trimmed.replace('http://', 'https://');
+  }
+
   if (trimmed.toLowerCase().endsWith('/api')) {
     return trimmed.slice(0, -4);
   }
