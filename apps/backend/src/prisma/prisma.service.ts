@@ -13,8 +13,7 @@ import { PrismaClient } from '@prisma/client';
 @Injectable()
 export class PrismaService
   extends PrismaClient
-  implements OnModuleInit, OnModuleDestroy
-{
+  implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger('NodumPersistence');
 
   constructor() {
@@ -24,8 +23,18 @@ export class PrismaService
   }
 
   async onModuleInit() {
-    await this.$connect();
-    this.logger.log('✅ Conexão com PostgreSQL estabelecida.');
+    try {
+      await this.$connect();
+      this.logger.log('✅ Conexão com PostgreSQL estabelecida.');
+    } catch (error) {
+      this.logger.warn(
+        '⚠️  FALHA NA CONEXÃO INICIAL COM O BANCO DE DADOS.',
+      );
+      this.logger.warn(
+        'A aplicação continuará o processo de boot para manter a estabilidade no Railway.',
+      );
+      this.logger.debug(error.message);
+    }
   }
 
   async onModuleDestroy() {
