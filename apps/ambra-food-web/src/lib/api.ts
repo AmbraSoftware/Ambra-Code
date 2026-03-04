@@ -126,14 +126,18 @@ export interface RechargeDto {
 
 export interface PixRechargeResponse {
   transactionId: string;
-  pixCode: string;
-  qrCode: string;
+  pixCode: string; // fallback
+  qrCode: string;  // fallback
+  brCode?: string; // [v4.0] Backend padrão
+  encodedImage?: string; // [v4.0] Backend padrão
   expiresAt: string;
   totalAmount: number;
+  totalToPay?: number; // [v4.0] Backend padrão
   fees: number;
   pixCopyPaste?: string;
   grossAmount?: number;
   netAmount?: number;
+  netValue?: number; // [v4.0] Backend padrão
 }
 
 export interface CashInFees {

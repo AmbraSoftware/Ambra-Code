@@ -14,6 +14,7 @@
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "prisma:generate": "prisma generate --schema=prisma/schema.prisma",
+    "seed:industrial": "npm run prisma:generate && ts-node -P tsconfig.json -r tsconfig-paths/register prisma/industrial-seed.ts",
     "script:simulate-asaas-webhook": "npm run prisma:generate && ts-node -P tsconfig.json -r tsconfig-paths/register src/scripts/simulate-asaas-webhook.ts",
     "script:verify-asaas": "ts-node -P tsconfig.json -r tsconfig-paths/register src/scripts/verify-asaas.ts",
     "script:verify-asaas-full": "ts-node -P tsconfig.json -r tsconfig-paths/register src/scripts/verify-asaas-full.ts",

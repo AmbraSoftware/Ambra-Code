@@ -59,10 +59,10 @@ export default function RechargePage() {
 
   const totalsFromBackend = pixData
     ? {
-        amount: pixData.creditAmount,
-        fees: pixData.feeAmount,
-        total: pixData.totalAmount,
-      }
+      amount: pixData.creditAmount,
+      fees: pixData.feeAmount,
+      total: pixData.totalAmount,
+    }
     : null;
 
   const totals = calculateTotals();
@@ -96,17 +96,22 @@ export default function RechargePage() {
         amount: totals.amount,
       });
 
-      const creditAmount = typeof data.netAmount === 'number' ? data.netAmount : totals.amount;
-      const totalAmount = typeof data.totalAmount === 'number'
-        ? data.totalAmount
-        : (typeof data.grossAmount === 'number' ? data.grossAmount : creditAmount);
+      // Mapeamento Industrial (Fallback v3 -> v4)
+      const creditAmount = typeof data.netValue === 'number'
+        ? data.netValue
+        : (typeof data.netAmount === 'number' ? data.netAmount : totals.amount);
+
+      const totalAmount = typeof data.totalToPay === 'number'
+        ? data.totalToPay
+        : (typeof data.totalAmount === 'number' ? data.totalAmount : (typeof data.grossAmount === 'number' ? data.grossAmount : creditAmount));
+
       const feeAmount = typeof data.fees === 'number'
         ? data.fees
         : Math.max(0, Number((totalAmount - creditAmount).toFixed(2)));
 
       setPixData({
-        code: data.pixCopyPaste || data.pixCode,
-        qrCode: data.qrCode,
+        code: data.brCode || data.pixCopyPaste || data.pixCode,
+        qrCode: data.encodedImage || data.qrCode,
         creditAmount,
         totalAmount,
         feeAmount,
