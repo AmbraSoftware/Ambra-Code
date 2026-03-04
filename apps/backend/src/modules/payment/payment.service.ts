@@ -130,6 +130,7 @@ export class PaymentService {
     userId: string,
     createRechargeDto: CreateRechargeDto,
   ) {
+    this.logger.debug(`[RECHARGE_FLOW] Recebido POST em /payment/recharge-request`);
     const { dependentId, amount } = createRechargeDto;
 
     this.logger.log(
@@ -232,7 +233,7 @@ export class PaymentService {
       });
 
       return pendingTransaction.id;
-    });
+    }, { timeout: 30000 });
 
     try {
       const pix = await this.transactionsService.prepareRechargeFromPending(
