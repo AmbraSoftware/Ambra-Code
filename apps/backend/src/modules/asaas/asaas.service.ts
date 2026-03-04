@@ -67,12 +67,18 @@ export class AsaasService {
   }
 
   private getHttp(options?: { apiKey?: string }): AxiosInstance {
-    // Fallback: Se a key fornecida for placeholder, usar Master
     let apiKey = options?.apiKey;
-    if (
-      apiKey &&
-      (apiKey.startsWith('$') || apiKey.includes('key') || apiKey.length < 20)
-    ) {
+
+    // Fallback: Se a key fornecida for placeholder, usar Master
+    // Placeholders comuns: $wall_..., $mock_..., ou chaves muito curtas
+    // As chaves REAIS do Asaas começam com $aact_ ou aact_
+    const isPlaceholder = (key: string) =>
+      key &&
+      !key.startsWith('$aact_') &&
+      !key.startsWith('aact_') &&
+      (key.startsWith('$') || key.includes('key') || key.length < 20);
+
+    if (apiKey && isPlaceholder(apiKey)) {
       this.logger.debug(
         `API Key do Operador parece ser um placeholder (${apiKey}). Usando Master Key.`,
       );
@@ -80,7 +86,15 @@ export class AsaasService {
     }
 
     // Decrypt if necessary (Master or Operator Key)
-    const finalKey = this.encryptionService.decrypt(apiKey || this.masterApiKey);
+    const rawKey = apiKey || this.masterApiKey;
+    let finalKey = this.encryptionService.decrypt(rawKey);
+
+    // [v4.1] Proteção Industrial: Se a chave contiver colons (:) mas não for um dump de criptografia,
+    // extrair apenas a primeira parte (o token real).
+    if (finalKey && finalKey.includes(':') && !this.encryptionService.isEncrypted(finalKey)) {
+      this.logger.warn('Detecada chave de API no formato "key:extra". Extraindo apenas o token.');
+      finalKey = finalKey.split(':')[0];
+    }
 
     return axios.create({
       baseURL: this.baseURL,
